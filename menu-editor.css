@@ -1,0 +1,155 @@
+/* Admin Menu Editor CSS file */  
+
+.ws_main_container {
+	margin:  2px;
+	width: 302px;
+	min-height: 30px;
+	float: left;
+	display:block;
+	border: 1px solid #cdd5d5;
+	padding: 4px;
+}
+
+.ws_main_button {
+	clear: both;
+	display:block;
+	width: 120px;
+	margin: 4px;
+	padding: 4px;
+}
+
+.ws_container {
+	display: block;
+	width: 290px;
+	padding : 3px;
+	margin: 2px;
+	border: 1px solid #a9badb;
+	background-color: #bdd3ff;
+}
+
+.ws_active {
+	background-color : #8eb0f1 !important; /* make sure this overrides ws_menu_separator */ 
+}
+
+#ws_menu_box {
+}
+
+#ws_submenu_box {
+}
+
+.ws_menu {
+}
+
+.ws_menu_separator {
+	background-color: #f0f0f0;
+}
+
+.ws_submenu {
+	background-color: #f0fafa;
+	min-height: 2em;
+}
+
+
+.ws_item_head {
+	padding-left: 2px;
+	padding-top: 2px;
+	padding-bottom: 2px;
+	cursor: default;
+}
+
+.ws_item_title {
+}
+
+.ws_edit_link {
+	float: right;
+	margin-right: 0px;
+	cursor: pointer;
+	display:block;
+	height: 18px;
+	width: 40px;
+	background-image: url('images/bullet_arrow_down2.png'); 
+	background-repeat: no-repeat;
+	background-position: center;
+}
+a.ws_edit_link:hover {
+	background-color: #ffffd0;
+	background-image: url('images/bullet_arrow_down2.png');
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.ws_edit_link_expanded {
+	background-color: #ffffd0;
+	border-bottom: none;
+	border-color: #ffffd0;
+	background-image: url('images/bullet_arrow_down2.png');
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+/* style for items not present in the default menu - these are usually user-created items */
+.ws_missing {
+	background-image: url('images/page_white_add.png');
+	background-repeat: no-repeat;
+	background-position: 232px 5px;
+}
+
+/* style for hidden items */
+.ws_hidden {
+	background-image: url('images/plugin_disabled.png');
+	background-repeat: no-repeat;
+	background-position: 232px 5px;
+}
+
+/* style for unused items - those that are in the default menu but not in the custom one */
+.ws_unused {
+	background-image: url('images/bullet_error.png');
+	background-repeat: no-repeat;
+	background-position: 232px 5px;
+}
+
+.ws_item {
+}
+
+.ws_editbox {
+	display: block;
+	background-color: #ffffd0;  
+	padding: 4px;
+}
+
+/* the reset-to-default button */
+.ws_reset_button {
+	font-size: smaller;
+	margin : 1px;
+	cursor: pointer;
+}
+
+.ws_editbox input {
+	width: 220px;
+}
+
+.ws_input_default {
+	color: gray;
+}
+
+.ws_edit_field {
+	margin-bottom: 8px;
+}
+
+.ws_toolbar {
+	display: block;
+	width: 290px;
+	height: 32px;
+}
+
+.ws_button {
+	display: block;
+	margin: 2px;
+	padding: 4px;
+	border: 1px solid #c0c0e0;
+	float: left;
+}
+
+a.ws_button:hover {
+	background-color: #d0e0ff;
+}
