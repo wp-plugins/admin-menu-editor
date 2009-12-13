@@ -15,14 +15,14 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 
 * Sort menu items via drag & drop.
 * Move a menu item to a different submenu via cut & paste. 
-* Edit any existing menu – change the title, access rights, menu icon and so on. Note that you can't lower the required access rights, but you can change them to be more restrictive.
+* Edit any existing menu - change the title, access rights, menu icon and so on. Note that you can't lower the required access rights, but you can change them to be more restrictive.
 * Hide/show any menu or menu item. A hidden menu is invisible to all users, including administrators.
 * Create custom menus that point to any part of the Dashboard. For example, you could create a new menu leading directly to the "Pending comments" page.
 
 **Known Issues**
 
 * If you delete any of the default menus they will reappear after saving. This is by design.
-* You can’t use arbitrary URLs as menu targets because WordPress will automatically strip off the "http:/".
+* You can't use arbitrary URLs as menu targets because WordPress will automatically strip off the "http:/".
 * A plugin's menu that is moved to a different submenu will not work unless you also include the parent file in the "File" field.
 
 == Installation ==
