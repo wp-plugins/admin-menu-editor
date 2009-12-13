@@ -44,4 +44,7 @@ To upgrade your installation
 
 == Changelog ==
 
-* This text is placeholder. The actual changelog will be added shortly. *
+= 0.1.5 =
+* First release on wordpress.org
+* Moved all images into a separate directory.
+* Added a readme.txt
