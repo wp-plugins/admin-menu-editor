@@ -44,6 +44,9 @@ To upgrade your installation
 
 == Changelog ==
 
+= 0.1.6 =
+* Fixed a conflict with All In One SEO Pack 1.6.10. It was caused by that plugin adding invisible sub-menus to a non-existent top-level menu.
+
 = 0.1.5 =
 * First release on wordpress.org
 * Moved all images into a separate directory.
