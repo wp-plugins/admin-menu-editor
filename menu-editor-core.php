@@ -186,7 +186,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 	//Build a tree struct. for the default menu
 	$default_menu = $this->wp2tree($this->default_wp_menu, $this->default_wp_submenu);
-
+	
 	//Is there a custom menu?
 	if (!empty($this->options['custom_menu'])){
 		$custom_menu = $this->options['custom_menu'];
@@ -477,6 +477,10 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 
 		//Attach all submenu items
 		foreach($submenu as $parent=>$items){
+			//Skip items that belong to a non-existent parent menu. 
+			//Rationale : All In One SEO Pack 1.6.10 (and possibly others) doth add such invalid submenus.
+			if ( !isset($tree[$parent]) ) continue;
+			
 			foreach($items as $pos=>$item){
 				//Add this item under the parent
 				$tree[$parent]['items'][$item[2]] = array(
