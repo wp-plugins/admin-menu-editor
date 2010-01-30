@@ -2,7 +2,7 @@
 
 /**
  * @author W-Shadow
- * @copyright 2008
+ * @copyright 2008-2010
  */
  
 //Make sure the needed constants are defined
@@ -16,11 +16,14 @@ if ( ! defined( 'WP_PLUGIN_DIR' ) )
 	define( 'WP_PLUGIN_DIR', WP_CONTENT_DIR . '/plugins' );
 
 class MenuEd_ShadowPluginFramework {
-	public static $framework_version = '0.1.2';
+	public static $framework_version = '0.2';
+	
+	public $is_mu_plugin = null; //True if installed in the mu-plugins directory, false otherwise
 	
 	protected $options = array();
 	public $option_name = ''; //should be set or overriden by the plugin
 	protected $defaults = array(); //should be set or overriden by the plugin
+	protected $sitewide_options = false; //WPMU only : save the setting in a site-wide option
 	
 	public $plugin_file = ''; //Filename of the plugin.
 	public $plugin_basename = ''; //Basename of the plugin, as returned by plugin_basename().
@@ -41,11 +44,20 @@ class MenuEd_ShadowPluginFramework {
 	protected function __construct( $plugin_file = ''){
 		if ($plugin_file == ''){
 			//Try to guess the name of the file that included this file.
-			//XXXXXX - not implemented yet.
+			//Not implemented yet.
 		}
+		
+		if ( is_null($this->is_mu_plugin) )
+			$this->is_mu_plugin = $this->is_in_wpmu_plugin_dir($plugin_file);
+		
 		$this->plugin_file = $plugin_file;
 		$this->plugin_basename = plugin_basename($this->plugin_file);
-		$this->plugin_dir_url = WP_PLUGIN_URL . '/' . dirname($this->plugin_basename);
+		
+		if ( $this->is_mu_plugin ){
+			$this->plugin_dir_url = WPMU_PLUGIN_URL . '/' . dirname($this->plugin_basename);
+		} else {
+			$this->plugin_dir_url = WP_PLUGIN_URL . '/' . dirname($this->plugin_basename);
+		}
 		
 		/************************************
 				Load settings
@@ -81,7 +93,12 @@ class MenuEd_ShadowPluginFramework {
    * @return boolean TRUE if options were loaded okay and FALSE otherwise. 
    */
 	function load_options(){
-		$this->options = get_option($this->option_name);
+		if ( $this->sitewide_options ) {
+			$this->options = get_site_option($this->option_name);
+		} else {
+			$this->options = get_option($this->option_name);
+		}
+		
 		if(!is_array($this->options)){
 			$this->options = $this->defaults;
 			return false;
@@ -122,8 +139,13 @@ class MenuEd_ShadowPluginFramework {
    * @return void
    */
 	function save_options(){
-		if ($this->option_name)
-			update_option($this->option_name, $this->options);
+		if ($this->option_name) {
+			if ( $this->sitewide_options ) {
+				update_site_option($this->option_name, $this->options);
+			} else {
+				update_option($this->option_name, $this->options);
+			}
+		}
 	}
 	
   /**
@@ -169,6 +191,23 @@ class MenuEd_ShadowPluginFramework {
     function uninstall(){
 		if ($this->option_name)
 			delete_option($this->option_name);
+	}
+	
+  /**
+   * MenuEd_ShadowPluginFramework::is_in_wpmu_plugin_dir()
+   * Checks if the specified file is inside the mu-plugins directory.
+   *
+   * @param string $filename The filename to check. Leave blank to use the current plugin's filename. 
+   * @return bool
+   */
+	function is_in_wpmu_plugin_dir( $filename = '' ){
+		if ( !defined('WPMU_PLUGIN_DIR') ) return false;
+		
+		if ( empty($filename) ){
+			$filename = $this->plugin_file;
+		}
+		
+		return (strpos( realpath($filename), realpath(WPMU_PLUGIN_DIR) ) !== false);
 	}
 	
 }

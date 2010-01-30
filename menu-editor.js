@@ -54,8 +54,6 @@ function outputWpMenu(menu){
 		}
     });
     
-    
-    
     //The "Default" button : Reset to default value when clicked
     $('.ws_reset_button').click(function () {
     	//Find the related input field
@@ -80,6 +78,18 @@ function outputWpMenu(menu){
 			$(this).parent().parent().parent().find('.ws_item_title').html($(this).val()+'&nbsp;');
 		}
 	});
+	
+	//When the "Custom" checkbox is clicked, add/remove the ws_custom_item class to 
+	//the menu (or menu item) in question.
+	$('.ws_custom_toggle').change(function(){
+		//Find the container
+		var my_container = $(this).parents('.ws_container:first');
+		if ( $(this).is(':checked') ){
+			my_container.addClass('ws_custom_item');
+		} else {
+			my_container.removeClass('ws_custom_item');
+		}
+	});
 }
 
 function outputTopMenu(menu, filename, ind){
@@ -90,10 +100,10 @@ function outputTopMenu(menu, filename, ind){
 	
 	var subclass = '';
 	//Apply subclasses based on the item's  state 
-	if ( menu.separator /*(!menu.defaults.menu_title) && (!menu.menu_title)*/ ) {
+	if ( menu.separator ) {
 		subclass = subclass + ' ws_menu_separator';
 	}
-	if (menu.missing) {
+	if (menu.missing && !menu.custom) {
 		subclass = subclass + ' ws_missing';
 	}
 	if (menu.hidden) {
@@ -101,6 +111,9 @@ function outputTopMenu(menu, filename, ind){
 	}
 	if (menu.unused) {
 		subclass = subclass + ' ws_unused';
+	}
+	if (menu.custom) {
+		subclass = subclass + ' ws_custom_item';
 	}
 	
 	var s = '<div id="'+id+'" class="ws_container ws_menu '+subclass+'" submenu_id="'+submenu_id+'">'+
@@ -133,7 +146,7 @@ function outputMenuEntry(entry, ind, parent){
 	
 	var subclass = '';
 	//Apply subclasses based on the item's  state 
-	if (entry.missing) {
+	if (entry.missing && !entry.custom) {
 		subclass = subclass + ' ws_missing';
 	}
 	if (entry.hidden) {
@@ -141,6 +154,9 @@ function outputMenuEntry(entry, ind, parent){
 	}
 	if (entry.unused) {
 		subclass = subclass + ' ws_unused';
+	}
+	if (entry.custom) {
+		subclass = subclass + ' ws_custom_item';
 	}
 	
 	var item = $('#'+parent).append('<div class="ws_container ws_item '+subclass+'">'+
@@ -181,6 +197,18 @@ function buildEditboxFields(entry){
 	for (var field_name in fields){
 		s = s + buildEditboxField(entry, field_name, fields[field_name]);
 	}
+	
+	//Add the "Custom item" checkbox
+	var is_custom = false;
+	if ( typeof(entry['custom']) != 'undefined' ){
+		is_custom = entry['custom'];
+	}
+	s = s + 
+		'<div class="ws_edit_field">'+
+			'<label><input type="checkbox" class="ws_custom_toggle"'+
+				(is_custom?' checked="checked"':'')+ '> Custom</label>'+
+		'</div>';
+		
 	return s;		
 }
 
@@ -202,9 +230,11 @@ function encodeMenuAsJSON(){
 		
 		var filename = $(this).find('.ws_edit_field[field_name="file"] input').val();
 		//Check if this is a separator
-		if (filename==''){
-			filename = 'separator_'+separator_count+'_';
+		if ( $(this).hasClass('ws_menu_separator') ){
 			menu_obj.separator = true;
+			if ( filename=='' ) {
+				filename = 'separator_'+separator_count+'_';
+			}
 			separator_count++;
 		}
 		
@@ -230,6 +260,9 @@ function encodeMenuAsJSON(){
 			menu_obj['hidden'] = true;
 		}
 		
+		//Check if this is a custom menu
+		menu_obj.custom = $(this).hasClass('ws_custom_item');
+
 		menu_obj.items = {};
 		
 		var item_position = 0;
@@ -267,6 +300,9 @@ function encodeMenuAsJSON(){
 			if ($(this).hasClass('ws_hidden')){
 				item.hidden = true;
 			}
+			//Check if this is a custom item
+			item.custom = $(this).hasClass('ws_custom_item');
+			
 			//Save the item in the parent menu  
 			menu_obj.items[filename] = item;
 		});
@@ -423,8 +459,10 @@ $(document).ready(function(){
 		});
 		
 		//Cleanup the menu's classes
-		menu.attr('class','ws_container ws_menu ws_missing');
+		menu.attr('class','ws_container ws_menu ws_custom_item');
 		
+		//Check the "Custom" checkbox
+		menu.find('.ws_custom_toggle').attr('checked', 'checked');		
 		
 		var temp_id = 'custom_menu_'+ws_paste_count;
 		//Assign a stub title
@@ -533,7 +571,10 @@ $(document).ready(function(){
 		var menu = $('#ws_submenu_box .ws_item:first').clone(true);
 		
 		//Cleanup the items's classes
-		menu.attr('class','ws_container ws_item ws_missing');
+		menu.attr('class','ws_container ws_item ws_custom_item');
+		
+		//Check the "Custom" checkbox
+		menu.find('.ws_custom_toggle').attr('checked', 'checked');		
 		
 		var temp_id = 'custom_item_'+ws_paste_count;
 		//Assign a stub title

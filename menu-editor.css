@@ -12,10 +12,12 @@
 
 .ws_main_button {
 	clear: both;
-	display:block;
-	width: 120px;
+	display: block;
 	margin: 4px;
-	padding: 4px;
+	margin-left: auto;
+	margin-right: auto;
+	width: 120px;
+	padding: 4px !important;
 }
 
 .ws_container {
@@ -87,8 +89,15 @@ a.ws_edit_link:hover {
 	background-position: center;
 }
 
-/* style for items not present in the default menu - these are usually user-created items */
+/* style for items not present in the default menu */
 .ws_missing {
+	background-image: url('images/plugin_error.png');
+	background-repeat: no-repeat;
+	background-position: 232px 5px;
+} 
+
+/* style for user-created items */
+.ws_custom_item {
 	background-image: url('images/page_white_add.png');
 	background-repeat: no-repeat;
 	background-position: 232px 5px;
@@ -103,7 +112,7 @@ a.ws_edit_link:hover {
 
 /* style for unused items - those that are in the default menu but not in the custom one */
 .ws_unused {
-	background-image: url('images/bullet_error.png');
+	background-image: url('images/plugin_add.png');
 	background-repeat: no-repeat;
 	background-position: 232px 5px;
 }
@@ -124,7 +133,7 @@ a.ws_edit_link:hover {
 	cursor: pointer;
 }
 
-.ws_editbox input {
+.ws_editbox input[type="text"] {
 	width: 220px;
 }
 

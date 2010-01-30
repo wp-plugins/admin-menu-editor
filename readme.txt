@@ -1,9 +1,9 @@
 === Admin Menu Editor ===
 Contributors: whiteshadow
 Donate link: http://w-shadow.com/
-Tags: admin, dashboard, menu, security
+Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 2.7.0
-Tested up to: 2.9
+Tested up to: 2.9.1
 Stable tag: 0.1.6
 
 Lets you directly edit the WordPress admin menu. You can re-order, hide or rename existing menus, add custom menus and more. 
@@ -21,26 +21,30 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 
 **Known Issues**
 
-* If you delete any of the default menus they will reappear after saving. This is by design.
-* You can't use arbitrary URLs as menu targets because WordPress will automatically strip off the "http:/".
-* A plugin's menu that is moved to a different submenu will not work unless you also include the parent file in the "File" field.
+* If you delete any of the default menus they will reappear after saving. This is by design. To get rid of a menu for good, either hide it or set it's access rights to a higher level.
+* A plugin's menu that is moved to a different submenu will not work unless you also include the parent file in the "File" field. For example, if the plugin's page was originally in the "Settings" menu and had the "File" field set to "my_plugin", you'll need to change it to "options-general.php?page=my_plugin" after moving it to a different menu.
 
 == Installation ==
 
-To do a new installation of the plugin, please follow these steps
+**Normal installation**
 
 1. Download the admin-menu-editor.zip file to your local machine.
-1. Unzip the file 
-1. Upload `admin-menu-editor` folder to the `/wp-content/plugins/` directory
+1. Unzip the file.
+1. Upload the `admin-menu-editor` directory to your `/wp-content/plugins/` directory.
 1. Activate the plugin through the 'Plugins' menu in WordPress.
 
 That's it. You can access the the menu editor by going to *Settings -> Menu Editor*. The plugin will automatically load your current menu configuration the first time you run it.
 
-To upgrade your installation
+**WPMU/Multi-user installation**
 
-1. De-activate the plugin
-1. Get and upload the new files (do steps 1. - 3. from "new installation" instructions)
-1. Reactivate the plugin. Your settings should have been retained from the previous version.
+If you have a WPMU site, you can also install Admin Menu Editor as a global plugin. This will enable you to edit the Dashboard menu for all blogs and users at once.
+
+1. Download the admin-menu-editor.zip file to your local machine.
+1. Unzip the file.
+1. Upload the `admin-menu-editor` directory to your `/wp-content/mu-plugins/` directory.
+1. Move the `admin-menu-editor-mu.php` file from `admin-menu-editor` to `/wp-content/mu-plugins/`.
+
+*Note : It is currently not possible to install this plugin both as a normal plugin and as a mu-plugin on the same site.*
 
 == Changelog ==
 
