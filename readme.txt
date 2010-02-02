@@ -4,7 +4,7 @@ Donate link: http://w-shadow.com/
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 2.7.0
 Tested up to: 2.9.1
-Stable tag: 0.2
+Stable tag: 0.1.6
 
 Lets you directly edit the WordPress admin menu. You can re-order, hide or rename existing menus, add custom menus and more. 
 
