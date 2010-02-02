@@ -175,10 +175,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			die("Access denied");
 		}
 		
-		?>
-<div class="wrap">
-<h2>Menu Editor</h2>
-<?php
 	//Handle form submissions
 	if (isset($_POST['data'])){
 		check_admin_referer('menu-editor-form');
@@ -186,7 +182,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Try to decode a menu tree encoded as JSON
 		$data = $this->json_decode($_POST['data'], true);
 		if (!$data){
-			echo "<!-- First decodind attempt failed, trying to fix with stripslashes() -->";
 			$fixed = stripslashes($_POST['data']);
 			$data = $this->json_decode( $fixed, true );
 		}
@@ -205,6 +200,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		die();
 	}
+	
+?>
+<div class="wrap">
+<h2>Menu Editor</h2>
+<?php
 	
 	if ( !empty($_GET['message']) ){
 		if ( intval($_GET['message']) == 1 ){
