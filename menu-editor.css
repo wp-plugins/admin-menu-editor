@@ -89,36 +89,49 @@ a.ws_edit_link:hover {
 	background-position: center;
 }
 
-/* style for items not present in the default menu */
-.ws_missing {
-	background-image: url('images/plugin_error.png');
-	background-repeat: no-repeat;
-	background-position: 232px 5px;
-} 
+/* Menu/menu item flags */
+.ws_flag_container {
+	float: right;
+	margin-right: 4px;
+}
 
-/* style for user-created items */
-.ws_custom_item {
+.ws_flag {
+	display: block;
+	float: right;
+	width: 16px;
+	height: 16px;
+	margin-left: 4px;
+	background-repeat: no-repeat;
+}
+
+/* user-created items */
+.ws_custom_item_flag {
 	background-image: url('images/page_white_add.png');
-	background-repeat: no-repeat;
-	background-position: 232px 5px;
 }
 
-/* style for hidden items */
-.ws_hidden {
-	background-image: url('images/plugin_disabled.png');
-	background-repeat: no-repeat;
-	background-position: 232px 5px;
+/* items not present in the default menu */
+.ws_missing_flag {
+	background-image: url('images/plugin_error.png');
 }
 
-/* style for unused items - those that are in the default menu but not in the custom one */
-.ws_unused {
+/* unused items - those that are in the default menu but not in the custom one */
+.ws_unused_flag {
 	background-image: url('images/plugin_add.png');
-	background-repeat: no-repeat;
-	background-position: 232px 5px;
 }
 
-.ws_item {
+/* hidden items */
+.ws_hidden_flag {
+	background-image: url('images/plugin_disabled.png');
 }
+
+/* These classes could be used to apply different styles to items depending on their flags */
+.ws_missing { } 
+.ws_custom_item { }
+.ws_hidden { }
+.ws_unused { }
+
+
+.ws_item { }
 
 .ws_editbox {
 	display: block;

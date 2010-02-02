@@ -4,7 +4,7 @@ Donate link: http://w-shadow.com/
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 2.7.0
 Tested up to: 2.9.1
-Stable tag: 0.1.6
+Stable tag: 0.2
 
 Lets you directly edit the WordPress admin menu. You can re-order, hide or rename existing menus, add custom menus and more. 
 
@@ -22,7 +22,8 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 **Known Issues**
 
 * If you delete any of the default menus they will reappear after saving. This is by design. To get rid of a menu for good, either hide it or set it's access rights to a higher level.
-* A plugin's menu that is moved to a different submenu will not work unless you also include the parent file in the "File" field. For example, if the plugin's page was originally in the "Settings" menu and had the "File" field set to "my_plugin", you'll need to change it to "options-general.php?page=my_plugin" after moving it to a different menu.
+* Custom menus will only show up in the final menu if the "Custom" box is checked. If some of your menu items are only visible in the editor but not the Dashboard menu itself, this is probably the reason.
+* A plugin's menu that is moved to a different submenu will not work unless you also include the parent file in the "File" field. For example, if the plugin's page was originally in the "Settings" menu and had the "File" field set to "my_plugin", you'll need to change it to "options-general.php?page=my_plugin" and tick the "Custom" checkbox after moving it to a different menu.
 
 == Installation ==
 

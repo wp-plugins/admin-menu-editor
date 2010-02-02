@@ -190,13 +190,26 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$fixed = stripslashes($_POST['data']);
 			$data = $this->json_decode( $fixed, true );
 		}
+	
+		$url = remove_query_arg('noheader');
 
 		if ($data){
 			//Save the custom menu
 			$this->options['custom_menu'] = $data;
 			$this->save_options();
-			echo '<div id="message" class="updated fade"><p><strong>Settings saved. <a href="javascript:window.location.href=window.location.href">Reload the page</a> to see the modified menu.</strong></p></div>';
+			//Redirect back to the editor and display the success message
+			wp_redirect( add_query_arg('message', 1, $url) );
 		} else {
+			//Or redirect & display the error message
+			wp_redirect( add_query_arg('message', 2, $url) );
+		}
+		die();
+	}
+	
+	if ( !empty($_GET['message']) ){
+		if ( intval($_GET['message']) == 1 ){
+			echo '<div id="message" class="updated fade"><p><strong>Settings saved.</strong></p></div>';
+		} elseif ( intval($_GET['message']) == 2 ) {
 			echo '<div id="message" class="error"><p><strong>Failed to decode input! The menu wasn\'t modified.</strong></p></div>';
 		}
 	}
@@ -244,7 +257,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	</div>
 </div>
 
-<form method="post" action="<?php echo admin_url('options-general.php?page=menu_editor'); ?>" id='ws_main_form' name='ws_main_form'>
+<form method="post" action="<?php echo admin_url('options-general.php?page=menu_editor&noheader=1'); ?>" id='ws_main_form' name='ws_main_form'>
 <div class="ws_main_container" style="width: 138px;">
 	<?php wp_nonce_field('menu-editor-form'); ?>
 	<input type="button" id='ws_save_menu' class="button-primary ws_main_button" value="Save Changes"

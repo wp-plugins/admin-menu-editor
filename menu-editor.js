@@ -85,9 +85,9 @@ function outputWpMenu(menu){
 		//Find the container
 		var my_container = $(this).parents('.ws_container:first');
 		if ( $(this).is(':checked') ){
-			my_container.addClass('ws_custom_item');
+			addMenuFlag(my_container, 'custom_item');
 		} else {
-			my_container.removeClass('ws_custom_item');
+			removeMenuFlag(my_container, 'custom_item');
 		}
 	});
 }
@@ -96,29 +96,16 @@ function outputTopMenu(menu, filename, ind){
 	id = 'topmenu-'+ind;
 	submenu_id = 'submenu-'+ind;
 	
-	//menu = menu_obj[filename];
-	
 	var subclass = '';
-	//Apply subclasses based on the item's  state 
 	if ( menu.separator ) {
 		subclass = subclass + ' ws_menu_separator';
 	}
-	if (menu.missing && !menu.custom) {
-		subclass = subclass + ' ws_missing';
-	}
-	if (menu.hidden) {
-		subclass = subclass + ' ws_hidden';
-	}
-	if (menu.unused) {
-		subclass = subclass + ' ws_unused';
-	}
-	if (menu.custom) {
-		subclass = subclass + ' ws_custom_item';
-	}
 	
+	//Create the menu HTML
 	var s = '<div id="'+id+'" class="ws_container ws_menu '+subclass+'" submenu_id="'+submenu_id+'">'+
 			'<div class="ws_item_head">'+
 				'<a class="ws_edit_link"> </a>'+
+				'<div class="ws_flag_container"> </div>'+
 				'<span class="ws_item_title">'+
 					((menu.menu_title!=null)?menu.menu_title:menu.defaults.menu_title)+
 				'&nbsp;</span>'+
@@ -126,7 +113,22 @@ function outputTopMenu(menu, filename, ind){
 			'<div class="ws_editbox" style="display: none;">'+buildEditboxFields(menu)+'</div>'+
 		'</div>';
 	
-	$('#ws_menu_box').append(s);
+	var menu_obj = $(s).appendTo('#ws_menu_box');
+	
+	//Apply flags based on the item's state
+	if (menu.missing && !menu.custom) {
+		addMenuFlag(menu_obj, 'missing');
+	}
+	if (menu.hidden) {
+		addMenuFlag(menu_obj, 'hidden');
+	}
+	if (menu.unused) {
+		addMenuFlag(menu_obj, 'unused');
+	}
+	if (menu.custom) {
+		addMenuFlag(menu_obj, 'custom_item');
+	}
+	
 	//Create a container for menu items, even if there are none
 	$('#ws_submenu_box').append('<div class="ws_submenu" id="'+submenu_id+'" style="display:none;"></div>');
 	
@@ -144,30 +146,32 @@ function outputTopMenu(menu, filename, ind){
 function outputMenuEntry(entry, ind, parent){
 	if (!entry.defaults) return;
 	
-	var subclass = '';
-	//Apply subclasses based on the item's  state 
+	var item = $(
+			'<div class="ws_container ws_item">'+
+				'<div class="ws_item_head">'+
+					'<a class="ws_edit_link"> </a>'+
+					'<div class="ws_flag_container"> </div>'+
+					'<span class="ws_item_title">'+
+						((entry.menu_title!=null)?entry.menu_title:entry.defaults.menu_title)+
+					'&nbsp;</span>'+
+				'</div>'+
+				'<div class="ws_editbox" style="display:none;">'+buildEditboxFields(entry)+'</div>'+
+			'<div>'
+		).appendTo('#'+parent)
+		
+	//Apply flags based on the item's state
 	if (entry.missing && !entry.custom) {
-		subclass = subclass + ' ws_missing';
+		addMenuFlag(item, 'missing');
 	}
 	if (entry.hidden) {
-		subclass = subclass + ' ws_hidden';
+		addMenuFlag(item, 'hidden');
 	}
 	if (entry.unused) {
-		subclass = subclass + ' ws_unused';
+		addMenuFlag(item, 'unused');
 	}
 	if (entry.custom) {
-		subclass = subclass + ' ws_custom_item';
+		addMenuFlag(item, 'custom_item');
 	}
-	
-	var item = $('#'+parent).append('<div class="ws_container ws_item '+subclass+'">'+
-			'<div class="ws_item_head">'+
-				'<a class="ws_edit_link"> </a>'+
-				'<span class="ws_item_title">'+
-					((entry.menu_title!=null)?entry.menu_title:entry.defaults.menu_title)+
-				'&nbsp;</span>'+
-			'</div>'+
-			'<div class="ws_editbox" style="display:none;">'+buildEditboxFields(entry)+'</div>'+
-		'<div>');
 }
 
 function buildEditboxField(entry, field_name, field_caption){
@@ -205,7 +209,8 @@ function buildEditboxFields(entry){
 	}
 	s = s + 
 		'<div class="ws_edit_field">'+
-			'<label><input type="checkbox" class="ws_custom_toggle"'+
+			'<label title="Custom items are visible even if they\'re not present in the default WordPress menu">'+
+				'<input type="checkbox" class="ws_custom_toggle"'+
 				(is_custom?' checked="checked"':'')+ '> Custom</label>'+
 		'</div>';
 		
@@ -256,10 +261,7 @@ function encodeMenuAsJSON(){
 			
 		});
 		//Check if the menu is hidden
-		if ($(this).hasClass('ws_hidden')){
-			menu_obj['hidden'] = true;
-		}
-		
+		menu_obj.hidden = $(this).hasClass('ws_hidden'); 
 		//Check if this is a custom menu
 		menu_obj.custom = $(this).hasClass('ws_custom_item');
 
@@ -316,6 +318,58 @@ function encodeMenuAsJSON(){
 	return $.toJSON(data);
 }
 
+var item_flags = {
+	'custom_item' : 'This is a custom menu item',
+	'unused' : 'This item was automatically (re)inserted into your custom menu because it is present in the default WordPress menu',
+	'missing' : 'This item is not present in the default WordPress menu. Tick the &quot;Custom&quot; checkbox if you want it to be visible anyway.',
+	'hidden' : 'This item is hidden' 
+}
+
+//These function manipulate the menu flags (e.g. hidden, custom, etc)
+function addMenuFlag(item, flag){
+	item = $(item);
+	
+	var item_class = 'ws_' + flag;
+	var img_class = 'ws_' + flag + '_flag';
+	
+	item.addClass(item_class);
+	//Add the flag image
+	var flag_container = item.find('.ws_flag_container');
+	if ( flag_container.find('.' + img_class).length == 0 ){
+		flag_container.append('<div class="ws_flag '+img_class+'" title="'+item_flags[flag]+'"></div>');
+	}
+}
+
+function removeMenuFlag(item, flag){
+	item = $(item);
+	var item_class = 'ws_' + flag;
+	var img_class = 'ws_' + flag + '_flag';
+	
+	item.removeClass('ws_' + flag);
+	item.find('.' + img_class).remove();
+}
+
+function toggleMenuFlag(item, flag){
+	if (menuHasFlag(item, flag)){
+		removeMenuFlag(item, flag);
+	} else {
+		addMenuFlag(item, flag);
+	}
+}
+
+function menuHasFlag(item, flag){
+	return $(item).hasClass('ws_'+flag);
+}
+
+function clearMenuFlags(item){
+	item = $(item);
+	item.find('.ws_flag').remove();
+	for(var flag in item_flags){
+		item.removeClass('ws_'+flag);
+	}	
+}
+
+//Cut & paste stuff
 var menu_in_clipboard = null;
 var submenu_in_clipboard = null;
 var item_in_clipboard = null;
@@ -340,13 +394,19 @@ $(document).ready(function(){
 		var selection = $('#ws_menu_box .ws_active');
 		if (!selection.length) return;
 		
-		//Mark the menu as hidden
-		selection.toggleClass('ws_hidden');
+		//Mark the menu as hidden/visible
+		//selection.toggleClass('ws_hidden');
+		toggleMenuFlag(selection, 'hidden');
+		
 		//Also mark all of it's submenus as hidden/visible
-		if (selection.hasClass('ws_hidden')){
-			$('#' + selection.attr('submenu_id') + ' .ws_item').addClass('ws_hidden');
+		if ( menuHasFlag(selection,'hidden') ){
+			$('#' + selection.attr('submenu_id') + ' .ws_item').each(function(){
+				addMenuFlag(this, 'hidden');
+			});
 		} else {
-			$('#' + selection.attr('submenu_id') + ' .ws_item').removeClass('ws_hidden');
+			$('#' + selection.attr('submenu_id') + ' .ws_item').each(function(){
+				removeMenuFlag(this, 'hidden');
+			});
 		}
 	});
 	
@@ -458,8 +518,10 @@ $(document).ready(function(){
 			dropOnEmpty: true,
 		});
 		
-		//Cleanup the menu's classes
-		menu.attr('class','ws_container ws_menu ws_custom_item');
+		//Clean up the menu's flags & classes
+		menu.attr('class','ws_container ws_menu');
+		clearMenuFlags(menu);
+		addMenuFlag(menu, 'custom_item');
 		
 		//Check the "Custom" checkbox
 		menu.find('.ws_custom_toggle').attr('checked', 'checked');		
@@ -497,7 +559,7 @@ $(document).ready(function(){
 		if (!selection.length) return;
 		
 		//Mark the item as hidden
-		selection.toggleClass('ws_hidden');
+		toggleMenuFlag(selection, 'hidden');
 	});
 	
 	//Delete menu
@@ -570,8 +632,10 @@ $(document).ready(function(){
 		//Clone another item to use as a template (hack)
 		var menu = $('#ws_submenu_box .ws_item:first').clone(true);
 		
-		//Cleanup the items's classes
-		menu.attr('class','ws_container ws_item ws_custom_item');
+		//Cleanup the items's flags & classes
+		menu.attr('class','ws_container ws_item');
+		clearMenuFlags(menu);
+		addMenuFlag(menu, 'custom_item');
 		
 		//Check the "Custom" checkbox
 		menu.find('.ws_custom_toggle').attr('checked', 'checked');		
@@ -622,6 +686,5 @@ $(document).ready(function(){
 	});
 	
   });
-
 	
 })(jQuery);
