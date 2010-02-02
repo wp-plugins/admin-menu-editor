@@ -49,6 +49,15 @@ If you have a WPMU site, you can also install Admin Menu Editor as a global plug
 
 == Changelog ==
 
+= 0.2 =
+* Provisional WPMU support.
+* Missing and unused menu items now get different icons in the menu editor.
+* Fixed some visual glitches.
+* Items that are not present in the default menu will only be included in the generated menu if their "Custom" flag is set. Makes perfect sense, eh? The takeaway is that you should tick the "Custom" checkbox for the menus you have created manually if you want them to show up.
+* You no longer need to manually reload the page to see the changes you made to the menu. Just clicking "Save Changes" is enough.
+* Added tooltips to the small flag icons that indicate that a particular menu item is hidden, user-created or otherwise special.
+* Updated the readme.txt
+
 = 0.1.6 =
 * Fixed a conflict with All In One SEO Pack 1.6.10. It was caused by that plugin adding invisible sub-menus to a non-existent top-level menu.
 
