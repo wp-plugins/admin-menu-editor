@@ -14,6 +14,12 @@ if ( ! defined( 'WP_PLUGIN_URL' ) )
 	define( 'WP_PLUGIN_URL', WP_CONTENT_URL. '/plugins' );
 if ( ! defined( 'WP_PLUGIN_DIR' ) )
 	define( 'WP_PLUGIN_DIR', WP_CONTENT_DIR . '/plugins' );
+	
+
+//Load JSON functions for PHP < 5.2
+if (!class_exists('Services_JSON')){
+	require 'JSON.php';
+}
 
 class MenuEd_ShadowPluginFramework {
 	public static $framework_version = '0.2';
@@ -24,6 +30,7 @@ class MenuEd_ShadowPluginFramework {
 	public $option_name = ''; //should be set or overriden by the plugin
 	protected $defaults = array(); //should be set or overriden by the plugin
 	protected $sitewide_options = false; //WPMU only : save the setting in a site-wide option
+	protected $serialize_with_json = false; //Use the JSON format for option storage 
 	
 	public $plugin_file = ''; //Filename of the plugin.
 	public $plugin_basename = ''; //Basename of the plugin, as returned by plugin_basename().
@@ -99,6 +106,10 @@ class MenuEd_ShadowPluginFramework {
 			$this->options = get_option($this->option_name);
 		}
 		
+		if ( $this->serialize_with_json && is_string($this->options) ){
+			$this->options = $this->json_decode($this->options, true);
+		}
+		
 		if(!is_array($this->options)){
 			$this->options = $this->defaults;
 			return false;
@@ -107,6 +118,54 @@ class MenuEd_ShadowPluginFramework {
 			return true;
 		}
 	}
+	
+  /**
+   * ShadowPluginFramework::save_options()
+   * Saves the $options array to the database.
+   *
+   * @return void
+   */
+	function save_options(){
+		if ($this->option_name) {
+			$stored_options = $this->options;
+			if ( $this->serialize_with_json ){
+				$stored_options = $this->json_encode($stored_options);
+			}
+			
+			if ( $this->sitewide_options ) {
+				update_site_option($this->option_name, $stored_options);
+			} else {
+				update_option($this->option_name, $stored_options);
+			}
+		}
+	}
+	
+	
+  /**
+   * Backwards fompatible json_decode.
+   *
+   * @param string $data
+   * @param bool $assoc Decode objects as associative arrays.
+   * @return string
+   */
+    function json_decode($data, $assoc=false){
+        $flag = $assoc?SERVICES_JSON_LOOSE_TYPE:0;
+        $json = new Services_JSON($flag);
+        return( $json->decode($data) );
+    }
+
+  /**
+   * Backwards fompatible json_encode.
+   *
+   * @param mixed $data
+   * @return string
+   */
+    function json_encode($data) {
+        $json = new Services_JSON();
+        return( $json->encode($data) );
+    }
+    
+
 	
   /**
    * ShadowPluginFramework::set_magic_hooks()
@@ -132,22 +191,7 @@ class MenuEd_ShadowPluginFramework {
 		unset($class);
 	}
 	
-  /**
-   * ShadowPluginFramework::save_options()
-   * Saves the $options array to the database.
-   *
-   * @return void
-   */
-	function save_options(){
-		if ($this->option_name) {
-			if ( $this->sitewide_options ) {
-				update_site_option($this->option_name, $this->options);
-			} else {
-				update_option($this->option_name, $this->options);
-			}
-		}
-	}
-	
+
   /**
    * ShadowPluginFramework::activate()
    * Stub function for the activation hook. Simply stores the default configuration.

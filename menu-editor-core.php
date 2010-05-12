@@ -3,11 +3,6 @@
 //Load the "framework"
 require 'shadow_plugin_framework.php';
 
-//Load JSON functions for PHP < 5.2
-if (!class_exists('Services_JSON')){
-	require 'JSON.php';
-}
-
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 	protected $default_wp_menu = null; //Holds the default WP menu for later use in the editor
@@ -29,6 +24,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Set some plugin-specific options
 		$this->option_name = 'ws_menu_editor';
 		$this->defaults = array();
+		$this->serialize_with_json = true; //Store the options in JSON format
 
 		$this->settings_link = 'options-general.php?page=menu_editor';
 		
@@ -64,21 +60,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 	}
 
-    //Backwards fompatible json_decode.
-    //We can't define this globally as that conflicts with the version created by Simple Tags.
-    function json_decode($data, $assoc=false){
-        $flag = $assoc?SERVICES_JSON_LOOSE_TYPE:0;
-        $json = new Services_JSON($flag);
-        return( $json->decode($data) );
-    }
-
-    //Backwards fompatible json_encode.
-    //Can't define this globally as that conflicts with Simple Tags.
-    function json_encode($data) {
-        $json = new Services_JSON();
-        return( $json->encode($data) );
-    }
-    
   /**
    * WPMenuEditor::enqueue_scripts()
    * Add the JS required by the editor to the page header
@@ -125,7 +106,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		
 		$this->default_wp_menu = $menu;
 		$this->default_wp_submenu = $submenu;
-
+		
 		//Is there a custom menu to use?
 		if ( !empty($this->options['custom_menu']) ){
 			//Merge in data from the default menu
@@ -213,7 +194,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			echo '<div id="message" class="error"><p><strong>Failed to decode input! The menu wasn\'t modified.</strong></p></div>';
 		}
 	}
-
+	
 	//Build a tree struct. for the default menu
 	$default_menu = $this->wp2tree($this->default_wp_menu, $this->default_wp_submenu);
 	
@@ -387,8 +368,16 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 				$menu_defaults[$topfile]['used'] = true;
 			} else {
 				//Record the menu as missing, unless it's a menu separator
-				if ( empty($topmenu['separator']) )
+				if ( empty($topmenu['separator']) ){
 					$topmenu['missing'] = true;
+					//[Nasty] Fill the 'defaults' array for menu's that don't have it.
+					//This should never be required - saving a custom menu should set the defaults
+					//for all menus it contains automatically. 
+					if ( empty($topmenu['defaults']) ){   
+						$tmp = $topmenu;
+						$topmenu['defaults'] = $tmp;
+					}
+				}
 			}
 
 			if (is_array($topmenu['items'])) {
@@ -402,6 +391,10 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 					} else {
 						//Record as missing
 						$item['missing'] = true;
+						if ( empty($item['defaults']) ){
+							$tmp = $item;
+							$item['defaults'] = $tmp;
+						}
 					}
 				}
 			}
@@ -488,13 +481,9 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 			
 			foreach($items as $pos=>$item){
 				//Add this item under the parent
-				$tree[$parent]['items'][$item[2]] = array(
-					'menu_title' => null,
-					'access_level' => null,
-					'file' => null,
-					'page_title' => null,
-					'position' => null,
-					'defaults' => $this->submenu2assoc($item, $pos),
+				$tree[$parent]['items'][$item[2]] = array_merge(
+					$this->blank_item,
+					array('defaults' => $this->submenu2assoc($item, $pos))
 				);
 			}
 		}
