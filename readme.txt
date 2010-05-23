@@ -3,7 +3,7 @@ Contributors: whiteshadow
 Donate link: http://w-shadow.com/
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 2.7.0
-Tested up to: 2.9.1
+Tested up to: 2.9.2
 Stable tag: 0.2
 
 Lets you directly edit the WordPress admin menu. You can re-order, hide or rename existing menus, add custom menus and more. 
@@ -18,6 +18,8 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 * Edit any existing menu - change the title, access rights, menu icon and so on. Note that you can't lower the required access rights, but you can change them to be more restrictive.
 * Hide/show any menu or menu item. A hidden menu is invisible to all users, including administrators.
 * Create custom menus that point to any part of the Dashboard. For example, you could create a new menu leading directly to the "Pending comments" page.
+
+[Suggest new features and improvements here](http://feedback.w-shadow.com/forums/58572-admin-menu-editor)
 
 **Known Issues**
 
