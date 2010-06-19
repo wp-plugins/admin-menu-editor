@@ -79,7 +79,7 @@
 
 .ws_menu_separator {
 	/*background-color: #f0f0f0;*/
-	background-image: url("images/menu-arrows.png");
+	background-image: url("../images/menu-arrows.png");
 	background-repeat: no-repeat;
 	background-position : 4px 8px;
 	background-color: #F9F9F9;
@@ -110,7 +110,7 @@
 	width: 40px;
 	height: 22px; /*18px;*/
 	
-	background-image: url('images/bullet_arrow_down2.png'); 
+	background-image: url('../images/bullet_arrow_down2.png'); 
 	background-repeat: no-repeat;
 	background-position: center;
 	
@@ -126,7 +126,7 @@
 
 a.ws_edit_link:hover {
 	background-color: #ffffd0;
-	background-image: url('images/bullet_arrow_down2.png');
+	background-image: url('../images/bullet_arrow_down2.png');
 }
 
 .ws_edit_link_expanded {
@@ -134,7 +134,7 @@ a.ws_edit_link:hover {
 	border-bottom: none;
 	border-color: #ffffd0;
 	
-	background-image: url('images/bullet_arrow_down2.png');
+	background-image: url('../images/bullet_arrow_down2.png');
 	padding-bottom: 1px;
 	background-position: center 3px;
 }
@@ -187,13 +187,13 @@ a.ws_edit_link:hover {
 	height: 16px;
 	vertical-align: top;
 		
-	background-image: url("images/pencil_delete_gray.png");
+	background-image: url("../images/pencil_delete_gray.png");
 	background-repeat: no-repeat;
 	background-position: center;
 }
 
 .ws_reset_button:hover {
-	background-image: url("images/pencil_delete.png");
+	background-image: url("../images/pencil_delete.png");
 }
 
 .ws_input_default input, .ws_input_default select {
@@ -326,22 +326,22 @@ to accomodate the dropdown button.
 
 /* user-created items */
 .ws_custom_item_flag {
-	background-image: url('images/page_white_add.png');
+	background-image: url('../images/page_white_add.png');
 }
 
 /* items not present in the default menu */
 .ws_missing_flag {
-	background-image: url('images/plugin_error.png');
+	background-image: url('../images/plugin_error.png');
 }
 
 /* unused items - those that are in the default menu but not in the custom one */
 .ws_unused_flag {
-	background-image: url('images/plugin_add.png');
+	background-image: url('../images/plugin_add.png');
 }
 
 /* hidden items */
 .ws_hidden_flag {
-	background-image: url('images/plugin_disabled.png');
+	background-image: url('../images/plugin_disabled.png');
 }
 
 /* These classes could be used to apply different styles to items depending on their flags */
@@ -464,7 +464,7 @@ select#ws_cap_selector optgroup option {
 }
 
 .ui-dialog-titlebar-close {
-	background-image: url(images/x.png);
+	background-image: url(../images/x.png);
 	background-repeat: no-repeat;
 	background-position: center;
 	background-color: #86A7E3;
@@ -481,7 +481,7 @@ select#ws_cap_selector optgroup option {
 }
 
 .ui-dialog-titlebar-close:hover {
-	/*background-image: url(images/x-light.png);*/
+	/*background-image: url(../images/x-light.png);*/
 	background-color: #a6c2f5;
 }
 
