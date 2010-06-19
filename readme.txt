@@ -2,7 +2,7 @@
 Contributors: whiteshadow
 Donate link: http://w-shadow.com/
 Tags: admin, dashboard, menu, security, wpmu
-Requires at least: 2.9.0
+Requires at least: 2.9.2
 Tested up to: 3.0
 Stable tag: 0.2
 

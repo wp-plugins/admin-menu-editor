@@ -142,7 +142,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return void
    */
 	function print_editor_css(){
-		echo '<link type="text/css" rel="stylesheet" href="', $this->plugin_dir_url, '/menu-editor.css" />',"\n";
+		echo '<link type="text/css" rel="stylesheet" href="', $this->plugin_dir_url, '/css/menu-editor.css" />',"\n";
 	}
 
   /**

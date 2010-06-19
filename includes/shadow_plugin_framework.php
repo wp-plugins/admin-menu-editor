@@ -162,7 +162,7 @@ class MenuEd_ShadowPluginFramework {
    */
     function json_encode($data) {
         $json = new Services_JSON();
-        return( $json->encode($data) );
+        return( $json->encodeUnsafe($data) );
     }
     
 
