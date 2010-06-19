@@ -6,8 +6,6 @@ Description: Lets you directly edit the WordPress admin menu. You can re-order, 
 Version: 1.0
 Author: Janis Elsts
 Author URI: http://w-shadow.com/blog/
-Slug: admin-menu-editor-pro
-PluginAPI: http://localhost/custom-plugin-api/
 */
 
 //Are we running in the Dashboard?
