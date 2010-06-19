@@ -439,8 +439,7 @@ function encodeMenuAsJSON(){
 }
 
 function readMenuTreeState(){
-	var tree = {}; 
-	
+	var tree = {};
 	var menu_position = 0;
 		
 	//Gather all menus and their items
@@ -450,7 +449,6 @@ function readMenuTreeState(){
 		//Attach the current menu to the main struct
 		var filename = (menu.file !== null)?menu.file:menu.defaults.file;
 		tree[filename] = menu;
-		
 	});
 	
 	return tree;

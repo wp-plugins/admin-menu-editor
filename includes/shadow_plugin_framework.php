@@ -22,7 +22,7 @@ if (!class_exists('Services_JSON')){
 }
 
 class MenuEd_ShadowPluginFramework {
-	public static $framework_version = '0.3';
+	public static $framework_version = '0.4';
 	
 	public $is_mu_plugin = null; //True if installed in the mu-plugins directory, false otherwise
 	
@@ -42,13 +42,13 @@ class MenuEd_ShadowPluginFramework {
 	protected $settings_link = ''; //If set, this will be automatically added after "Deactivate"/"Edit". 
 	
   /**
-   * ShadowPluginFramework::__construct()
-   * Initializes the plugin and loads settings from the database.
+   * Class constructor. Populates some internal fields, then calls the plugin's own 
+   * intializer (if any).
    *
    * @param string $plugin_file Plugin's filename. Usuallly you can just use __FILE__.
    * @return void
    */
-	protected function __construct( $plugin_file = ''){
+	function __construct( $plugin_file = ''){
 		if ($plugin_file == ''){
 			//Try to guess the name of the file that included this file.
 			//Not implemented yet.
@@ -67,6 +67,32 @@ class MenuEd_ShadowPluginFramework {
 		}
 		
 		/************************************
+				Add the default hooks
+		************************************/
+		add_action('activate_'.$this->plugin_basename, array(&$this,'activate'));
+		add_action('deactivate_'.$this->plugin_basename, array(&$this,'deactivate'));
+		
+		$this->init();        //Call the plugin's init() function
+		$this->init_finish(); //Complete initialization by loading settings, etc
+	}
+	
+	/**
+	 * Init the plugin. Should be overridden in a sub-class.
+	 * Called by the class constructor.
+	 * 
+	 * @return void
+	 */
+	function init(){
+		//Do nothing.
+	}
+	
+	/**
+	 * Initialize settings and set up magic hooks. 
+	 * 
+	 * @return void
+	 */
+	function init_finish(){
+		/************************************
 				Load settings
 		************************************/
 		//The provided $option_name overrides the default only if it is set to something useful
@@ -80,12 +106,7 @@ class MenuEd_ShadowPluginFramework {
 			$this->load_options();
 		}
 		
-		/************************************
-				Add the default hooks
-		************************************/
-		add_action('activate_'.$this->plugin_basename, array(&$this,'activate'));
-		add_action('deactivate_'.$this->plugin_basename, array(&$this,'deactivate'));
-		
+		//Add a "Settings" action link
 		if ($this->settings_link)
 			add_filter('plugin_action_links', array(&$this, 'plugin_action_links'), 10, 2);
 		
@@ -94,7 +115,6 @@ class MenuEd_ShadowPluginFramework {
 	}
 	
   /**
-   * ShadowPluginFramework::load_options()
    * Loads the plugin's configuration : loads an option specified by $this->option_name into $this->options.
    *
    * @return boolean TRUE if options were loaded okay and FALSE otherwise. 
@@ -238,7 +258,6 @@ class MenuEd_ShadowPluginFramework {
 	}
 	
   /**
-   * MenuEd_ShadowPluginFramework::is_in_wpmu_plugin_dir()
    * Checks if the specified file is inside the mu-plugins directory.
    *
    * @param string $filename The filename to check. Leave blank to use the current plugin's filename. 
@@ -252,6 +271,56 @@ class MenuEd_ShadowPluginFramework {
 		}
 		
 		return (strpos( realpath($filename), realpath(WPMU_PLUGIN_DIR) ) !== false);
+	}
+	
+	/**
+	 * Check if the plugin is active for the entire network.  
+	 * Will return true when the plugin is installed in /mu-plugins/ (WPMU, pre-3.0)
+	 * or has been activated via "Network Activate" (WP 3.0+).
+	 * 
+	 * Blame the ridiculous blog/site/network confusion perpetrated by 
+	 * the WP API for the silly name.
+	 * 
+	 * @return bool
+	 */
+	function is_super_plugin(){
+		if ( is_null($this->is_mu_plugin) ){
+			$this->is_mu_plugin = $this->is_in_wpmu_plugin_dir($plugin_file);
+		}
+		
+		if ( $this->is_mu_plugin ){
+			return true;
+		} else {
+			if ( function_exists('is_plugin_active_for_network') ){
+				return is_plugin_active_for_network($this->plugin_basename);
+			} else {
+				return $this->is_plugin_active_for_network($this->plugin_basename);
+			}
+		}
+	}
+	
+	/**
+	 * Check whether the plugin is active for the entire network.
+	 * 
+	 * Silly WP doesn't load the file that contains this native function until *after* 
+	 * all plugins are loaded, so until then we use a copy-pasted version of the same.
+	 * 
+	 * @param string $plugin
+	 * @return bool
+	 */
+	function is_plugin_active_for_network( $plugin ) {
+		if ( function_exists('is_plugin_active_for_network') ){
+			return is_plugin_active_for_network($plugin);
+		}
+		
+		if ( !is_multisite() )
+			return false;
+	
+		$plugins = get_site_option( 'active_sitewide_plugins');
+		if ( isset($plugins[$plugin]) )
+			return true;
+	
+		return false;
 	}
 	
 }
