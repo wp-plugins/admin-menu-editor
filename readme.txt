@@ -1,6 +1,6 @@
 === Admin Menu Editor ===
 Contributors: whiteshadow
-Donate link: http://w-shadow.com/
+Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A6P9S6CE3SRSW
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 2.9.2
 Tested up to: 3.0
