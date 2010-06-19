@@ -1000,6 +1000,17 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 			}
 		}
 		
+		//Add multisite-specific capabilities (not listed in any roles in WP 3.0)
+		$multisite_caps = array(
+			'manage_sites' => 1,  
+			'manage_network' => 1, 
+			'manage_network_users' => 1, 
+			'manage_network_themes' => 1, 
+			'manage_network_options' => 1, 
+			'manage_network_plugins' => 1, 
+		);
+		$capabilities = array_merge($capabilities, $multisite_caps);
+		
 		return $capabilities;
 	}
 	
