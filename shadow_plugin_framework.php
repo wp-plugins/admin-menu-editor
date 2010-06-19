@@ -22,7 +22,7 @@ if (!class_exists('Services_JSON')){
 }
 
 class MenuEd_ShadowPluginFramework {
-	public static $framework_version = '0.2';
+	public static $framework_version = '0.3';
 	
 	public $is_mu_plugin = null; //True if installed in the mu-plugins directory, false otherwise
 	
@@ -106,7 +106,7 @@ class MenuEd_ShadowPluginFramework {
 			$this->options = get_option($this->option_name);
 		}
 		
-		if ( $this->serialize_with_json && is_string($this->options) ){
+		if ( $this->serialize_with_json || is_string($this->options) ){
 			$this->options = $this->json_decode($this->options, true);
 		}
 		

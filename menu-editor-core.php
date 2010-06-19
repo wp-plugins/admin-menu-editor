@@ -3,13 +3,44 @@
 //Load the "framework"
 require 'shadow_plugin_framework.php';
 
+if ( !function_exists('plog') ){
+	
+/**
+ * Output a variable in debug format
+ *
+ * @param mixed $x
+ * @return void
+ */
+	function plog($var, $title = ''){
+		if ( !empty($title) ){
+			echo "<strong>", htmlspecialchars($title), "</strong>\n<br>";
+		}
+		
+		if ( is_string($var) ){
+			echo htmlspecialchars($var), "\n<br>";
+		} elseif (is_array($var) || is_object($var)) {
+			echo '<pre>';
+			print_r($var);
+			echo "</pre>\n";
+		} elseif (is_bool($var)){
+			echo $var?"True":"False","\n<br>";
+		} else {
+			print_r($var);
+		}
+	}
+}
+
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 	protected $default_wp_menu = null; //Holds the default WP menu for later use in the editor
 	protected $default_wp_submenu = null; //Holds the default WP menu for later use
+	protected $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
+	                                    //fix the titles of moved plugin pages.
+	private $custom_menu = null;        //The current custom menu with defaults merged in
+    
+    private $templates = null; //Template arrays for various menu structures. See the constructor for details.
 	
-	private $blank_menu = null;
-	private $blank_item = null;	
+	public $menu_format_version = 4;
 
 	function __construct($plugin_file=''){
 		if ( empty($plugin_file) ) $plugin_file = __FILE__;
@@ -23,8 +54,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		
 		//Set some plugin-specific options
 		$this->option_name = 'ws_menu_editor';
-		$this->defaults = array();
-		$this->serialize_with_json = true; //Store the options in JSON format
+		$this->defaults = array(
+			'hide_advanced_settings' => true,
+			'menu_format_version' => 0,
+		);
+		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
 		$this->settings_link = 'options-general.php?page=menu_editor';
 		
@@ -35,33 +69,53 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		parent::__construct($plugin_file);
 
         //Build some template arrays
-        $this->blank_menu = array(
+        $this->templates['basic_defaults'] = array(
+            'page_title' => '',
+			'menu_title' => '',
+			'access_level' => 'read',  
+			'file' => '',          
+			'css_class' => '',
+			'hookname' => '',
+			'icon_url' => '',
+			'position' => 0,
+			'separator' => false,
+			'custom' => false,
+			'open_in' => 'same_window', //'new_window', 'iframe' or 'same_window' (the default)
+        );
+        
+        //Template for a basic top-level menu
+        $this->templates['blank_menu'] = array(
 			'page_title' => null,
 			'menu_title' => null,
-			'access_level' => null,
-			'file' => null,
+			'access_level' => null,  
+			'file' => null,          
 			'css_class' => null,
 			'hookname' => null,
 			'icon_url' => null,
 			'position' => null,
-			'defaults' => null,
 			'separator' => null,
 			'custom' => null,
-		 );
-
-		$this->blank_item = array(
+			'open_in' => null, 
+			'defaults' => $this->templates['basic_defaults'],
+			'items' => array(),
+		);
+		//Template for menu items
+		$this->templates['blank_item'] = array(
 			'menu_title' => null,
 			'access_level' => null,
 			'file' => null,
 			'page_title' => null,
 			'position' => null,
-			'custom' => null,
+            'custom' => null,
+			'open_in' => null,
+			'defaults' => $this->templates['basic_defaults'],
 		 );
 
+		//AJAXify screen options
+		add_action( 'wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options') );		 
 	}
 
   /**
-   * WPMenuEditor::enqueue_scripts()
    * Add the JS required by the editor to the page header
    *
    * @return void
@@ -69,11 +123,16 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	function enqueue_scripts(){
 		wp_enqueue_script('jquery');
         wp_enqueue_script('jquery-ui-sortable');
+        wp_enqueue_script('jquery-ui-dialog');
+        wp_enqueue_script('jquery-form');
 
 		//jQuery JSON plugin
-		wp_enqueue_script('jquery-json', $this->plugin_dir_url.'/jquery.json-1.3.js', array('jquery'), '1.3');
+		wp_enqueue_script('jquery-json', $this->plugin_dir_url.'/js/jquery.json-1.3.js', array('jquery'), '1.3');
+		//jQuery sort plugin
+		wp_enqueue_script('jquery-sort', $this->plugin_dir_url.'/js/jquery.sort.js', array('jquery'));
+		
 		//Editor's scipts
-        wp_enqueue_script('menu-editor', $this->plugin_dir_url.'/menu-editor.js', array('jquery'));
+        wp_enqueue_script('menu-editor', $this->plugin_dir_url.'/js/menu-editor.js', array('jquery'));
 	}
 	
   /**
@@ -87,7 +146,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
   /**
-   * WPMenuEditor::hook_admin_menu()
    * Create a configuration page and load the custom menu
    *
    * @return void
@@ -95,13 +153,29 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	function hook_admin_menu(){
 		global $menu, $submenu;
 		
+		//Menu reset (for emergencies). Executed by accessing http://example.com/wp-admin/?reset_admin_menu=1 
+		$reset_requested = isset($_GET['reset_admin_menu']) && $_GET['reset_admin_menu'];
+		if ( $reset_requested && $this->current_user_can_edit_menu() ){
+			$this->options['custom_menu'] = null;
+			$this->save_options();
+		}
+		
 		//The menu editor is only visible to users with the manage_options privilege.
 		//Or, if the plugin is installed in mu-plugins, only to the site administrator(s). 
-		if ( !$this->is_mu_plugin || ( function_exists('is_site_admin') && is_site_admin() ) ){
-			$page = add_options_page('Menu Editor', 'Menu Editor', 'manage_options', 'menu_editor', array(&$this, 'page_menu_editor'));
+		if ( $this->current_user_can_edit_menu() ){
+			$page = add_options_page(
+				apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'), 
+				apply_filters('admin_menu_editor-self_menu_title', 'Menu Editor'), 
+				'manage_options', 
+				'menu_editor', 
+				array(&$this, 'page_menu_editor')
+			);
 			//Output our JS & CSS on that page only
 			add_action("admin_print_scripts-$page", array(&$this, 'enqueue_scripts'));
 			add_action("admin_print_scripts-$page", array(&$this, 'print_editor_css'));
+			
+			//Make a placeholder for our screen options (hacky)
+			add_meta_box("ws-ame-screen-options", "You should never see this", array(&$this, 'noop'), $page);
 		}
 		
 		$this->default_wp_menu = $menu;
@@ -109,19 +183,57 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		
 		//Is there a custom menu to use?
 		if ( !empty($this->options['custom_menu']) ){
+			//Check if we need to upgrade the menu structure
+			if ( empty($this->options['menu_format_version']) || ($this->options['menu_format_version'] < $this->menu_format_version) ){
+				$this->options['custom_menu'] = $this->upgrade_menu_structure($this->options['custom_menu']);
+				$this->options['menu_format_version'] = $this->menu_format_version;
+				$this->save_options();
+			}
 			//Merge in data from the default menu
 			$tree = $this->menu_merge($this->options['custom_menu'], $menu, $submenu);
 			//Apply the custom menu
-			list($menu, $submenu) = $this->tree2wp($tree);
+			list($menu, $submenu, $this->title_lookups) = $this->tree2wp($tree);
 			//Save for later - the editor page will need it
 			$this->custom_menu = $tree;
 			//Re-filter the menu (silly WP should do that itself, oh well)
 			$this->filter_menu();
 		}
 	}
+	
+	/**
+	 * Determine if the current user may use the menu editor.
+	 * 
+	 * @return bool
+	 */
+	function current_user_can_edit_menu(){
+		if ( function_exists('is_multisite') && is_multisite() ){
+			return is_super_admin();
+		} elseif ( $this->is_mu_plugin ){
+			return function_exists('is_site_admin') && is_site_admin();
+		} else {
+			return current_user_can('manage_options');
+		}
+	}
+	
+  /**
+   * Intercept a handy action to fix the page title for moved plugin pages.
+   *
+   * @return void
+   */
+	function hook_admin_xml_ns(){
+		global $title;
+		global $pagenow;
+		global $plugin_page;
+		
+		if ( empty($title) && !empty($plugin_page) && !empty($pagenow) ){
+			$file = sprintf('%s?page=%s', $pagenow, $plugin_page);
+			if ( isset($this->title_lookups[$file]) ){
+				$title = esc_html( strip_tags( $this->title_lookups[$file] ) );
+			}
+		}		
+	}
 
   /**
-   * WPMenuEditor::filter_menu()
    * Loop over the Dashboard submenus and remove pages for which the current user does not have privs.
    *
    * @return void
@@ -145,122 +257,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
   /**
-   * WPMenuEditor::page_menu_editor()
-   * Output the menu editor page
-   *
-   * @return void
-   */
-	function page_menu_editor(){
-		global $menu, $submenu;
-		if ( !current_user_can('manage_options') ){
-			die("Access denied");
-		}
-		
-	//Handle form submissions
-	if (isset($_POST['data'])){
-		check_admin_referer('menu-editor-form');
-		
-		//Try to decode a menu tree encoded as JSON
-		$data = $this->json_decode($_POST['data'], true);
-		if (!$data){
-			$fixed = stripslashes($_POST['data']);
-			$data = $this->json_decode( $fixed, true );
-		}
-	
-		$url = remove_query_arg('noheader');
-
-		if ($data){
-			//Save the custom menu
-			$this->options['custom_menu'] = $data;
-			$this->save_options();
-			//Redirect back to the editor and display the success message
-			wp_redirect( add_query_arg('message', 1, $url) );
-		} else {
-			//Or redirect & display the error message
-			wp_redirect( add_query_arg('message', 2, $url) );
-		}
-		die();
-	}
-	
-?>
-<div class="wrap">
-<h2>Menu Editor</h2>
-<?php
-	
-	if ( !empty($_GET['message']) ){
-		if ( intval($_GET['message']) == 1 ){
-			echo '<div id="message" class="updated fade"><p><strong>Settings saved.</strong></p></div>';
-		} elseif ( intval($_GET['message']) == 2 ) {
-			echo '<div id="message" class="error"><p><strong>Failed to decode input! The menu wasn\'t modified.</strong></p></div>';
-		}
-	}
-	
-	//Build a tree struct. for the default menu
-	$default_menu = $this->wp2tree($this->default_wp_menu, $this->default_wp_submenu);
-	
-	//Is there a custom menu?
-	if (!empty($this->options['custom_menu'])){
-		$custom_menu = $this->options['custom_menu'];
-		//Merge in the current defaults
-		$custom_menu = $this->menu_merge($custom_menu, $this->default_wp_menu, $this->default_wp_submenu);
-	} else {
-		//Start out with the default menu if there is no user-created one
-		$custom_menu = $default_menu;
-	}
-	
-	//Encode both menus as JSON
-	$default_menu_js = $this->getMenuAsJS($default_menu);
-	$custom_menu_js = $this->getMenuAsJS($custom_menu);
-
-	$plugin_url = $this->plugin_dir_url;
-	$images_url = $this->plugin_dir_url . '/images';
-?>
-<div id='ws_menu_editor'>
-	<div id='ws_menu_box' class='ws_main_container'>
-		<div class='ws_toolbar'>
-			<a id='ws_cut_menu' class='ws_button' href='javascript:void(0)' title='Cut'><img src='<?php echo $images_url; ?>/cut.png' /></a>
-			<a id='ws_copy_menu' class='ws_button' href='javascript:void(0)' title='Copy'><img src='<?php echo $images_url; ?>/page_white_copy.png' /></a>
-			<a id='ws_paste_menu' class='ws_button' href='javascript:void(0)' title='Paste'><img src='<?php echo $images_url; ?>/page_white_paste.png' /></a>
-			<a id='ws_new_menu' class='ws_button' href='javascript:void(0)' title='New'><img src='<?php echo $images_url; ?>/page_white_add.png' /></a>
-			<a id='ws_hide_menu' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $images_url; ?>/plugin_disabled.png' /></a>
-			<a id='ws_delete_menu' class='ws_button' href='javascript:void(0)' title='Delete'><img src='<?php echo $images_url; ?>/page_white_delete.png' /></a>
-		</div>
-	</div>
-	<div id='ws_submenu_box' class='ws_main_container'>
-		<div class='ws_toolbar'>
-			<a id='ws_cut_item' class='ws_button' href='javascript:void(0)' title='Cut'><img src='<?php echo $images_url; ?>/cut.png' /></a>
-			<a id='ws_copy_item' class='ws_button' href='javascript:void(0)' title='Copy'><img src='<?php echo $images_url; ?>/page_white_copy.png' /></a>
-			<a id='ws_paste_item' class='ws_button' href='javascript:void(0)' title='Paste'><img src='<?php echo $images_url; ?>/page_white_paste.png' /></a>
-			<a id='ws_new_item' class='ws_button' href='javascript:void(0)' title='New'><img src='<?php echo $images_url; ?>/page_white_add.png' /></a>
-			<a id='ws_hide_item' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $images_url; ?>/plugin_disabled.png' /></a>
-			<a id='ws_delete_item' class='ws_button' href='javascript:void(0)' title='Delete'><img src='<?php echo $images_url; ?>/page_white_delete.png' /></a>
-		</div>
-	</div>
-</div>
-
-<form method="post" action="<?php echo admin_url('options-general.php?page=menu_editor&noheader=1'); ?>" id='ws_main_form' name='ws_main_form'>
-<div class="ws_main_container" style="width: 138px;">
-	<?php wp_nonce_field('menu-editor-form'); ?>
-	<input type="button" id='ws_save_menu' class="button-primary ws_main_button" value="Save Changes"
-		style="margin-bottom: 20px;" />
-	<input type="button" id='ws_load_menu' value="Load default menu" class="button ws_main_button" />
-	<input type="button" id='ws_reset_menu' value="Reset menu" class="button ws_main_button" />
-	<input type="hidden" name="data" id="ws_data" value="">
-</div>
-</form>
-
-</div>
-<script type='text/javascript'>
-
-var defaultMenu = <?php echo $default_menu_js; ?>;
-var customMenu = <?php echo $custom_menu_js; ?>;
-
-</script>
-		<?php
-	}
-
-  /**
-   * WPMenuEditor::getMenuAsJS()
    * Encode a menu tree as JSON
    *
    * @param array $tree
@@ -271,7 +267,6 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 	}
 
   /**
-   * WPMenuEditor::menu2assoc()
    * Convert a WP menu structure to an associative array
    *
    * @param array $item An element of the $menu array
@@ -280,27 +275,31 @@ var customMenu = <?php echo $custom_menu_js; ?>;
    */
 	function menu2assoc($item, $pos=0){
 		$item = array(
-			'page_title' => $item[3],
 			'menu_title' => $item[0],
 			'access_level' => $item[1],
 			'file' => $item[2],
+			'page_title' => $item[3],
 			'css_class' => $item[4],
 			'hookname' => (isset($item[5])?$item[5]:''), //ID
 			'icon_url' => (isset($item[6])?$item[6]:''),
 			'position' => $pos,
-		 );
-		return $item;
+		);
+		$item['separator'] = strpos($item['css_class'], 'wp-menu-separator') !== false;
+		//Flag plugin pages
+		$item['is_plugin_page'] = (get_plugin_page_hook($item['file'], '') != null);
+        
+		return array_merge($this->templates['basic_defaults'], $item);
 	}
 
   /**
-   * WPMenuEditor::submenu2assoc()
-   * Converts a WP submenu structure to an associative array
+   * Convert a WP submenu structure to an associative array
    *
    * @param array $item An element of the $submenu array
    * @param integer $pos The position (index) of that element
-   * @return
+   * @param string $parent Parent file that this menu item belongs to.
+   * @return array
    */
-	function submenu2assoc($item, $pos=0){
+	function submenu2assoc($item, $pos = 0, $parent = ''){
 		$item = array(
 			'menu_title' => $item[0],
 			'access_level' => $item[1],
@@ -308,11 +307,15 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 			'page_title' => (isset($item[3])?$item[3]:''),
 			'position' => $pos,
 		 );
-		return $item;
+		//Save the default parent menu
+		$item['parent'] = $parent;
+		//Flag plugin pages
+		$item['is_plugin_page'] = (get_plugin_page_hook($item['file'], $parent) != null);
+        
+		return array_merge($this->templates['basic_defaults'], $item);
 	}
 
   /**
-   * WPMenuEditor::build_lookups()
    * Populate lookup arrays with default values from $menu and $submenu. Used later to merge
    * a custom menu with the native WordPress menu structure somewhat gracefully.
    *
@@ -334,10 +337,10 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 		$submenu_defaults = array();
 		foreach($submenu as $parent => $items){
 			foreach($items as $pos => $item){
-				$item = $this->submenu2assoc($item, $pos);
-				//save the default parent menu
-				$item['parent'] = $parent;
-				$submenu_defaults[$item['file']] = $item; //index by filename
+				$item = $this->submenu2assoc($item, $pos, $parent);
+				//File itself is not guaranteed to be unique, so we use a surrogate ID to identify submenus.
+				$uid = $this->unique_submenu_id($item['file'], $parent);
+				$submenu_defaults[$uid] = $item;
 			}
 		}
 
@@ -356,10 +359,9 @@ var customMenu = <?php echo $custom_menu_js; ?>;
    */
 	function menu_merge($tree, $menu, $submenu){
 		list($menu_defaults, $submenu_defaults) = $this->build_lookups($menu, $submenu);
-
+		
 		//Iterate over all menus and submenus and look up default values
 		foreach ($tree as $topfile => &$topmenu){
-
 			//Is this menu present in the default WP menu?
 			if (isset($menu_defaults[$topfile])){
 				//Yes, load defaults from that item
@@ -372,7 +374,7 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 					$topmenu['missing'] = true;
 					//[Nasty] Fill the 'defaults' array for menu's that don't have it.
 					//This should never be required - saving a custom menu should set the defaults
-					//for all menus it contains automatically. 
+					//for all menus it contains automatically.
 					if ( empty($topmenu['defaults']) ){   
 						$tmp = $topmenu;
 						$topmenu['defaults'] = $tmp;
@@ -383,11 +385,13 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 			if (is_array($topmenu['items'])) {
 				//Iterate over submenu items
 				foreach ($topmenu['items'] as $file => &$item){
+					$uid = $this->unique_submenu_id($item, $topfile);
+					
 					//Is this item present in the default WP menu?
-					if (isset($submenu_defaults[$file])){
+					if (isset($submenu_defaults[$uid])){
 						//Yes, load defaults from that item
-						$item['defaults'] = $submenu_defaults[$file];
-						$submenu_defaults[$file]['used'] = true;
+						$item['defaults'] = $submenu_defaults[$uid];
+						$submenu_defaults[$uid]['used'] = true;
 					} else {
 						//Record as missing
 						$item['missing'] = true;
@@ -413,7 +417,7 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 			if ( !empty($topmenu['used']) ) continue;
 
 			//Found an unused item. Build the tree entry.
-			$entry = $this->blank_menu;
+			$entry = $this->templates['blank_menu'];
 			$entry['defaults'] = $topmenu;
 			$entry['items'] = array(); //prepare a place for menu items, if any.
 			//Note that this item is unused
@@ -424,10 +428,10 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 		unset($topmenu);
 
 		//Find and merge submenu items
-		foreach($submenu_defaults as $file => $item){
+		foreach($submenu_defaults as $uid => $item){
 			if ( !empty($item['used']) ) continue;
 			//Found an unused item. Build an entry and attach it under the default toplevel menu.
-			$entry = $this->blank_item;
+			$entry = $this->templates['blank_item'];
 			$entry['defaults'] = $item;
 			//Note that this item is unused
 			$entry['unused'] = true;
@@ -446,6 +450,28 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 
 		return $tree;
 	}
+	
+  /**
+   * Generate an ID that uniquely identifies a given submenu item. 
+   *
+   * @param string|array $file Menu item in question
+   * @param string $parent Parent menu. Optional. If $file is an array, the function will try to get the parent value from $file['defaults'] instead.
+   * @return string Unique ID
+   */
+	function unique_submenu_id($file, $parent = ''){
+		if ( is_array($file) ){
+			if ( isset($file['defaults']) && isset($file['defaults']['parent']) ){
+				$parent = $file['defaults']['parent'];
+			}
+			$file = $this->get_menu_field($file, 'file');
+		}
+		
+		if ( !empty($parent) ){
+			return $parent . '::' . $file;
+		} else {
+			return $file;
+		}
+	}
 
   /**
    * WPMenuEditor::wp2tree()
@@ -460,9 +486,9 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 		$separator_count = 0;
 		foreach ($menu as $pos => $item){
 			
-			$tree_item = $this->blank_menu;
+			$tree_item = $this->templates['blank_menu'];
 			$tree_item['defaults'] = $this->menu2assoc($item, $pos);
-			$tree_item['separator'] = empty($item[2]) || empty($item[0]);
+			$tree_item['separator'] = empty($item[2]) || empty($item[0]) || (strpos($item[4], 'wp-menu-separator') !== false);
 			
 			$item_file = $tree_item['defaults']['file'];
 			if ( empty($item_file) ){
@@ -482,8 +508,8 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 			foreach($items as $pos=>$item){
 				//Add this item under the parent
 				$tree[$parent]['items'][$item[2]] = array_merge(
-					$this->blank_item,
-					array('defaults' => $this->submenu2assoc($item, $pos))
+					$this->templates['blank_item'],
+					array('defaults' => $this->submenu2assoc($item, $pos, $parent))
 				);
 			}
 		}
@@ -494,7 +520,6 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 	}
 
   /**
-   * WPMenuEditor::apply_defaults()
    * Sets all undefined fields to the default value
    *
    * @param array $item Menu item in the plugin's internal form
@@ -512,9 +537,59 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 		}
 		return $item;
 	}
+	
+	
+  /**
+   * Apply custom menu filters to an item of the custom menu.
+   *
+   * Calls two types of filters :
+   * 	'custom_admin_$item_type' with the entire $item passed as the argument. 
+   * 	'custom_admin_$item_type-$field' with the value of a single field of $item as the argument.
+   *	
+   * Used when converting the current custom menu to a WP-format menu. 
+   *
+   * @param array $item Associative array representing one menu item (either top-level or submenu).
+   * @param string $item_type 'menu' or 'submenu'
+   * @param mixed $extra Optional extra data to pass to hooks.
+   * @return array Filtered menu item.
+   */
+	function apply_menu_filters($item, $item_type = '', $extra = null){
+		if ( empty($item_type) ){
+			//Only top-level menus have an icon
+			$item_type = isset($item['icon_url'])?'menu':'submenu';
+		}
+		
+		$item = apply_filters("custom_admin_{$item_type}", $item, $extra);
+		foreach($item as $field => $value){
+			$item[$field] = apply_filters("custom_admin_{$item_type}-$field", $value, $extra);
+		}
+		
+		return $item;
+	}
+	
+  /**
+   * Get the value of a menu/submenu field.
+   * Will return the corresponding value from the 'defaults' entry of $item if the 
+   * specified field is not set in the item itself.
+   *
+   * @param array $item
+   * @param string $field_name
+   * @param mixed $default Returned if the requested field is not set and is not listed in $item['defaults']. Defaults to null.  
+   * @return mixed Field value.
+   */
+	function get_menu_field($item, $field_name, $default = null){
+		if ( isset($item[$field_name]) && ($item[$field_name] !== null) ){
+			return $item[$field_name];
+		} else {
+			if ( isset($item['defaults']) && isset($item['defaults'][$field_name]) ){
+				return $item['defaults'][$field_name];
+			} else {
+				return $default;
+			}
+		}
+	}
 
   /**
-   * WPMenuEditor::compare_position()
    * Custom comparison function that compares menu items based on their position in the menu.
    *
    * @param array $a
@@ -546,7 +621,6 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 	}
 	
   /**
-   * WPMenuEditor::sort_menu_tree()
    * Sort the menus and menu items of a given menu according to their positions 
    *
    * @param array $tree A menu structure in the internal format
@@ -566,8 +640,12 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 	}
 
   /**
-   * WPMenuEditor::tree2wp()
    * Convert internal menu representation to the form used by WP.
+   * 
+   * Note : While this function doesn't cause any side effects of its own, 
+   * it executes several filters that may modify global state. Specifically,
+   * IFrame-handling callbacks in 'extras.php' may insert items into the 
+   * global $menu and $submenu arrays.
    *
    * @param array $tree
    * @return array $menu and $submenu
@@ -575,20 +653,26 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 	function tree2wp($tree){
 		$menu = array();
 		$submenu = array();
+		$title_lookup = array();
 		
 		//Sort the menu by position
 		uasort($tree, array(&$this, 'compare_position'));
 
 		//Prepare the top menu
-		foreach ($tree as &$topmenu){
+		foreach ($tree as $topmenu){
 			
-			//Skip missing menus, unless they're user-created and thus might point to a non-standard file 
-			if ( !empty($topmenu['missing']) && empty($topmenu['custom']) ) continue;
+			//Skip missing menus, unless they're user-created and thus might point to a non-standard file
+			$custom = $this->get_menu_field($topmenu, 'custom', false); 
+			if ( !empty($topmenu['missing']) && !$custom ) {
+				continue;
+			};
+			
 			//Skip hidden entries
 			if (!empty($topmenu['hidden'])) continue;
 			
 			//Build the WP item structure, using defaults where necessary
 			$topmenu = $this->apply_defaults($topmenu);
+			$topmenu = $this->apply_menu_filters($topmenu, 'menu');
 			$menu[] = array(
 					$topmenu['menu_title'],
 					$topmenu['access_level'],
@@ -604,29 +688,329 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 				$items = $topmenu['items'];
 				//Sort by position
 				uasort($items, array(&$this, 'compare_position'));
+				
 				foreach ($items as $item) {
 					
 					//Skip missing items, unless they're user-created
-					if ( !empty($item['missing']) && empty($item['custom']) ) continue;
+					$custom = $this->get_menu_field($item, 'custom', false);
+					if ( !empty($item['missing']) && !$custom ) continue;
 					//Skip hidden items
 					if (!empty($item['hidden'])) {
 						continue;
 					}
-	
+					
+					//Special case : plugin pages that have been moved to a different menu.
+					//If the file field hasn't already been modified, we'll need to adjust it
+					//to point to the old parent. This is required because WP identifies 
+					//plugin pages using *both* the plugin file and the parent file.
+					if ( $this->get_menu_field($item, 'is_plugin_page', false) && ($item['file'] === null) ){
+						$default_parent = '';
+						if ( isset($item['defaults']) && isset($item['defaults']['parent'])){
+							$default_parent = $item['defaults']['parent'];
+						}
+						if ( $topmenu['file'] != $default_parent ){
+							$item['file'] = $default_parent . '?page=' . $item['defaults']['file'];
+						}
+					}
+					
 					$item = $this->apply_defaults($item);
+					$item = $this->apply_menu_filters($item, 'submenu', $topmenu['file']);
 					$submenu[$topmenu['file']][] = array(
 						$item['menu_title'],
 						$item['access_level'],
 						$item['file'],
 						$item['page_title'],
-					 );
+					);
+					 
+					//Make a note of the page's correct title so we can fix it later
+					//if necessary.
+					$title_lookup[$item['file']] = $item['menu_title']; 
 				}
 			}
 		}
 		
-		return array($menu, $submenu);
+		return array($menu, $submenu, $title_lookup);
 	}
+	
+  /**
+   * Upgrade a menu tree to the currently used structure
+   * Does nothing if the menu is already up to date.
+   *
+   * @param array $tree
+   * @return array
+   */
+	function upgrade_menu_structure($tree){
+		
+		//Append new fields, if any
+		foreach($tree as $menu_file => $menu){
+			$menu = array_merge($this->templates['blank_menu'], $menu);
+            $menu['defaults'] = array_merge($this->templates['basic_defaults'], $menu['defaults']);
+            
+			foreach($menu['items'] as $item_file => $item){
+				$item = array_merge($this->templates['blank_item'], $item);
+                $item['defaults'] = array_merge($this->templates['basic_defaults'], $item['defaults']);
+				$menu['items'][$item_file] = $item;
+			}
+			$tree[$menu_file] = $menu;			
+		}
+		
+		return $tree;
+	}
+	
+  /**
+   * Output the menu editor page
+   *
+   * @return void
+   */
+	function page_menu_editor(){
+		global $menu, $submenu;
+		global $wp_roles;
+		
+		if ( !$this->current_user_can_edit_menu() ){
+			die("Access denied");
+		}
+		
+		$action = isset($_POST['action'])?$_POST['action']:(isset($_GET['action'])?$_GET['action']:'');
+		do_action('admin_menu_editor_header', $action);
+		
+	//Handle form submissions
+	if (isset($_POST['data'])){
+		check_admin_referer('menu-editor-form');
+		
+		//Try to decode a menu tree encoded as JSON
+		$data = $this->json_decode($_POST['data'], true);
+		if (!$data){
+			$fixed = stripslashes($_POST['data']);
+			$data = $this->json_decode( $fixed, true );
+		}
+	
+		$url = remove_query_arg('noheader');
 
+		if ($data){
+			//Save the custom menu
+			$this->options['custom_menu'] = $data;
+			$this->save_options();
+			//Redirect back to the editor and display the success message
+			wp_redirect( add_query_arg('message', 1, $url) );
+		} else {
+			//Or redirect & display the error message
+			wp_redirect( add_query_arg('message', 2, $url) );
+		}
+		die();
+	}
+	
+	//Attach a "Feedback" link to the screen meta panel.
+	$this->print_uservoice_widget();	
+?>
+<div class="wrap">
+<h2><?php echo apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'); ?></h2>
+<?php
+	
+	if ( !empty($_GET['message']) ){
+		if ( intval($_GET['message']) == 1 ){
+			echo '<div id="message" class="updated fade"><p><strong>Settings saved.</strong></p></div>';
+		} elseif ( intval($_GET['message']) == 2 ) {
+			echo '<div id="message" class="error"><p><strong>Failed to decode input! The menu wasn\'t modified.</strong></p></div>';
+		}
+	}
+	
+	//Build a tree struct. for the default menu
+	$default_menu = $this->wp2tree($this->default_wp_menu, $this->default_wp_submenu);
+	
+	//Is there a custom menu?
+	if (!empty($this->custom_menu)){
+		$custom_menu = $this->custom_menu;
+	} else {
+		//Start out with the default menu if there is no user-created one
+		$custom_menu = $default_menu;
+	}
+	
+	//Encode both menus as JSON
+	$default_menu_js = $this->getMenuAsJS($default_menu);
+	$custom_menu_js = $this->getMenuAsJS($custom_menu);
+
+	$plugin_url = $this->plugin_dir_url;
+	$images_url = $this->plugin_dir_url . '/images';
+	
+	//Create a list of all known capabilities and roles. Used for the dropdown list on the access field.
+	$all_capabilities = $this->get_all_capabilities();
+	$all_capabilities = array_keys($all_capabilities);
+	natcasesort($all_capabilities);
+	
+	$all_roles = $this->get_all_roles();
+	asort($all_roles);
+?>
+<div id='ws_menu_editor'>
+	<div class='ws_main_container'>
+		<div class='ws_toolbar'>
+			<div class="ws_button_container">		
+				<a id='ws_cut_menu' class='ws_button' href='javascript:void(0)' title='Cut'><img src='<?php echo $images_url; ?>/cut.png' /></a>
+				<a id='ws_copy_menu' class='ws_button' href='javascript:void(0)' title='Copy'><img src='<?php echo $images_url; ?>/page_white_copy.png' /></a>
+				<a id='ws_paste_menu' class='ws_button' href='javascript:void(0)' title='Paste'><img src='<?php echo $images_url; ?>/page_white_paste.png' /></a>
+				
+				<div class="ws_separator">&nbsp;</div>
+				
+				<a id='ws_new_menu' class='ws_button' href='javascript:void(0)' title='New menu'><img src='<?php echo $images_url; ?>/page_white_add.png' /></a>
+				<a id='ws_hide_menu' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $images_url; ?>/plugin_disabled.png' /></a>
+				<a id='ws_delete_menu' class='ws_button' href='javascript:void(0)' title='Delete menu'><img src='<?php echo $images_url; ?>/page_white_delete.png' /></a>
+				
+				<div class="ws_separator">&nbsp;</div>
+				
+				<a id='ws_new_separator' class='ws_button' href='javascript:void(0)' title='New separator'><img src='<?php echo $images_url; ?>/separator_add.png' /></a>
+			</div>
+		</div>
+		
+		<div id='ws_menu_box' class="ws_box">
+		</div> 
+	</div>
+	<div class='ws_main_container'>
+		<div class='ws_toolbar'>
+			<div class="ws_button_container">
+				<a id='ws_cut_item' class='ws_button' href='javascript:void(0)' title='Cut'><img src='<?php echo $images_url; ?>/cut.png' /></a>
+				<a id='ws_copy_item' class='ws_button' href='javascript:void(0)' title='Copy'><img src='<?php echo $images_url; ?>/page_white_copy.png' /></a>
+				<a id='ws_paste_item' class='ws_button' href='javascript:void(0)' title='Paste'><img src='<?php echo $images_url; ?>/page_white_paste.png' /></a>
+				
+				<div class="ws_separator">&nbsp;</div>
+				
+				<a id='ws_new_item' class='ws_button' href='javascript:void(0)' title='New menu item'><img src='<?php echo $images_url; ?>/page_white_add.png' /></a>
+				<a id='ws_hide_item' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $images_url; ?>/plugin_disabled.png' /></a>
+				<a id='ws_delete_item' class='ws_button' href='javascript:void(0)' title='Delete menu item'><img src='<?php echo $images_url; ?>/page_white_delete.png' /></a>
+				
+				<div class="ws_separator">&nbsp;</div>
+				
+				<a id='ws_sort_ascending' class='ws_button' href='javascript:void(0)' title='Sort ascending'>
+					<img src='<?php echo $images_url; ?>/sort_ascending.png' />
+				</a>
+				<a id='ws_sort_descending' class='ws_button' href='javascript:void(0)' title='Sort descending'>
+					<img src='<?php echo $images_url; ?>/sort_descending.png' />
+				</a>
+			</div>
+		</div>
+		
+		<div id='ws_submenu_box' class="ws_box">
+		</div>
+	</div>
+</div>
+
+<div class="ws_main_container" id="ws_editor_sidebar">
+<form method="post" action="<?php echo admin_url('options-general.php?page=menu_editor&noheader=1'); ?>" id='ws_main_form' name='ws_main_form'>
+	<?php wp_nonce_field('menu-editor-form'); ?>
+	<input type="hidden" name="data" id="ws_data" value="">
+	<input type="button" id='ws_save_menu' class="button-primary ws_main_button" value="Save Changes" />
+</form>
+	
+	<input type="button" id='ws_reset_menu' value="Undo changes" class="button ws_main_button" />
+	<input type="button" id='ws_load_menu' value="Load default menu" class="button ws_main_button" />
+	
+	<?php
+		do_action('admin_menu_editor_sidebar');
+	?>
+</div>
+
+
+</div>
+
+<?php
+	//Createa a pop-up capability selector
+	$capSelector = array('<select id="ws_cap_selector" size="10">');
+	
+	$capSelector[] = '<optgroup label="Roles">';
+ 	foreach($all_roles as $role_id => $role_name){
+ 		$capSelector[] = sprintf(
+		 	'<option value="%s">%s</option>',
+		 	esc_attr($role_id),
+		 	$role_name
+	 	);
+ 	}
+ 	$capSelector[] = '</optgroup>';
+	
+ 	$capSelector[] = '<optgroup label="Capabilities">';
+ 	foreach($all_capabilities as $cap){
+ 		$capSelector[] = sprintf(
+		 	'<option value="%s">%s</option>',
+		 	esc_attr($cap),
+		 	$cap
+	 	);
+ 	}
+ 	$capSelector[] = '</optgroup>';
+ 	$capSelector[] = '</select>';
+ 	
+ 	echo implode("\n", $capSelector);
+?>
+
+<span id="ws-ame-screen-meta-contents" style="display:none;">
+<label for="ws-hide-advanced-settings"><input type="checkbox" id="ws-hide-advanced-settings" /> Hide advanced options</label>
+</span>
+
+<script type='text/javascript'>
+
+var defaultMenu = <?php echo $default_menu_js; ?>;
+var customMenu = <?php echo $custom_menu_js; ?>;
+
+var imagesUrl = "<?php echo esc_js($images_url); ?>";
+
+var adminAjaxUrl = "<?php echo esc_js(admin_url('admin-ajax.php')); ?>";
+
+var hideAdvancedSettings = <?php echo $this->options['hide_advanced_settings']?'true':'false'; ?>;
+var hideAdvancedSettingsNonce = '<?php echo esc_js(wp_create_nonce('ws_ame_save_screen_options'));  ?>';
+
+var captionShowAdvanced = 'Show advanced options';
+var captionHideAdvanced = 'Hide advanced options';
+
+window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
+
+</script>
+
+		<?php
+		
+		//Let the Pro version script output it's extra HTML & scripts.
+		do_action('admin_menu_editor_footer');
+	}
+	
+  /**
+   * Retrieve a list of all known capabilities of all roles
+   *
+   * @return array Associative array with capability names as keys
+   */
+	function get_all_capabilities(){
+		global $wp_roles;
+		
+		$capabilities = array();
+		
+		if ( !isset($wp_roles) || !isset($wp_roles->roles) ){
+			return $capabilities;
+		}
+		
+		//Iterate over all known roles and collect their capabilities
+		foreach($wp_roles->roles as $role_id => $role){
+			if ( !empty($role['capabilities']) && is_array($role['capabilities']) ){ //Being defensive here
+				$capabilities = array_merge($capabilities, $role['capabilities']);
+			}
+		}
+		
+		return $capabilities;
+	}
+	
+  /**
+   * Retrieve a list of all known roles
+   *
+   * @return array Associative array with role IDs as keys and role display names as values
+   */
+	function get_all_roles(){
+		global $wp_roles;
+		$roles = array();
+		
+		if ( !isset($wp_roles) || !isset($wp_roles->roles) ){
+			return $roles;
+		}
+		
+		foreach($wp_roles->roles as $role_id => $role){
+			$roles[$role_id] = $role['name'];
+		}
+		
+		return $roles;
+	}
+	
   /**
    * WPMenuEditor::is_wp27()
    * Check if running WordPress 2.7 or later (unused)
@@ -637,6 +1021,61 @@ var customMenu = <?php echo $custom_menu_js; ?>;
 		global $wp_version;
 		return function_exists('register_uninstall_hook');
 	}
+	
+  /**
+   * Output the JavaScript that adds the "Feedback" widget to screen meta.
+   *
+   * @return void
+   */
+	function print_uservoice_widget(){
+		?>
+		<script type="text/javascript">
+		(function($){
+			$('#screen-meta-links').append(
+				'<div id="ws-ame-feedback-widget-wrap" class="hide-if-no-js screen-meta-toggle">' +
+					'<a href="http://feedback.w-shadow.com/forums/58572-admin-menu-editor" id="ws-ame-feedback-widget" class="show-settings" target="_blank" title="Open the user feedback forum">Feedback</a>' +
+				'</div>'
+			);
+		})(jQuery);
+		</script>
+		<?php
+	}
+	
+	/**
+	 * AJAX callback for saving screen options (whether to show or to hide advanced menu options).
+	 * 
+	 * Handles the 'ws_ame_save_screen_options' action. The new option value 
+	 * is read from $_POST['hide_advanced_settings'].
+	 * 
+	 * @return void
+	 */
+	function ajax_save_screen_options(){
+		if (!current_user_can('manage_options') || !check_ajax_referer('ws_ame_save_screen_options', false, false)){
+			die( $this->json_encode( array(
+				'error' => "You're not allowed to do that!" 
+			 )));
+		}
+		
+		$this->options['hide_advanced_settings'] = !empty($_POST['hide_advanced_settings']);
+		$this->save_options();
+		die('1');
+	}
+	
+	/**
+	 * A callback for the stub meta box added to the plugin's page. Does nothing.  
+	 * 
+	 * @return void
+	 */
+	function noop(){
+		//nihil
+	}
+	
 } //class
+
+//Load Pro version extras
+$ws_me_extras_file = dirname(__FILE__).'/extras.php'; 
+if ( file_exists($ws_me_extras_file) ){
+	include $ws_me_extras_file;
+}
 
 ?>
