@@ -1,122 +1,108 @@
 //(c) W-Shadow
 
-function escapeJS (s) {
-	s = s + '';
-	return s.replace(/&/g,'&amp;').replace(/>/g,'&gt;').replace(/</g,'&lt;').
-		  replace(/"/g,'&quot;').replace(/'/g,"&#39;").replace(/\\/g,'&#92;');
-};
+var wsIdCounter = 0;
 
 (function ($){
 	
+/*
+ * Utility function for generating pseudo-random alphanumeric menu IDs.
+ * Rationale: Simpler than atomically auto-incrementing or globally unique IDs.
+ */
+function randomMenuId(size){
+	if ( typeof size == 'undefined' ){
+		size = 5;
+	}
+	
+    var text = "";
+    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    for( var i=0; i < size; i++ )
+        text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+    return text;
+}
+	
 function outputWpMenu(menu){
 	//Remove the current menu data
-	$('.ws_container').remove();
-	$('.ws_submenu').remove();
+	$('#ws_menu_box').empty();
+	$('#ws_submenu_box').empty();
+	//Kill autocomplete boxes
+	$('.ac_results').remove();
 	
 	//Display the new menu
 	var i = 0;
 	for (var filename in menu){
-		outputTopMenu(menu[filename], filename, i);
+		outputTopMenu(menu[filename]);
 		i++;
 	}
-	
-	//Make the submenus sortable
-	$('.ws_submenu').sortable({
-		items: '> .ws_container',
-		cursor: 'move',
-		dropOnEmpty: true,
-	});
-	
-	//Highlight the clicked menu item and show it's submenu
-    $('.ws_item_head').click(function () {
-		var p = $(this).parent();
-		//Highlight the active item
-		p.siblings().removeClass('ws_active');
-		p.addClass('ws_active');
-		//Show the appropriate submenu
-		if (p.hasClass('ws_menu')) {
-			$('.ws_submenu:visible').hide();
-			$('#'+p.attr('submenu_id')).show();
-		}
-    });
-    
-    //Expand/collapse a menu item 
-    $('.ws_edit_link').click(function () {
-		var box = $(this).parent().parent().find('.ws_editbox');
-		$(this).toggleClass('ws_edit_link_expanded');
-		//show/hide the editbox
-		if ($(this).hasClass('ws_edit_link_expanded')){
-			box.show();	
-		} else {
-			//Make sure changes are applied before the menu is collapsed
-			box.find('input').change();
-			box.hide();
-		}
-    });
-    
-    //The "Default" button : Reset to default value when clicked
-    $('.ws_reset_button').click(function () {
-    	//Find the related input field
-		var field = $(this).siblings('input');
-		if (field.length > 0) {
-			//Set the value to the default
-			field.val(field.attr('default'));
-			field.addClass('ws_input_default');
-			//Trigget the change event to ensure consistency
-			field.change();
-		}	
-	});
-	
-	//When a field is edited, change it's appearance if it's contents don't match the default value.
-	$('.ws_edit_field input[type="text"]').change(function () {
-		if ( $(this).attr('default') != $(this).val() ) {
-			$(this).removeClass('ws_input_default');
-		}
-		
-		//If the changed field is the menu title, update the header
-		if ( $(this).parent().attr('field_name')=='menu_title' ){
-			$(this).parent().parent().parent().find('.ws_item_title').html($(this).val()+'&nbsp;');
-		}
-	});
-	
-	//When the "Custom" checkbox is clicked, add/remove the ws_custom_item class to 
-	//the menu (or menu item) in question.
-	$('.ws_custom_toggle').change(function(){
-		//Find the container
-		var my_container = $(this).parents('.ws_container:first');
-		if ( $(this).is(':checked') ){
-			addMenuFlag(my_container, 'custom_item');
-		} else {
-			removeMenuFlag(my_container, 'custom_item');
-		}
-	});
 }
 
-function outputTopMenu(menu, filename, ind){
-	id = 'topmenu-'+ind;
-	submenu_id = 'submenu-'+ind;
+/*
+ * Create edit widgets for a top-level menu and its submenus and append them all to the DOM.
+ *
+ * Inputs : 
+ *	menu - an object containing menu data
+ *	afterNode - if specified, the new menu widget will be inserted after this node. Otherwise,
+ *	            it will be added to the end of the list.
+ * Outputs :
+ *	Object with two fields - 'menu' and 'submenu' - containing the DOM nodes of the created widgets.
+ */
+function outputTopMenu(menu, afterNode){
+	//Create a container for menu items, even if there are none
+	var submenu = buildSubmenu(menu.items);
 	
+	//Create the menu widget
+	var menu_obj = buildTopMenu(menu);
+	menu_obj.data('submenu_id', submenu.attr('id'));
+	
+	//Display
+	submenu.appendTo('#ws_submenu_box');
+	if ( typeof afterNode != 'undefined' ){
+		$(afterNode).after(menu_obj);
+	} else {
+		menu_obj.appendTo('#ws_menu_box');
+	}
+	
+	return {
+		'menu' : menu_obj,
+		'submenu' : submenu
+	};
+}
+
+/*
+ * Create an edit widget for a top-level menu.
+ */
+function buildTopMenu(menu){
 	var subclass = '';
 	if ( menu.separator ) {
 		subclass = subclass + ' ws_menu_separator';
 	}
 	
 	//Create the menu HTML
-	var s = '<div id="'+id+'" class="ws_container ws_menu '+subclass+'" submenu_id="'+submenu_id+'">'+
-			'<div class="ws_item_head">'+
-				'<a class="ws_edit_link"> </a>'+
-				'<div class="ws_flag_container"> </div>'+
-				'<span class="ws_item_title">'+
-					((menu.menu_title!=null)?menu.menu_title:menu.defaults.menu_title)+
-				'&nbsp;</span>'+
-			'</div>'+
-			'<div class="ws_editbox" style="display: none;">'+buildEditboxFields(menu)+'</div>'+
-		'</div>';
+	var menu_obj = $('<div></div>')
+		.attr('class', "ws_container ws_menu "+subclass)
+		.attr('id', 'ws-topmenu-'+(wsIdCounter++))
+		.data('defaults', menu.defaults)
+		.data('initial_values', getCurrentFieldValues(menu))
+		.data('field_editors_created', false);
 	
-	var menu_obj = $(s).appendTo('#ws_menu_box');
+	//Add a header and a container for property editors (to improve performance
+	//the editors themselves are created later, when the user tries to access them
+	//for the first time).
+	var contents = [];
+	contents.push(
+		'<div class="ws_item_head">',
+			'<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
+			'<span class="ws_item_title">',
+				((menu.menu_title!=null)?menu.menu_title:menu.defaults.menu_title),
+			'&nbsp;</span>',
+		'</div>',
+		'<div class="ws_editbox" style="display: none;"></div>'
+	);
+	menu_obj.append(contents.join(''));
 	
 	//Apply flags based on the item's state
-	if (menu.missing && !menu.custom) {
+	if (menu.missing && !getFieldValue(menu, 'custom', false)) {
 		addMenuFlag(menu_obj, 'missing');
 	}
 	if (menu.hidden) {
@@ -125,42 +111,69 @@ function outputTopMenu(menu, filename, ind){
 	if (menu.unused) {
 		addMenuFlag(menu_obj, 'unused');
 	}
-	if (menu.custom) {
+	if (getFieldValue(menu, 'custom', false)) {
 		addMenuFlag(menu_obj, 'custom_item');
 	}
 	
-	//Create a container for menu items, even if there are none
-	$('#ws_submenu_box').append('<div class="ws_submenu" id="'+submenu_id+'" style="display:none;"></div>');
-	
-	//Only show menus that have items. 
-	//Skip arrays (with a length) because filled menus are encoded as custom objects (). 
-	if (menu.items && (typeof menu.items != 'Array')){
-		var i = 0;
-		for (var item_file in menu.items){
-			outputMenuEntry(menu.items[item_file], i, submenu_id);
-			i++;
-		}
-	}
+	return menu_obj;
 }
 
-function outputMenuEntry(entry, ind, parent){
-	if (!entry.defaults) return;
+/*
+ * Create and populate a submenu container.
+ */
+function buildSubmenu(items){
+	//Create a container for menu items, even if there are none
+	var submenu = $('<div class="ws_submenu"style="display:none;"></div>');
+	submenu.attr('id', 'ws-submenu-'+(wsIdCounter++));
 	
-	var item = $(
-			'<div class="ws_container ws_item">'+
-				'<div class="ws_item_head">'+
-					'<a class="ws_edit_link"> </a>'+
-					'<div class="ws_flag_container"> </div>'+
-					'<span class="ws_item_title">'+
-						((entry.menu_title!=null)?entry.menu_title:entry.defaults.menu_title)+
-					'&nbsp;</span>'+
-				'</div>'+
-				'<div class="ws_editbox" style="display:none;">'+buildEditboxFields(entry)+'</div>'+
-			'<div>'
-		).appendTo('#'+parent)
+	//Only show menus that have items. 
+	//Skip arrays (with a length) because filled menus are encoded as custom objects.
+	var entry = null 
+	if (items && (typeof items != 'Array')){
+		for (var item_file in items){
+			entry = buildMenuItem(items[item_file]);
+			if ( entry ){
+				submenu.append(entry);
+			}
+		}
+	}
+	
+	//Make the submenu sortable
+	makeBoxSortable(submenu);
+	
+	return submenu;
+}
+
+/*
+ * Create an edit widget for a menu entry and return it.
+ */
+function buildMenuItem(entry){
+	if (!entry.defaults) {
+		return null
+	};
+	
+	var item = $('<div class="ws_container ws_item">')
+		.data('defaults', entry.defaults)
+		.data('initial_values', getCurrentFieldValues(entry))
+		.data('field_editors_created', false);
+	
+	//Add a header and a container for property editors (to improve performance
+	//the editors themselves are created later, when the user tries to access them
+	//for the first time).
+	var contents = [];
+	contents.push(
+		'<div class="ws_item_head">',
+			'<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
+			'<span class="ws_item_title">',
+				((entry.menu_title!=null)?entry.menu_title:entry.defaults.menu_title),
+			'&nbsp;</span>',
+		'</div>',
+		'<div class="ws_editbox" style="display: none;"></div>'
+	);
+	item.append(contents.join(''));
 		
 	//Apply flags based on the item's state
-	if (entry.missing && !entry.custom) {
+	if (entry.missing && !getFieldValue(entry, 'custom', false)) {
 		addMenuFlag(item, 'missing');
 	}
 	if (entry.hidden) {
@@ -169,154 +182,389 @@ function outputMenuEntry(entry, ind, parent){
 	if (entry.unused) {
 		addMenuFlag(item, 'unused');
 	}
-	if (entry.custom) {
+	if (getFieldValue(entry, 'custom', false)) {
 		addMenuFlag(item, 'custom_item');
 	}
+	
+	return item;
 }
 
-function buildEditboxField(entry, field_name, field_caption){
-	if (entry[field_name]===undefined) {
-		return ''; //skip fields this entry doesn't have
-	}
+/*
+ * List of all menu fields that have an associated editor
+ */ 
+var knownMenuFields = {
+	'menu_title' : {
+		caption : 'Menu title',
+        standardCaption : true,
+		advanced : false,
+		type : 'text',
+		defaultValue: '',
+		visible: true
+	},
+	'access_level' : {
+		caption: 'Required capability',
+        standardCaption : true,
+		advanced : false,
+		type : 'text',
+		defaultValue: 'read',
+		addDropdown : true,
+		visible: true
+	},
+	'file' : {
+		caption: 'URL',
+		advanced : false,
+        standardCaption : true,
+		type : 'text',
+		defaultValue: '',
+		visible: true
+	},
+	'page_title' : {
+		caption: "Window title",
+        standardCaption : true,
+		advanced : true,
+		type : 'text',
+		defaultValue: '',
+		visible: true
+	},
+	'open_in' : {
+		caption: 'Open in',
+        standardCaption : true,
+		advanced : true,
+		type : 'select',
+		options : {
+			'Same window or tab' : 'same_window',
+			'New window' : 'new_window',
+			'Frame' : 'iframe'
+		},
+		defaultValue: 'same_window',
+		visible: false
+	},
+	'css_class' : {
+		caption: 'CSS classes',
+        standardCaption : true,
+		advanced : true,
+		type : 'text',
+		defaultValue: '',
+		visible: true
+	},
+	'hookname' : {
+		caption: 'Hook name',
+        standardCaption : true,
+		advanced : true,
+		type : 'text',
+		defaultValue: '',
+		visible: true
+	},
+	'icon_url' : {
+		caption: 'Icon URL',
+        standardCaption : true,
+		advanced : true,
+		type : 'text',
+		defaultValue: 'div',
+		visible: true
+	},
+    'custom' : {
+        caption : 'Custom',
+        standardCaption : false,
+        advanced: true,
+        type: 'checkbox',
+        defaultValue: false,
+        visible: true
+    }
+};
 
-	return '<div class="ws_edit_field" field_name="'+field_name+'">' + (field_caption) + '<br />' + 
-		'<input type="text" value="'+escapeJS((entry[field_name]!=null)?entry[field_name]:entry.defaults[field_name])+
-		'" default=\''+escapeJS(entry.defaults[field_name])+'\''+
-		' class="'+((entry[field_name]==null)?'ws_input_default':'')+'">'+
-		'<span class="ws_reset_button">[default]</span></div>';
-}
-
-function buildEditboxFields(entry){
-	var  fields = {
-		'menu_title' : "Menu title",
-		'page_title' : "Page title",
-		'access_level' : 'Access level',
-		'file' : 'File',
-		'css_class' : 'CSS class',
-		'hookname' : 'CSS ID',
-		'icon_url' : 'Icon URL'
-	};
-	var s = '';
+/*
+ * Create editors for the visible fields of a menu entry and append them to the specified node.
+ */
+function buildEditboxFields(containerNode, entry){
+	var fields = knownMenuFields;
+    
+    var basicFields = $('<div class="ws_edit_panel ws_basic"></div>').appendTo(containerNode);
+    var advancedFields = $('<div class="ws_edit_panel ws_advanced"></div>').appendTo(containerNode);
+    
+    if ( hideAdvancedSettings ){
+    	advancedFields.css('display', 'none');
+    }
 	
 	for (var field_name in fields){
-		s = s + buildEditboxField(entry, field_name, fields[field_name]);
+		var field = buildEditboxField(entry, field_name, fields[field_name]);
+		if (field){
+            if (fields[field_name].advanced){
+                advancedFields.append(field);
+            } else {
+                basicFields.append(field);
+            }
+		}
 	}
 	
-	//Add the "Custom item" checkbox
-	var is_custom = false;
-	if ( typeof(entry['custom']) != 'undefined' ){
-		is_custom = entry['custom'];
-	}
-	s = s + 
-		'<div class="ws_edit_field">'+
-			'<label title="Custom items are visible even if they\'re not present in the default WordPress menu">'+
-				'<input type="checkbox" class="ws_custom_toggle"'+
-				(is_custom?' checked="checked"':'')+ '> Custom</label>'+
-		'</div>';
-		
-	return s;		
+	//Add a link that shows/hides advanced fields
+	containerNode.append(
+		'<div class="ws_toggle_container"><a href="#" class="ws_toggle_advanced_fields"'+
+		(hideAdvancedSettings?'':' style="display:none;"')+'>'+
+		(hideAdvancedSettings?captionShowAdvanced:captionHideAdvanced)
+		+'</a></div>'
+	);
 }
 
-//Encode the current menu structure as JSON
-function encodeMenuAsJSON(){
-	var data = {}; 
-	var separator_count = 0;
-	var menu_position = 0;
-
-	//Iterate over all menus
-	$('#ws_menu_box .ws_menu').each(function(i) {
-		
-		var menu_obj = {};
-		menu_obj.defaults = {};
-		
-		menu_position++;
-		menu_obj.position = menu_position;
-		menu_obj.defaults.position = menu_position; //the real default value will later overwrite this
-		
-		var filename = $(this).find('.ws_edit_field[field_name="file"] input').val();
-		//Check if this is a separator
-		if ( $(this).hasClass('ws_menu_separator') ){
-			menu_obj.separator = true;
-			if ( filename=='' ) {
-				filename = 'separator_'+separator_count+'_';
-			}
-			separator_count++;
-		}
-		
-		//Iterate over all fields of the menu
-		$(this).find('.ws_edit_field').each(function() {
-			//Get the name of this field
-			field_name = $(this).attr('field_name');
-			//Skip if unnamed
-			if (!field_name) return true;
-			
-			input_box = $(this).find('input');
-			//Save null if default used, custom value otherwise
-			if (input_box.hasClass('ws_input_default')){
-				menu_obj[field_name] = null;
-			} else {
-				menu_obj[field_name] = input_box.val();
-			}
-			menu_obj.defaults[field_name]=input_box.attr('default');
-			
-		});
-		//Check if the menu is hidden
-		menu_obj.hidden = $(this).hasClass('ws_hidden'); 
-		//Check if this is a custom menu
-		menu_obj.custom = $(this).hasClass('ws_custom_item');
-
-		menu_obj.items = {};
-		
-		var item_position = 0;
-
-		//Iterate over the menu's items, if any
-		$('#'+$(this).attr('submenu_id')).find('.ws_item').each(function (i) {
-			var filename = $(this).find('.ws_edit_field[field_name="file"] input').val();
-			
-			var item = {};
-			item.defaults = {};
-			
-			//Save the position data (probably not all that useful)
-			item_position++;
-			item.position = item_position;
-			item.defaults.position = item_position;
-			
-			//Iterate over all fields of the item
-			$(this).find('.ws_edit_field').each(function() {
-				//Get the name of this field
-				field_name = $(this).attr('field_name');
-				//Skip if unnamed
-				if (!field_name) return true;
-				
-				input_box = $(this).find('input');
-				//Save null if default used, custom value otherwise
-				if (input_box.hasClass('ws_input_default')){
-					item[field_name] = null;
-				} else {
-					item[field_name] = input_box.val();
+/*
+ * Create an editor for a specified field.
+ */
+function buildEditboxField(entry, field_name, field_settings){
+	if (typeof entry[field_name] === 'undefined') {
+		return null; //skip fields this entry doesn't have
+	}
+	
+	var default_value = (typeof entry.defaults[field_name] != 'undefined')?entry.defaults[field_name]:field_settings.defaultValue;
+	var value = (entry[field_name]!=null)?entry[field_name]:default_value;
+	
+	//Build a form field of the appropriate type 
+	var inputBox = null;
+	switch(field_settings.type){
+		case 'select':
+			inputBox = $('<select class="ws_field_value">');
+			var option = null;
+			for( var optionTitle in field_settings.options ){
+				option = $('<option>')
+					.val(field_settings.options[optionTitle])
+					.text(optionTitle);
+				if ( field_settings.options[optionTitle] == value ){
+					option.attr('selected', 'selected');
 				}
-				item.defaults[field_name]=input_box.attr('default');
-				
-			});
-			//Check if the item is hidden
-			if ($(this).hasClass('ws_hidden')){
-				item.hidden = true;
+				option.appendTo(inputBox);
 			}
-			//Check if this is a custom item
-			item.custom = $(this).hasClass('ws_custom_item');
-			
-			//Save the item in the parent menu  
-			menu_obj.items[filename] = item;
-		});
-		//*/
+			break;
+            
+        case 'checkbox':
+            inputBox = $('<label><input type="checkbox"'+(value?' checked="checked"':'')+ ' class="ws_field_value"> '+
+                field_settings.caption+'</label>'
+            );
+            break;
+            
+		case 'text':
+		default:
+			inputBox = $('<input type="text" class="ws_field_value">').val(value);
+	}
+	
+	
+	var className = "ws_edit_field ws_edit_field-"+field_name;
+	if(entry[field_name]==null){
+		className += ' ws_input_default';
+	}
 		
-		//Attach the menu to the main struct
-		data[filename] = menu_obj;
+	var editField = $('<div>' + (field_settings.standardCaption?(field_settings.caption+'<br>'):'') + '</div>')
+		.attr('class', className)
+		.append(inputBox);
+		
+	if ( (typeof(field_settings['addDropdown']) != 'undefined') && field_settings.addDropdown ){
+		//Add a dropdown button
+		editField.append('<input type="button" class="button ws_dropdown_button" value="&#9660;" tabindex="-1">');
+	}
+	
+	editField
+		.append('<img src="'+imagesUrl+'/transparent16.png" class="ws_reset_button" title="Reset to default value">&nbsp;</img>')
+		.data('field_name', field_name)
+		.data('default_value', default_value);
+		
+	if ( !field_settings.visible ){
+		editField.css('display', 'none');
+	}
+		
+	return editField;	
+}
+
+/*
+ * Get the current values of all menu fields (ignores defaults). 
+ * Returns an object containing each field as a separate property. 
+ */
+function getCurrentFieldValues(entry){
+	var values = {};
+	
+	for (var field_name in knownMenuFields){
+		if (typeof entry[field_name] === 'undefined') {
+			continue; //skip fields this entry doesn't have
+		}
+		values[field_name] = entry[field_name];
+	}
+	
+	values.defaults = entry.defaults;
+	
+	return values;
+}
+
+/*
+ * Get the current value of a single menu field. 
+ *
+ * If the specified field is not set, this function will attempt to retrieve it 
+ * from the "defaults" property of the menu object. If *that* fails, it will return
+ * the value of the optional third argument defaultValue. 
+ */
+function getFieldValue(entry, fieldName, defaultValue){
+	if ( (typeof entry[fieldName] === 'undefined') || (entry[fieldName] === null) ) {
+		if ( (typeof entry['defaults'] === 'undefined') || (typeof entry['defaults'][fieldName] === 'undefined') ){
+			return defaultValue;
+		} else {
+			return entry.defaults[fieldName];
+		}
+	} else {
+		return entry[fieldName];
+	}
+}
+
+/*
+ * Make a menu container sortable
+ */
+function makeBoxSortable(menuBox){
+	//Make the submenu sortable
+	menuBox.sortable({
+		items: '> .ws_container',
+		cursor: 'move',
+		dropOnEmpty: true,
+		cancel : '.ws_editbox, .ws_edit_link'
+	});
+}
+
+/***************************************************************************
+                       Parsing & encoding menu inputs
+ ***************************************************************************/
+
+/* 
+ * Encode the current menu structure as JSON
+ *
+ * Returns : 
+ *	A JSON-encoded string representing the current menu tree loaded in the editor.
+ */
+function encodeMenuAsJSON(){
+	var tree = readMenuTreeState();
+	return $.toJSON(tree);
+}
+
+function readMenuTreeState(){
+	var tree = {}; 
+	
+	var menu_position = 0;
+		
+	//Gather all menus and their items
+	$('#ws_menu_box .ws_menu').each(function(i) {
+		var menu = readMenuState(this, menu_position++);
+		
+		//Attach the current menu to the main struct
+		var filename = (menu.file !== null)?menu.file:menu.defaults.file;
+		tree[filename] = menu;
 		
 	});
 	
-	return $.toJSON(data);
+	return tree;
 }
+
+/*
+ * Extract the settings of a top-level menu from its editor widget(s).
+ *
+ * Inputs : 
+ * 	menu_div - DOM node, typically one with the .ws_menu class.
+ *  position - The current menu position (int).
+ *
+ * Output : 
+ *  A menu object in the tree format.  	
+ *
+ */
+function readMenuState(menu_div, position){
+	menu_div = $(menu_div);
+	var menu = readAllFields(menu_div);
+	
+	menu.defaults = menu_div.data('defaults');
+	
+	menu.position = position;
+	menu.defaults.position = position; //the real default value will later overwrite this
+	
+	menu.separator = menu_div.hasClass('ws_menu_separator');
+	menu.hidden = menu_div.hasClass('ws_hidden'); 
+
+	//Gather the menu's items, if any
+	menu.items = {};
+	var item_position = 0;
+	$('#'+menu_div.data('submenu_id')).find('.ws_item').each(function (i) {
+		var item = readItemState(this, item_position++);
+		menu.items[ (item.file?item.file:item.defaults.file) ] = item;
+	});
+	
+	return menu;
+}
+
+/*
+ * Extract the current menu item settings from its editor widget.
+ *
+ * Inputs : 
+ *	item_div - DOM node containing the editor widget, usually with the .ws_item class.  
+ *	position - Menu item position among its sibling menu items.   
+ *
+ */
+function readItemState(item_div, position){
+	var item_div = $(item_div);
+	var item = readAllFields(item_div);
+	
+	item.defaults = item_div.data('defaults');
+	
+	//Save the position data
+	if ( typeof position == 'undefined' ){
+		position = 0;
+	}
+	item.position = position;
+	item.defaults.position = position;
+	
+	//Check if the item is hidden
+	item.hidden = item_div.hasClass('ws_hidden');
+	
+	return item;
+}
+
+/*
+ * Extract the values of all menu/item fields present in a container node
+ *
+ * Inputs:
+ *	container - a jQuery collection representing the node to read.  
+ */
+function readAllFields(container){
+	if ( !container.hasClass('ws_container') ){
+		container = container.parents('ws_container').first();
+	}
+	
+	if ( !container.data('field_editors_created') ){
+		return container.data('initial_values');
+	}
+	
+	var state = {};
+	
+	//Iterate over all fields of the item
+	container.find('.ws_edit_field').each(function() {
+		var field = $(this);
+		
+		//Get the name of this field
+		field_name = field.data('field_name');
+		//Skip if unnamed
+		if (!field_name) return true;
+		
+		//Find the field (usually an input or select element).
+		input_box = field.find('.ws_field_value');
+		
+		//Save null if default used, custom value otherwise
+		if (field.hasClass('ws_input_default')){
+			state[field_name] = null;
+		} else {
+            if ( input_box.attr('type') == 'checkbox' ){
+                state[field_name] = input_box.is(':checked');
+            } else {
+                state[field_name] = input_box.val();
+            }
+		}
+	});
+	
+	return state;
+}
+
+
+/***************************************************************************
+                         Flag manipulation
+ ***************************************************************************/
 
 var item_flags = {
 	'custom_item' : 'This is a custom menu item',
@@ -324,8 +572,7 @@ var item_flags = {
 	'missing' : 'This item is not present in the default WordPress menu. Tick the &quot;Custom&quot; checkbox if you want it to be visible anyway.',
 	'hidden' : 'This item is hidden' 
 }
-
-//These function manipulate the menu flags (e.g. hidden, custom, etc)
+ 
 function addMenuFlag(item, flag){
 	item = $(item);
 	
@@ -376,18 +623,277 @@ var item_in_clipboard = null;
 var ws_paste_count = 0;
 
 $(document).ready(function(){
+	if (window.wsMenuEditorPro) {
+		knownMenuFields['open_in'].visible = true;
+	};	
 
-	//Show the default menu
+	//Show the menu
     outputWpMenu(customMenu);
     
     //Make the top menu box sortable (we only need to do this once)
-	$('#ws_menu_box').sortable({
-		items: '> .ws_container',
-		cursor: 'move',
-		dropOnEmpty: true,
-	});
+    var mainMenuBox = $('#ws_menu_box');
+    makeBoxSortable(mainMenuBox);
     
-	//===== Toolbar buttons =======
+	/***************************************************************************
+	                  Event handlers for editor widgets
+	 ***************************************************************************/
+	
+	//Highlight the clicked menu item and show it's submenu
+	var currentVisibleSubmenu = null;
+    $('#ws_menu_editor .ws_container').live('click', (function () {
+		var container = $(this);
+		if ( container.hasClass('ws_active') ){
+			return;
+		}
+		
+		//Highlight the active item and un-highlight the previous one
+		container.addClass('ws_active')
+		container.siblings('.ws_active').removeClass('ws_active');
+		if ( container.hasClass('ws_menu') ){
+			//Show/hide the appropriate submenu
+			if ( currentVisibleSubmenu ){
+				currentVisibleSubmenu.hide();
+			}
+			currentVisibleSubmenu = $('#'+container.data('submenu_id')).show();
+		}
+    }));
+    
+    //Show/hide a menu's properties
+    $('#ws_menu_editor .ws_edit_link').live('click', (function () {
+    	var container = $(this).parents('.ws_container').first(); 
+		var box = container.find('.ws_editbox');
+		
+		//For performance, the property editors for each menu are only created 
+		//when the user tries to access access them for the first time.
+		if ( !container.data('field_editors_created') ){
+			buildEditboxFields(box, container.data('initial_values'));
+			container.data('field_editors_created', true);
+		}
+		
+		$(this).toggleClass('ws_edit_link_expanded');
+		//show/hide the editbox
+		if ($(this).hasClass('ws_edit_link_expanded')){
+			box.show();
+		} else {
+			//Make sure changes are applied before the menu is collapsed
+			box.find('input').change();
+			box.hide();
+		}
+    }));
+    
+    //The "Default" button : Reset to default value when clicked
+    $('#ws_menu_editor .ws_reset_button').live('click', (function () {
+        //Find the field div (it holds the default value)
+        var field = $(this).parent();
+    	//Find the related input field
+		var input = field.find('.ws_field_value');
+		if ( (input.length > 0) && (field.length > 0) ) {
+			//Set the value to the default
+            if (input.attr('type') == 'checkbox'){
+                if ( field.data('default_value') ){
+                    input.attr('checked', 'checked');
+                } else {
+                    input.removeAttr('checked');
+                }
+            } else {
+                input.val(field.data('default_value'));   
+            }
+			field.addClass('ws_input_default');
+			//Trigger the change event to ensure consistency
+			input.change();
+		}	
+	}));
+	
+	//When a field is edited, change it's appearance if it's contents don't match the default value.
+    function fieldValueChange(){
+        var input = $(this);
+		var field = input.parents('.ws_edit_field').first();
+        
+        if ( input.attr('type') == 'checkbox' ){
+            var value = input.is(':checked');
+        } else {
+            var value = input.val();
+        }
+		
+		if ( field.data('default_value') != value ) {
+			field.removeClass('ws_input_default');
+		}
+		
+        var fieldName = field.data('field_name');
+		if ( fieldName == 'menu_title' ){
+            //If the changed field is the menu title, update the header
+			field.parents('.ws_container').first().find('.ws_item_title').html(input.val()+'&nbsp;');
+		} else if ( fieldName == 'custom' ){
+            //Show/hide the custom flag
+            var myContainer = field.parents('.ws_container').first();
+            if ( value ){
+    			addMenuFlag(myContainer, 'custom_item');
+    		} else {
+    			removeMenuFlag(myContainer, 'custom_item');
+    		}
+		} else if (fieldName == 'file' ){
+			//A menu must always have a non-empty URL. If the user deletes the current value,
+			//reset back to the default.
+			if ( value == '' ){
+				field.find('.ws_reset_button').click();
+			}
+		}
+    }
+	$('#ws_menu_editor .ws_field_value').live('click', fieldValueChange);
+	//jQuery 1.3.x can't catch 'change' events with live(), 
+	//so we handle that by using event delegation instead.
+	$('#ws_menu_editor').change(function(event){
+		var target = $(event.target);
+		if ( target.is('.ws_field_value') ){
+			fieldValueChange.call(target, event);
+		}
+	});
+	
+	//Show/hide advanced fields
+	$('#ws_menu_editor .ws_toggle_advanced_fields').live('click', function(){
+		var self = $(this);
+		var advancedFields = self.parents('.ws_container').first().find('.ws_advanced');
+		
+		if ( advancedFields.is(':visible') ){
+			advancedFields.hide();
+			self.text(captionShowAdvanced);
+		} else {
+			advancedFields.show();
+			self.text(captionHideAdvanced);
+		}
+		
+		return false;
+	});
+	
+	
+	//Event handlers for the capability dropdown
+	var capList = $('#ws_cap_selector');
+	var currentCapListOwner = null;
+	var timeoutForgetOwner = 0;
+	
+	//Show/hide the capability dropdown list when the button is clicked   
+	$('#ws_menu_editor input.ws_dropdown_button').live('click',function(event){
+		var list = capList;
+		
+		var button = $(this);
+		var inputBox = button.parent().find('input.ws_field_value');
+		
+		clearTimeout(timeoutForgetOwner);
+		timeoutForgetOwner = 0;
+		
+		//If we already own the list, hide it and rescind ownership.
+		if ( currentCapListOwner == this ){
+			list.hide();
+			
+			currentCapListOwner = null;
+			inputBox.focus();
+			
+			return;
+		}
+		currentCapListOwner = this; //Got ye now!
+		
+		//Move the dropdown near to the button
+		var inputPos = inputBox.offset();
+		list.css({
+			position: 'absolute',
+			left: inputPos.left,
+			top: inputPos.top + inputBox.outerHeight()
+		});
+		
+		//Pre-select the current capability (will clear selection if there's no match)
+		list.val(inputBox.val());
+		
+		list.show();
+		list.focus();
+	});
+	
+	//Also show it when the user presses the down arrow in the input field  
+	$('#ws_menu_editor .ws_edit_field-access_level input.ws_field_value').live('keyup', function(event){
+		if ( event.which == 40 ){
+			$(this).parent().find('input.ws_dropdown_button').click();
+		}
+	});
+	
+	//Hide capability dropdown when it loses focus
+	capList.blur(function(event){
+		capList.hide();
+		/*
+		* Hackiness : make sure the list doesn't disappear & immediately reappear 
+		* when the event that caused it to lose focus was the user clicking on the
+		* dropdown button.
+		*/
+		timeoutForgetOwner = setTimeout(
+			(function(){
+				currentCapListOwner = null;
+			}), 
+			200
+		);
+	});
+	
+	capList.keydown(function(event){
+		//Also hide it when the user presses Esc
+		if ( event.which == 27 ){
+			var inputBox = $(currentCapListOwner).parent().find('input.ws_field_value');
+			
+			capList.hide();
+			if ( currentCapListOwner ){
+				$(currentCapListOwner).parent().find('input.ws_field_value').focus();
+			}
+			currentCapListOwner = null;
+			
+		//Select an item & hide the list when the user presses Enter or Tab
+		} else if ( (event.which == 13) || (event.which == 9) ){
+			capList.hide();
+			
+			var inputBox = $(currentCapListOwner).parent().find('input.ws_field_value');
+			if ( capList.val() ){
+				inputBox.val(capList.val());
+				inputBox.change();
+			}
+			
+			inputBox.focus();
+			currentCapListOwner = null;
+			
+			event.preventDefault();
+		}
+	});
+	
+	//Eat Tab keys to prevent focus theft. Required to make the "select item on Tab" thing work. 
+	capList.keyup(function(event){
+		if ( event.which == 9 ){
+			event.preventDefault();
+		}
+	})
+	
+	
+	//Update the input & hide the list when an option is clicked 
+	capList.click(function(){
+		if ( !currentCapListOwner || !capList.val() ){
+			return;
+		}
+		capList.hide();
+		
+		var inputBox = $(currentCapListOwner).parent().find('input.ws_field_value');
+		inputBox.val(capList.val()).change().focus();
+		currentCapListOwner = null;
+	});
+	
+	//Highlight an option when the user mouses over it (doesn't work in IE)
+	capList.mousemove(function(event){
+		if ( !event.target ){
+			return;
+		}
+		
+		var option = $(event.target);
+		if ( !option.attr('selected') && option.attr('value')){
+			option.attr('selected', 'selected');
+		}
+	});	
+	
+    
+    /*************************************************************************
+	                           Menu toolbar buttons
+	 *************************************************************************/
 	//Show/Hide menu
 	$('#ws_hide_menu').click(function () {
 		//Get the selected menu
@@ -400,11 +906,11 @@ $(document).ready(function(){
 		
 		//Also mark all of it's submenus as hidden/visible
 		if ( menuHasFlag(selection,'hidden') ){
-			$('#' + selection.attr('submenu_id') + ' .ws_item').each(function(){
+			$('#' + selection.data('submenu_id') + ' .ws_item').each(function(){
 				addMenuFlag(this, 'hidden');
 			});
 		} else {
-			$('#' + selection.attr('submenu_id') + ' .ws_item').each(function(){
+			$('#' + selection.data('submenu_id') + ' .ws_item').each(function(){
 				removeMenuFlag(this, 'hidden');
 			});
 		}
@@ -416,9 +922,9 @@ $(document).ready(function(){
 		var selection = $('#ws_menu_box .ws_active');
 		if (!selection.length) return;
 		
-		if (confirm('Are you sure you want to delete this menu?')){
+		if (confirm('Delete this menu?')){
 			//Delete the submenu first
-			$('#' + selection.attr('submenu_id')).remove();
+			$('#' + selection.data('submenu_id')).remove();
 			//Delete the menu
 			selection.remove();
 		}
@@ -430,10 +936,8 @@ $(document).ready(function(){
 		var selection = $('#ws_menu_box .ws_active');
 		if (!selection.length) return;
 		
-		//Store a copy in clipboard
-		menu_in_clipboard = selection.clone(true); //just like that
-		menu_in_clipboard.removeClass('ws_active');
-		submenu_in_clipboard = $('#'+selection.attr('submenu_id')).clone(true);
+		//Store a copy of the current menu state in clipboard
+		menu_in_clipboard = readMenuState(selection);
 	});
 	
 	//Cut menu
@@ -442,13 +946,12 @@ $(document).ready(function(){
 		var selection = $('#ws_menu_box .ws_active');
 		if (!selection.length) return;
 		
-		//Store a copy of both menu and it's submenu in clipboard
-		menu_in_clipboard = selection.removeClass('ws_active').clone(true);
-		menu_in_clipboard.removeClass('ws_active');
-		submenu_in_clipboard = $('#'+selection.attr('submenu_id')).clone(true);
+		//Store a copy of the current menu state in clipboard
+		menu_in_clipboard = readMenuState(selection);
+		
 		//Remove the original menu and submenu		
 		selection.remove();
-		$('#'+selection.attr('submenu_id')).remove;
+		$('#'+selection.data('submenu_id')).remove;
 	});
 	
 	//Paste menu
@@ -458,107 +961,103 @@ $(document).ready(function(){
 		//Get the selected menu
 		var selection = $('#ws_menu_box .ws_active');
 		
-		ws_paste_count++;
-		
-		//Clone new objects from the virtual clipboard
-		var new_menu = menu_in_clipboard.clone(true);
-		var new_submenu = submenu_in_clipboard.clone(true);
-		//Close submenu editboxes
-		new_submenu.find('.ws_editbox').hide();
-		
-		//The cloned menu must have a unique file name, unless it's a separator
-		if (!new_menu.hasClass('ws_menu_separator')) { 
-			new_menu.find('.ws_edit_field[field_name="file"] input').val('custom_menu_'+ws_paste_count);
-		}
-		
-		//The cloned submenu needs a unique ID (could be improved) 
-		new_submenu.attr('id', 'ws-pasted-obj-'+ws_paste_count);
-		new_menu.attr('submenu_id', 'ws-pasted-obj-'+ws_paste_count); 
-		
-		//Make the new submenu sortable
-		new_submenu.sortable({
-			items: '> .ws_container',
-			cursor: 'move',
-			dropOnEmpty: true,
-		});
-		
 		if (selection.length > 0) {
 			//If a menu is selected add the pasted item after it
-			selection.after(new_menu); 
+			outputTopMenu(menu_in_clipboard, selection);
 		} else {
 			//Otherwise add the pasted item at the end
-			$('#ws_menu_box').append(new_menu); 
+			outputTopMenu(menu_in_clipboard);
 		};
-		
-		//Insert the submenu in the box, too
-		$('#ws_submenu_box').append(new_submenu);
-		
-		new_menu.show();
-		new_submenu.hide();
 	});
 	
 	//New menu
 	$('#ws_new_menu').click(function () {
 		ws_paste_count++;
 		
-		//This is a hack.
-		//Clone another menu to use as a template
-		var menu = $('#ws_menu_box .ws_menu:first').clone(true);
-		//Also clone a submenu
-		var submenu = $('#' + menu.attr('submenu_id')).clone(true);
-		//Assign a new ID
-		submenu.attr('id', 'ws-new-submenu-'+ws_paste_count);
-		menu.attr('submenu_id', 'ws-new-submenu-'+ws_paste_count);
-		//Remove all items from the submenu 
-		submenu.empty();
-		//Make the submenu sortable
-		submenu.sortable({
-			items: '> .ws_container',
-			cursor: 'move',
-			dropOnEmpty: true,
-		});
+		//The new menu starts out rather bare
+		var randomId = 'custom_menu_'+randomMenuId();		
+		var menu = {
+			menu_title : null,
+			page_title : null,
+			access_level : null,
+			file : null,
+			css_class : null,
+			icon_url : null,
+			hookname : null,
+			position : null,
+			custom : null, 
+			open_in: null,
+			items : {}, //No items
+			defaults : {
+				menu_title : 'Custom Menu '+ws_paste_count,
+				page_title : '',
+				access_level : 'read',
+				file : randomId,
+				css_class : 'menu-top',
+				icon_url : 'images/generic.png',
+				hookname : randomId,
+				open_in : 'same_window',
+				custom: true, //Important : flag the new menu as custom, or it won't show up after saving.
+				position : 0,
+				separator: false
+			}
+		};
 		
-		//Clean up the menu's flags & classes
-		menu.attr('class','ws_container ws_menu');
-		clearMenuFlags(menu);
-		addMenuFlag(menu, 'custom_item');
-		
-		//Check the "Custom" checkbox
-		menu.find('.ws_custom_toggle').attr('checked', 'checked');		
-		
-		var temp_id = 'custom_menu_'+ws_paste_count;
-		//Assign a stub title
-		menu.find('.ws_item_title').text('Custom Menu '+ws_paste_count);
-		//All fields start out set to defaults 
-		menu.find('input').attr('default','').addClass('ws_input_default');
-		//Set all fields
-		menu.find('.ws_edit_field[field_name="page_title"] input').val('').attr('default','');
-		menu.find('.ws_edit_field[field_name="menu_title"] input').val('Custom Menu '+ws_paste_count).attr('default','Custom Menu '+ws_paste_count);
-		menu.find('.ws_edit_field[field_name="access_level"] input').val('read').attr('default','read');
-		menu.find('.ws_edit_field[field_name="file"] input').val(temp_id).attr('default',temp_id);
-		menu.find('.ws_edit_field[field_name="css_class"] input').val('menu-top').attr('default','menu-top');
-		menu.find('.ws_edit_field[field_name="icon_url"] input').val('images/generic.png').attr('default','images/generic.png');
-		menu.find('.ws_edit_field[field_name="hookname"] input').val(temp_id).attr('default',temp_id);
-		
+		//Insert the new menu
+		result = outputTopMenu(menu);
+				
 		//The menus's editbox is always open
-		menu.find('.ws_editbox').show();
-		//Make sure the edit link is in the right state, too
-		menu.find('.ws_edit_link').addClass('ws_edit_link_expanded'); 
-		
-		//Finally, insert the menu into the box
-		$('#ws_menu_box').append(menu);
-		//And insert the submenu
-		$('#ws_submenu_box').append(submenu);
+		result.menu.find('.ws_edit_link').click();
 	});
 	
-	//===== Item toolbar buttons =======
+	//New separator
+	$('#ws_new_separator').click(function () {
+		ws_paste_count++;
+		
+		//The new menu starts out rather bare
+		var randomId = 'separator_'+randomMenuId();		
+		var menu = {
+			menu_title : null,
+			page_title : null,
+			access_level : null,
+			file : null,
+			css_class : null,
+			icon_url : null,
+			hookname : null,
+			position : null,
+			separator : true, //Flag as a separator
+			custom : null, 
+			open_in : null,
+			items : {}, //No items
+			defaults : {
+				menu_title : '',
+				page_title : '',
+				access_level : 'read',
+				file : randomId,
+				css_class : 'wp-menu-separator',
+				icon_url : '',
+				hookname : '',
+				position : 0,
+				custom: false, //Separators don't need to flagged as custom to be retained. 
+				open_in: 'same_window',
+				separator: true
+			}
+		};
+		
+		//Insert the new menu
+		result = outputTopMenu(menu);
+	});
+	
+	/*************************************************************************
+	                          Item toolbar buttons
+	 *************************************************************************/
 	//Show/Hide item
 	$('#ws_hide_item').click(function () {
 		//Get the selected item
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
 		if (!selection.length) return;
 		
-		//Mark the item as hidden
+		//Mark the item as hidden/visible
 		toggleMenuFlag(selection, 'hidden');
 	});
 	
@@ -568,7 +1067,7 @@ $(document).ready(function(){
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
 		if (!selection.length) return;
 		
-		if (confirm('Are you sure you want to delete this menu item?')){
+		if (confirm('Delete this menu item?')){
 			//Delete the item
 			selection.remove();
 		}
@@ -580,9 +1079,8 @@ $(document).ready(function(){
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
 		if (!selection.length) return;
 		
-		//Store a copy in clipboard
-		item_in_clipboard = selection.clone(true); //just like that
-		item_in_clipboard.removeClass('ws_active');
+		//Store a copy of item state in the clipboard
+		item_in_clipboard = readItemState(selection);
 	});
 	
 	//Cut item
@@ -591,9 +1089,9 @@ $(document).ready(function(){
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
 		if (!selection.length) return;
 		
-		//Store a the item in clipboard
-		item_in_clipboard = selection.clone(true);
-		item_in_clipboard.removeClass('ws_active');
+		//Store a copy of item state in the clipboard
+		item_in_clipboard = readItemState(selection);
+		
 		//Remove the original item		
 		selection.remove();
 	});
@@ -602,16 +1100,11 @@ $(document).ready(function(){
 	$('#ws_paste_item').click(function () {
 		//Check if anything has been copied/cut
 		if (!item_in_clipboard) return;
+		//Create a new editor widget for the copied item
+		var new_item = buildMenuItem(item_in_clipboard);
+		
 		//Get the selected menu
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
-		
-		ws_paste_count++;
-		
-		//Clone a new object from the virtual clipboard
-		var new_item = item_in_clipboard.clone(true);
-		//The item's editbox is always closed
-		new_item.find('.ws_editbox').hide();
-		
 		if (selection.length > 0) {
 			//If an item is selected add the pasted item after it
 			selection.after(new_item); 
@@ -625,39 +1118,72 @@ $(document).ready(function(){
 	
 	//New item
 	$('#ws_new_item').click(function () {
-		if ($('.ws_submenu:visible').length<1) return; //abort if no submenu visible
+		if ($('.ws_submenu:visible').length < 1) { 
+			return; //Abort if no submenu visible 
+		}
 		
 		ws_paste_count++;
+		var entry = {
+			menu_title : null,
+			page_title : null,
+			access_level : null,
+			file : null,
+			custom : null,
+			open_in : null,
+			defaults : {
+				menu_title : 'Custom Item ' + ws_paste_count,
+				page_title : '',
+				access_level : 'read',
+				file : 'custom_item_'+randomMenuId(),
+				is_plugin_page : false,
+				custom: true,
+				open_in : 'same_window'
+			}		
+		};
 		
-		//Clone another item to use as a template (hack)
-		var menu = $('#ws_submenu_box .ws_item:first').clone(true);
+		var menu = buildMenuItem(entry);
 		
-		//Cleanup the items's flags & classes
-		menu.attr('class','ws_container ws_item');
-		clearMenuFlags(menu);
-		addMenuFlag(menu, 'custom_item');
-		
-		//Check the "Custom" checkbox
-		menu.find('.ws_custom_toggle').attr('checked', 'checked');		
-		
-		var temp_id = 'custom_item_'+ws_paste_count;
-		//Assign a stub title
-		menu.find('.ws_item_title').text('Custom Item '+ws_paste_count);
-		//All fields start out set to defaults 
-		menu.find('input').attr('default','').addClass('ws_input_default');
-		//Set all fields
-		menu.find('.ws_edit_field[field_name="page_title"] input').val('').attr('default','');
-		menu.find('.ws_edit_field[field_name="menu_title"] input').val('Custom Item '+ws_paste_count).attr('default','Custom Item '+ws_paste_count);
-		menu.find('.ws_edit_field[field_name="access_level"] input').val('read').attr('default','read');
-		menu.find('.ws_edit_field[field_name="file"] input').val(temp_id).attr('default',temp_id);
+		//Insert the item into the box
+		$('#ws_submenu_box .ws_submenu:visible').append(menu);
 		
 		//The items's editbox is always open
-		menu.find('.ws_editbox').show();
-		//Make sure the edit link is in the right state, too
-		menu.find('.ws_edit_link').addClass('ws_edit_link_expanded'); 
+		menu.find('.ws_edit_link').click();
+	});
+	
+	function compareMenus(a, b){
+		function jsTrim(str){
+			return str.replace(/^\s+|\s+$/g, "");
+		}
 		
-		//Finally, insert the item into the box
-		$('.ws_submenu:visible').append(menu);
+		var aTitle = jsTrim( $(a).find('.ws_item_title').text() );
+		var bTitle = jsTrim( $(b).find('.ws_item_title').text() );
+		
+		aTitle = aTitle.toLowerCase();
+		bTitle = bTitle.toLowerCase();
+						
+		return aTitle > bTitle ? 1 : -1;
+	}
+	
+	//Sort items in ascending order
+	$('#ws_sort_ascending').click(function () {
+		var submenu = $('#ws_submenu_box .ws_submenu:visible');
+		if (submenu.length < 1) { 
+			return; //Abort if no submenu visible 
+		}
+		
+		submenu.find('.ws_container').sort(compareMenus);
+	});
+	
+	//Sort items in descending order
+	$('#ws_sort_descending').click(function () {
+		var submenu = $('#ws_submenu_box .ws_submenu:visible');
+		if (submenu.length < 1) { 
+			return; //Abort if no submenu visible 
+		}
+		
+		submenu.find('.ws_container').sort((function(a, b){
+			return -compareMenus(a, b);
+		}));
 	});
 	
 	//==============================================
@@ -673,18 +1199,201 @@ $(document).ready(function(){
 	
 	//Load default menu - load the default WordPress menu
 	$('#ws_load_menu').click(function () {
-		if (confirm('Are you sure you want to load the default WordPress menu into the editor?')){
+		if (confirm('Are you sure you want to load the default WordPress menu?')){
 			outputWpMenu(defaultMenu);
 		}
 	});
 	
-	//Reset menu - re-load the custom menu = discards any changes made by user
+	//Reset menu - re-load the custom menu. Discards any changes made by user.
 	$('#ws_reset_menu').click(function () {
-		if (confirm('Are you sure you want to reset the custom menu? Any unsaved changes will be lost!')){
+		if (confirm('Undo all changes made in the current editing session?')){
 			outputWpMenu(customMenu);
 		}
 	});
 	
+	//Export menu - download the current menu as a file
+	$('#export_dialog').dialog({ 
+		autoOpen: false,
+		closeText: ' ',
+		modal: true,
+		minHeight: 100
+	});
+	
+	$('#ws_export_menu').click(function(){
+		var button = $(this);
+		button.attr('disabled', 'disabled');
+		button.val('Exporting...');
+		
+		$('#export_complete_notice, #download_menu_button').hide();
+		$('#export_progress_notice').show();
+		$('#export_dialog').dialog('open');
+		
+		//Encode and store the menu for download
+		var menu = readMenuTreeState();
+		var exportData = {
+			'format' : exportFormatString,
+			'menu' : menu
+		};
+		exportData = $.toJSON(exportData);
+		
+		$.post(
+			adminAjaxUrl,
+			{
+				'data' : exportData,
+				'action' : 'export_custom_menu',
+				'_ajax_nonce' : exportMenuNonce
+			},
+			function(data, textStatus){
+				button.val('Export');
+				button.removeAttr('disabled');
+				
+				if ( typeof data['error'] != 'undefined' ){
+					$('#export_dialog').dialog('close');
+					alert(data.error);
+				}
+				
+				if ( (typeof data['download_url'] != 'undefined') && data.download_url ){
+					//window.location = data.download_url;
+					$('#download_menu_button').attr('href', data.download_url);
+					$('#export_progress_notice').hide();
+					$('#export_complete_notice, #download_menu_button').show();
+				}
+			},
+			'json'
+		);
+	});
+	
+	$('#ws_cancel_export').click(function(){
+		$('#export_dialog').dialog('close');
+	});
+	
+	$('#download_menu_button').click(function(){
+		$('#export_dialog').dialog('close');
+	});
+	
+	//Import menu - upload an exported menu and show it in the editor
+	$('#import_dialog').dialog({ 
+		autoOpen: false,
+		closeText: ' ',
+		modal: true
+	});
+	
+	$('#ws_cancel_import').click(function(){
+		$('#import_dialog').dialog('close');
+	});
+	
+	$('#ws_import_menu').click(function(){
+		$('#import_progress_notice, #import_progress_notice2, #import_complete_notice').hide();
+		$('#import_menu_form').resetForm();
+		//The "Upload" button is disabled until the user selects a file
+		$('#ws_start_import').attr('disabled', 'disabled'); 
+		
+		$('#import_dialog .hide-when-uploading').show();
+		
+		$('#import_dialog').dialog('open');
+	})
+	
+	$('#import_file_selector').change(function(){
+		if ( $(this).val() ){
+			$('#ws_start_import').removeAttr('disabled');
+		} else {
+			$('#ws_start_import').attr('disabled', 'disabled');
+		};
+	});
+	
+	//AJAXify the upload form
+	$('#import_menu_form').ajaxForm({
+		dataType : 'json',
+		beforeSubmit: function(formData, $form, options) { 
+			
+			//Check if the user has selected a file
+			for(var i = 0; i < formData.length; i++){
+				if ( formData[i].name == 'menu' ){
+					if ( (typeof formData[i]['value'] == 'undefined') || !formData[i]['value']){
+						alert('Select a file first!');
+						return false;
+					}
+				}
+			}
+			
+			$('#import_dialog .hide-when-uploading').hide();
+			$('#import_progress_notice').show();
+			
+			$('#ws_start_import').attr('disabled', 'disabled');
+			
+		    // return false to cancel submit                  
+		},
+		success: function(data){
+			if ( !$('#import_dialog').dialog('isOpen') ){
+				//Whoops, the user closed the dialog while the upload was in progress.
+				//Discard the response silently.
+				return;				
+			};
+			
+			if ( typeof data['error'] != 'undefined' ){
+				alert(data.error);
+				//Let the user try again
+				$('#import_menu_form').resetForm();
+				$('#import_dialog .hide-when-uploading').show();
+			}
+			$('#import_progress_notice').hide();
+			
+			if ( (typeof data['menu'] != 'undefined') && data.menu ){
+				//Whee, we got back a (seemingly) valid menu. A veritable miracle!
+				//Lets load it into the editor.
+				$('#import_progress_notice2').show();
+				outputWpMenu(data.menu);
+				$('#import_progress_notice2').hide();
+				//Display a success notice, then automatically close the window after a few moments
+				$('#import_complete_notice').show();
+				setTimeout((function(){
+					//Close the import dialog
+					$('#import_dialog').dialog('close');
+				}), 500);				
+			}
+			
+		}
+	}); 
+	
   });
 	
 })(jQuery);
+
+//==============================================
+//				Screen options
+//==============================================
+
+jQuery(function($){
+	var screenOptions = $('#ws-ame-screen-meta-contents');
+	var checkbox = screenOptions.find('#ws-hide-advanced-settings');
+	
+	if ( hideAdvancedSettings ){
+		checkbox.attr('checked', 'checked');
+	} else {
+		checkbox.removeAttr('checked');
+	}
+	
+	//Update editor state when settings change
+	checkbox.click(function(){
+		hideAdvancedSettings = checkbox.attr('checked');
+		if ( hideAdvancedSettings ){
+			$('#ws_menu_editor div.ws_advanced').hide();
+			$('#ws_menu_editor a.ws_toggle_advanced_fields').text(captionShowAdvanced).show();
+		} else {
+			$('#ws_menu_editor div.ws_advanced').show();
+			$('#ws_menu_editor a.ws_toggle_advanced_fields').text(captionHideAdvanced).hide();
+		}
+		
+		$.post(
+			adminAjaxUrl,
+			{
+				'action' : 'ws_ame_save_screen_options',
+				'hide_advanced_settings' : hideAdvancedSettings?1:0,
+				'_ajax_nonce' : hideAdvancedSettingsNonce
+			}
+		);
+	});
+	
+	//Move our options into the screen meta panel 
+	$('#adv-settings').empty().append(screenOptions.show());
+});
