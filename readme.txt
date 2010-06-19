@@ -31,23 +31,30 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 
 **Normal installation**
 
-1. Download the admin-menu-editor.zip file to your local machine.
+1. Download the admin-menu-editor.zip file to your computer.
 1. Unzip the file.
 1. Upload the `admin-menu-editor` directory to your `/wp-content/plugins/` directory.
 1. Activate the plugin through the 'Plugins' menu in WordPress.
 
 That's it. You can access the the menu editor by going to *Settings -> Menu Editor*. The plugin will automatically load your current menu configuration the first time you run it.
 
-**WPMU/Multi-user installation**
+**WP MultiSite installation**
 
-If you have a WPMU site, you can also install Admin Menu Editor as a global plugin. This will enable you to edit the Dashboard menu for all blogs and users at once.
+If you have WordPress set up in multisite ("Network") mode, you can also install Admin Menu Editor as a global plugin. This will enable you to edit the Dashboard menu for all sites and users at once.
 
-1. Download the admin-menu-editor.zip file to your local machine.
+1. Download the admin-menu-editor.zip file to your computer.
 1. Unzip the file.
-1. Upload the `admin-menu-editor` directory to your `/wp-content/mu-plugins/` directory.
-1. Move the `admin-menu-editor-mu.php` file from `admin-menu-editor/includes` to `/wp-content/mu-plugins/`.
+1. Create a new directory named `mu-plugins` in your site's `wp-content` directory (unless it already exists).
+1. Upload the `admin-menu-editor` directory to `/wp-content/mu-plugins/`.
+1. Move `admin-menu-editor-mu.php` from `admin-menu-editor/includes` to `/wp-content/mu-plugins/`.
 
-*Note : It is currently not possible to install this plugin both as a normal plugin and as a mu-plugin on the same site.*
+Plugins installed in the `mu-plugins` directory are treated as "always on", so you don't need to explicitly activate the menu editor. Just go to *Settings -> Menu Editor* and start customizing your admin menu :)
+
+*Notes* 
+* Instead of installing Admin Menu Editor in `mu-plugins`, you can also install it normally and then activate it globally via "Network Activate". However, this will make the plugin visible to normal users when it is inactive (e.g. during upgrades).
+* When Admin Menu Editor is installed in `mu-plugins` or activated via "Network Activate", only the "super admin" user can access the menu editor page. Other users will see the customized Dashboard menu, but be unable to edit it.
+* It is currently not possible to install Admin Menu Editor as both a normal and global plugin on the same site.
+
 
 == Changelog ==
 
