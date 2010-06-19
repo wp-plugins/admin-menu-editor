@@ -12,7 +12,7 @@ Author URI: http://w-shadow.com/blog/
 if ( is_admin() ) {
 
     //Load the plugin
-    require 'menu-editor-core.php';
+    require 'includes/menu-editor-core.php';
     $wp_menu_editor = new WPMenuEditor(__FILE__);
 
 }//is_admin()
