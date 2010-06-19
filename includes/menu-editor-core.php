@@ -1072,10 +1072,4 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 	
 } //class
 
-//Load Pro version extras
-$ws_me_extras_file = dirname(__FILE__).'/extras.php'; 
-if ( file_exists($ws_me_extras_file) ){
-	include $ws_me_extras_file;
-}
-
 ?>
