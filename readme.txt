@@ -3,7 +3,7 @@ Contributors: whiteshadow
 Donate link: http://w-shadow.com/
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 2.9.0
-Tested up to: 3.0-RC3
+Tested up to: 3.0
 Stable tag: 0.2
 
 Lets you directly edit the WordPress admin menu. You can re-order, hide or rename existing menus, add custom menus and more. 
@@ -45,7 +45,7 @@ If you have a WPMU site, you can also install Admin Menu Editor as a global plug
 1. Download the admin-menu-editor.zip file to your local machine.
 1. Unzip the file.
 1. Upload the `admin-menu-editor` directory to your `/wp-content/mu-plugins/` directory.
-1. Move the `admin-menu-editor-mu.php` file from `admin-menu-editor` to `/wp-content/mu-plugins/`.
+1. Move the `admin-menu-editor-mu.php` file from `admin-menu-editor/includes` to `/wp-content/mu-plugins/`.
 
 *Note : It is currently not possible to install this plugin both as a normal plugin and as a mu-plugin on the same site.*
 
