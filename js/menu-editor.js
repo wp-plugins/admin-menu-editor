@@ -1373,7 +1373,7 @@ jQuery(function($){
 	
 	//Update editor state when settings change
 	checkbox.click(function(){
-		hideAdvancedSettings = checkbox.attr('checked');
+		hideAdvancedSettings = $(this).attr('checked'); //Using '$(this)' instead of 'checkbox' due to jQuery bugs
 		if ( hideAdvancedSettings ){
 			$('#ws_menu_editor div.ws_advanced').hide();
 			$('#ws_menu_editor a.ws_toggle_advanced_fields').text(captionShowAdvanced).show();
@@ -1392,6 +1392,6 @@ jQuery(function($){
 		);
 	});
 	
-	//Move our options into the screen meta panel 
+	//Move our options into the screen meta panel
 	$('#adv-settings').empty().append(screenOptions.show());
 });
