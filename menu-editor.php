@@ -13,7 +13,7 @@ if ( is_admin() ) {
 
     //Load the plugin
     require 'includes/menu-editor-core.php';
-    $wp_menu_editor = new WPMenuEditor(__FILE__);
+    $wp_menu_editor = new WPMenuEditor(__FILE__, 'ws_menu_editor');
 
 }//is_admin()
 ?>
