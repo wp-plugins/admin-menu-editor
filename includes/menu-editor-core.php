@@ -951,7 +951,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 ?>
 
 <span id="ws-ame-screen-meta-contents" style="display:none;">
-<label for="ws-hide-advanced-settings"><input type="checkbox" id="ws-hide-advanced-settings" /> Hide advanced options</label>
+<label for="ws-hide-advanced-settings">
+	<input type="checkbox" id="ws-hide-advanced-settings"<?php 
+		if ( $this->options['hide_advanced_settings'] ){
+			echo ' checked="checked"';
+		}
+	?> /> Hide advanced options
+</label>
 </span>
 
 <script type='text/javascript'>
