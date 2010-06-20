@@ -48,11 +48,12 @@ class MenuEd_ShadowPluginFramework {
    * @param string $plugin_file Plugin's filename. Usuallly you can just use __FILE__.
    * @return void
    */
-	function __construct( $plugin_file = ''){
+	function __construct( $plugin_file = '', $option_name = null ){
 		if ($plugin_file == ''){
 			//Try to guess the name of the file that included this file.
 			//Not implemented yet.
 		}
+		$this->option_name = $option_name;
 		
 		if ( is_null($this->is_mu_plugin) )
 			$this->is_mu_plugin = $this->is_in_wpmu_plugin_dir($plugin_file);
@@ -115,15 +116,21 @@ class MenuEd_ShadowPluginFramework {
 	}
 	
   /**
-   * Loads the plugin's configuration : loads an option specified by $this->option_name into $this->options.
+   * Load the plugin's configuration.
+   * Loads the specified option into $this->options, substituting defaults where necessary.
    *
+   * @param string $option_name Optional. The slug of the option to load. If not set, the value of $this->option_name will be used instead.
    * @return boolean TRUE if options were loaded okay and FALSE otherwise. 
    */
-	function load_options(){
+	function load_options($option_name = null){
+		if ( empty($option_name) ){
+			$option_name = $this->option_name;
+		}
+		
 		if ( $this->sitewide_options ) {
-			$this->options = get_site_option($this->option_name);
+			$this->options = get_site_option($option_name);
 		} else {
-			$this->options = get_option($this->option_name);
+			$this->options = get_option($option_name);
 		}
 		
 		if ( $this->serialize_with_json || is_string($this->options) ){

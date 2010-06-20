@@ -49,7 +49,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		
 		//Set some plugin-specific options
-		$this->option_name = 'ws_menu_editor';
+		if ( empty($this->option_name) ){
+			$this->option_name = 'ws_menu_editor';
+		}
 		$this->defaults = array(
 			'hide_advanced_settings' => true,
 			'menu_format_version' => 0,
@@ -106,6 +108,37 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//AJAXify screen options
 		add_action( 'wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options') );		 
+	}
+	
+  /**
+   * Activation hook
+   * 
+   * @return void
+   */
+	function activate(){
+		//If we have no stored settings for this version of the plugin, try importing them
+		//from other versions (i.e. the free or the Pro version).
+		if ( !$this->load_options() ){
+			$this->import_settings();
+		}
+		
+		parent::activate();
+	}
+	
+  /**
+   * Import settings from a different version of the plugin.
+   * 
+   * @return bool True if settings were imported successfully, False otherwise
+   */
+	function import_settings(){
+		$possible_names = array('ws_menu_editor', 'ws_menu_editor_pro');
+		foreach($possible_names as $option_name){
+			if ( $this->load_options($option_name) ){
+				return true;
+			}
+		}
+		
+		return false;
 	}
 
   /**
