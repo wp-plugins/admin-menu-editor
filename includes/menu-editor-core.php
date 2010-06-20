@@ -1,5 +1,13 @@
 <?php
 
+//Can't have two different versions of the plugin active at the same time. It would be incredibly buggy.
+if (class_exists('WPMenuEditor')){
+	trigger_error(
+		'Another version of Admin Menu Editor is already active. Please deactivate it before activating this one.', 
+		E_USER_ERROR
+	);
+}
+
 //Load the "framework"
 require 'shadow_plugin_framework.php';
 
@@ -29,6 +37,8 @@ if ( !function_exists('plog') ){
 		}
 	}
 }
+
+if ( !class_exists('WPMenuEditor') ) :
 
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
@@ -1133,5 +1143,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 	}
 	
 } //class
+
+endif;
 
 ?>
