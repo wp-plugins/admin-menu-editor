@@ -169,6 +169,9 @@ class MenuEd_ShadowPluginFramework {
    * @return string
    */
     function json_decode($data, $assoc=false){
+    	if ( function_exists('json_decode') ){
+    		return json_decode($data, $assoc);
+    	}
         $flag = $assoc?SERVICES_JSON_LOOSE_TYPE:0;
         $json = new Services_JSON($flag);
         return( $json->decode($data) );
