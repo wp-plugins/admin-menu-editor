@@ -855,10 +855,17 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 	
 	//Attach a "Feedback" link to the screen meta panel.
-	$this->print_uservoice_widget();	
+	$this->print_uservoice_widget();
+	//Kindly remind the user to give me money
+	if ( !apply_filters('admin_menu_editor_is_pro', false) ){
+		$this->print_upgrade_notice();
+	}	
 ?>
 <div class="wrap">
-<h2><?php echo apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'); ?></h2>
+<h2>
+	<?php echo apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'); ?>
+</h2>
+
 <?php
 	
 	if ( !empty($_GET['message']) ){
@@ -947,6 +954,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	</div>
 </div>
 
+<style>
+#pro-version-notice {
+	font-weight: bold;
+	margin-top: 20px;
+}
+</style>
+
+
 <div class="ws_main_container" id="ws_editor_sidebar">
 <form method="post" action="<?php echo admin_url('options-general.php?page=menu_editor&noheader=1'); ?>" id='ws_main_form' name='ws_main_form'>
 	<?php wp_nonce_field('menu-editor-form'); ?>
@@ -961,7 +976,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		do_action('admin_menu_editor_sidebar');
 	?>
 </div>
-
 
 </div>
 
@@ -1106,6 +1120,25 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 			$('#screen-meta-links').append(
 				'<div id="ws-ame-feedback-widget-wrap" class="hide-if-no-js screen-meta-toggle">' +
 					'<a href="http://feedback.w-shadow.com/forums/58572-admin-menu-editor" id="ws-ame-feedback-widget" class="show-settings" target="_blank" title="Open the user feedback forum">Feedback</a>' +
+				'</div>'
+			);
+		})(jQuery);
+		</script>
+		<?php
+	}
+	
+  /**
+   * Output the "Upgrade to Pro" message
+   *
+   * @return void
+   */
+	function print_upgrade_notice(){
+		?>
+		<script type="text/javascript">
+		(function($){
+			$('#screen-meta-links').append(
+				'<div id="ws-pro-version-notice" class="hide-if-no-js screen-meta-toggle">' +
+					'<a href="#" id="ws-pro-version-notice-link" class="show-settings" target="_blank" title="View Pro version details">Upgrade to Pro</a>' +
 				'</div>'
 			);
 		})(jQuery);

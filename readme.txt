@@ -13,11 +13,11 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 
 **Features**
 
+* Edit any existing menu - change the title, access rights, menu icon and so on. 
 * Sort menu items via drag & drop.
 * Move a menu item to a different submenu via cut & paste. 
-* Edit any existing menu - change the title, access rights, menu icon and so on. Note that you can't lower the required access rights, but you can change them to be more restrictive.
 * Hide/show any menu or menu item. A hidden menu is invisible to all users, including administrators.
-* Create custom menus that point to any part of the Dashboard. For example, you could create a new menu leading directly to the "Pending comments" page.
+* Create custom menus that point to any part of the Dashboard or an external URL.
 
 [Suggest new features and improvements here](http://feedback.w-shadow.com/forums/58572-admin-menu-editor)
 
@@ -25,7 +25,8 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 
 * If you delete any of the default menus they will reappear after saving. This is by design. To get rid of a menu for good, either hide it or set it's access rights to a higher level.
 * Custom menus will only show up in the final menu if the "Custom" box is checked. If some of your menu items are only visible in the editor but not the Dashboard menu itself, this is probably the reason.
-* A plugin's menu that is moved to a different submenu will not work unless you also include the parent file in the "File" field. For example, if the plugin's page was originally in the "Settings" menu and had the "File" field set to "my_plugin", you'll need to change it to "options-general.php?page=my_plugin" and tick the "Custom" checkbox after moving it to a different menu.
+* You can't lower a menu's required access rights, but you can change them to be more restrictive.
+
 
 == Installation ==
 

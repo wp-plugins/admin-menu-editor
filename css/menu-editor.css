@@ -538,10 +538,12 @@ select#ws_cap_selector optgroup option {
 }
 
 /************************************
-          Feedback button
+        Screen meta buttons
 *************************************/
 
-#ws-ame-feedback-widget-wrap {
+/* All buttons */
+#ws-ame-feedback-widget-wrap, 
+#ws-pro-version-notice {
 	float: right;
 	height: 22px;
 	padding: 0;
@@ -557,8 +559,25 @@ select#ws_cap_selector optgroup option {
 	-webkit-border-bottom-right-radius: 3px;
 }
 
-#ws-ame-feedback-widget-wrap a.show-settings {
+#ws-ame-feedback-widget-wrap a.show-settings, 
+#ws-pro-version-notice a.show-settings {
 	background-image: none;
 	padding:0 6px 0 6px;
+}
+
+/* "Upgrade to Pro" */
+#ws-pro-version-notice {
+	background-color: #00C31F; 
+}
+
+
+#ws-pro-version-notice a.show-settings {
 	font-weight: bold;
+	color: #DEFFD8;
+	text-shadow: none;
+}
+
+#ws-pro-version-notice a.show-settings:hover {
+	color: white;
+	text-shadow: #009B19 1px 1px 2px; /*#008B16*/
 }
