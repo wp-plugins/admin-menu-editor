@@ -1138,7 +1138,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		(function($){
 			$('#screen-meta-links').append(
 				'<div id="ws-pro-version-notice" class="hide-if-no-js screen-meta-toggle">' +
-					'<a href="#" id="ws-pro-version-notice-link" class="show-settings" target="_blank" title="View Pro version details">Upgrade to Pro</a>' +
+					'<a href="http://wpplugins.com/plugin/146/admin-menu-editor-pro" id="ws-pro-version-notice-link" class="show-settings" target="_blank" title="View Pro version details">Upgrade to Pro</a>' +
 				'</div>'
 			);
 		})(jQuery);
