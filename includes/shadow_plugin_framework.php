@@ -295,17 +295,13 @@ class MenuEd_ShadowPluginFramework {
 	 */
 	function is_super_plugin(){
 		if ( is_null($this->is_mu_plugin) ){
-			$this->is_mu_plugin = $this->is_in_wpmu_plugin_dir($plugin_file);
+			$this->is_mu_plugin = $this->is_in_wpmu_plugin_dir($this->plugin_file);
 		}
 		
 		if ( $this->is_mu_plugin ){
 			return true;
 		} else {
-			if ( function_exists('is_plugin_active_for_network') ){
-				return is_plugin_active_for_network($this->plugin_basename);
-			} else {
-				return $this->is_plugin_active_for_network($this->plugin_basename);
-			}
+			return $this->is_plugin_active_for_network($this->plugin_basename);
 		}
 	}
 	

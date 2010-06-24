@@ -11,33 +11,6 @@ if (class_exists('WPMenuEditor')){
 //Load the "framework"
 require 'shadow_plugin_framework.php';
 
-if ( !function_exists('plog') ){
-	
-/**
- * Output a variable in debug format
- *
- * @param mixed $x
- * @return void
- */
-	function plog($var, $title = ''){
-		if ( !empty($title) ){
-			echo "<strong>", htmlspecialchars($title), "</strong>\n<br>";
-		}
-		
-		if ( is_string($var) ){
-			echo htmlspecialchars($var), "\n<br>";
-		} elseif (is_array($var) || is_object($var)) {
-			echo '<pre>';
-			print_r($var);
-			echo "</pre>\n";
-		} elseif (is_bool($var)){
-			echo $var?"True":"False","\n<br>";
-		} else {
-			print_r($var);
-		}
-	}
-}
-
 if ( !class_exists('WPMenuEditor') ) :
 
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
@@ -168,17 +141,16 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		wp_enqueue_script('jquery-sort', $this->plugin_dir_url.'/js/jquery.sort.js', array('jquery'));
 		
 		//Editor's scipts
-        wp_enqueue_script('menu-editor', $this->plugin_dir_url.'/js/menu-editor.js', array('jquery'));
+        wp_enqueue_script('menu-editor', $this->plugin_dir_url.'/js/menu-editor.js', array('jquery'), '1.0');
 	}
 	
   /**
-   * WPMenuEditor::print_editor_css()
    * Add the editor's CSS file to the page header
    *
    * @return void
    */
-	function print_editor_css(){
-		echo '<link type="text/css" rel="stylesheet" href="', $this->plugin_dir_url, '/css/menu-editor.css" />',"\n";
+	function enqueue_styles(){
+		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '1.0');
 	}
 
   /**
@@ -208,7 +180,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			);
 			//Output our JS & CSS on that page only
 			add_action("admin_print_scripts-$page", array(&$this, 'enqueue_scripts'));
-			add_action("admin_print_scripts-$page", array(&$this, 'print_editor_css'));
+			add_action("admin_print_styles-$page", array(&$this, 'enqueue_styles'));
 			
 			//Make a placeholder for our screen options (hacky)
 			add_meta_box("ws-ame-screen-options", "You should never see this", array(&$this, 'noop'), $page);
@@ -397,7 +369,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
   /**
-   * WPMenuEditor::menu_merge()
    * Merge $menu and $submenu into the $tree. Adds/replaces defaults, inserts new items
    * and marks missing items as such.
    *
@@ -527,12 +498,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
   /**
-   * WPMenuEditor::wp2tree()
    * Convert the WP menu structure to the internal representation. All properties set as defaults.
    *
    * @param array $menu
    * @param array $submenu
-   * @return array
+   * @return array Menu in the internal tree format.
    */
 	function wp2tree($menu, $submenu){
 		$tree = array();
@@ -568,7 +538,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
   /**
-   * Sets all undefined fields to the default value
+   * Set all undefined menu fields to the default value
    *
    * @param array $item Menu item in the plugin's internal form
    * @return array
@@ -954,14 +924,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	</div>
 </div>
 
-<style>
-#pro-version-notice {
-	font-weight: bold;
-	margin-top: 20px;
-}
-</style>
-
-
 <div class="ws_main_container" id="ws_editor_sidebar">
 <form method="post" action="<?php echo admin_url('options-general.php?page=menu_editor&noheader=1'); ?>" id='ws_main_form' name='ws_main_form'>
 	<?php wp_nonce_field('menu-editor-form'); ?>
@@ -1095,17 +1057,6 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		}
 		
 		return $roles;
-	}
-	
-  /**
-   * WPMenuEditor::is_wp27()
-   * Check if running WordPress 2.7 or later (unused)
-   *
-   * @return bool
-   */
-	function is_wp27(){
-		global $wp_version;
-		return function_exists('register_uninstall_hook');
 	}
 	
   /**

@@ -78,7 +78,6 @@
 .ws_item { }
 
 .ws_menu_separator {
-	/*background-color: #f0f0f0;*/
 	background-image: url("../images/menu-arrows.png");
 	background-repeat: no-repeat;
 	background-position : 4px 8px;
@@ -87,7 +86,6 @@
 }
 
 .ws_submenu {
-	/*background-color: #f0fafa;*/
 	min-height: 2em;
 }
 
@@ -108,7 +106,7 @@
 	cursor: pointer;
 	display:block;
 	width: 40px;
-	height: 22px; /*18px;*/
+	height: 22px; 
 	
 	background-image: url('../images/bullet_arrow_down2.png'); 
 	background-repeat: no-repeat;
@@ -449,7 +447,7 @@ select#ws_cap_selector optgroup option {
 	margin: 0;
 	padding: 4px 4px 4px 8px;
 	
-	background-color: #86A7E3/*#8EB0F1*/;
+	background-color: #86A7E3;
 	font-size: 1.0em;
 	line-height: 22px;
 	
@@ -579,5 +577,4 @@ select#ws_cap_selector optgroup option {
 
 #ws-pro-version-notice a.show-settings:hover {
 	color: white;
-	/*text-shadow: #009B19 1px 1px 2px;*/ /*#008B16*/
 }
