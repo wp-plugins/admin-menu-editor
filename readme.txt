@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 3.0
 Tested up to: 3.0
-Stable tag: 0.2
+Stable tag: 1.0
 
 Lets you directly edit the WordPress admin menu. You can re-order, hide or rename existing menus, add custom menus and more. 
 
@@ -58,6 +58,24 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 
 
 == Changelog ==
+
+= 1.0 =
+* Added a "Feedback" link.
+* Added a dropdown list of all roles and capabilities to the menu editor.
+* Added toolbar buttons for sorting menu items alphabetically.
+* New "Add separator" button.
+* New separator graphics.
+* Minimum requirements upped to WP 3.0.
+* Compatibility with WP 3.0 MultiSite mode.
+* Plugin pages moved to different menus no longer stop working.
+* Fixed moved pages not having a window title.
+* Hide advanced menu fields by default (can be turned off in Screen Options).
+* Changed a lot of UI text to be a bit more intuitive.
+* In emergencies, administrators can now reset the custom menu by going to http:://example.com/wp-admin/?reset\_admin\_menu=1
+* Fixed the "Donate" link in readme.txt
+* Unbundle the JSON.php JSON parser/encoder and use the built-in class-json.php instead.
+* Use the native JSON decoding routine if it's available.
+* Replaced the cryptic "Cannot redeclare whatever" activation error message with a more useful one.
 
 = 0.2 =
 * Provisional WPMU support.
