@@ -579,5 +579,5 @@ select#ws_cap_selector optgroup option {
 
 #ws-pro-version-notice a.show-settings:hover {
 	color: white;
-	text-shadow: #009B19 1px 1px 2px; /*#008B16*/
+	/*text-shadow: #009B19 1px 1px 2px;*/ /*#008B16*/
 }
