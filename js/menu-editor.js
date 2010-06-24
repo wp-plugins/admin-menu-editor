@@ -1318,8 +1318,6 @@ $(document).ready(function(){
 			$('#import_progress_notice').show();
 			
 			$('#ws_start_import').attr('disabled', 'disabled');
-			
-		    // return false to cancel submit                  
 		},
 		success: function(data){
 			if ( !$('#import_dialog').dialog('isOpen') ){
