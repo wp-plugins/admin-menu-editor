@@ -19,7 +19,7 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 * Hide/show any menu or menu item. A hidden menu is invisible to all users, including administrators.
 * Create custom menus that point to any part of the Dashboard or an external URL.
 
-There's also a [Pro Version](http://wpplugins.com/plugin/146/admin-menu-editor-pro) that lets you import/export menu configurations, make menu items open in a new window, and use [shortcodes](http://wpplugins.com/plugin/146/admin-menu-editor-pro?view=notes) in the Dashboard menu.
+The [Pro version](http://wpplugins.com/plugin/146/admin-menu-editor-pro) of the plugin lets you also import/export menu configurations, make menu items open in a new window, and use [shortcodes](http://wpplugins.com/plugin/146/admin-menu-editor-pro?view=notes) in the Dashboard menu.
 
 [Suggest new features and improvements here](http://feedback.w-shadow.com/forums/58572-admin-menu-editor)
 
