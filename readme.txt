@@ -29,7 +29,6 @@ The [Pro version](http://wpplugins.com/plugin/146/admin-menu-editor-pro) of the 
 * If one of your menu items is only visible in the editor but not the Dashboard menu itself, make sure its "Custom" checkbox is ticked. The plugin will usually do this for you when you create a new menu.
 * You can't lower a menu's required access rights, but you can change them to be more restrictive.
 
-
 == Installation ==
 
 **Normal installation**
@@ -73,7 +72,7 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 * Fixed moved pages not having a window title.
 * Hide advanced menu fields by default (can be turned off in Screen Options).
 * Changed a lot of UI text to be a bit more intuitive.
-* In emergencies, administrators can now reset the custom menu by going to http:://example.com/wp-admin/?reset\_admin\_menu=1
+* In emergencies, administrators can now reset the custom menu by going to http://example.com/wp-admin/?reset\_admin\_menu=1
 * Fixed the "Donate" link in readme.txt
 * Unbundle the JSON.php JSON parser/encoder and use the built-in class-json.php instead.
 * Use the native JSON decoding routine if it's available.
