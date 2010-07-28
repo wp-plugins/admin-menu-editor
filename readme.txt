@@ -23,11 +23,12 @@ The [Pro version](http://wpplugins.com/plugin/146/admin-menu-editor-pro) of the 
 
 [Suggest new features and improvements here](http://feedback.w-shadow.com/forums/58572-admin-menu-editor)
 
-**Known Issues**
+**Notes**
 
 * If you delete any of the default menus they will reappear after saving. This is by design. To get rid of a menu for good, either hide it or set it's access rights to a higher level.
 * If one of your menu items is only visible in the editor but not the Dashboard menu itself, make sure its "Custom" checkbox is ticked. The plugin will usually do this for you when you create a new menu.
 * You can't lower a menu's required access rights, but you can change them to be more restrictive.
+* In case of emergency, you can reset the menu configuration back to the default by going to http://example.com/wp-admin/?reset\_admin\_menu=1
 
 == Installation ==
 
