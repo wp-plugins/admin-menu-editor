@@ -130,18 +130,18 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return void
    */
 	function enqueue_scripts(){
-		wp_enqueue_script('jquery');
-        wp_enqueue_script('jquery-ui-sortable');
-        wp_enqueue_script('jquery-ui-dialog');
-        wp_enqueue_script('jquery-form');
-
 		//jQuery JSON plugin
 		wp_enqueue_script('jquery-json', $this->plugin_dir_url.'/js/jquery.json-1.3.js', array('jquery'), '1.3');
 		//jQuery sort plugin
 		wp_enqueue_script('jquery-sort', $this->plugin_dir_url.'/js/jquery.sort.js', array('jquery'));
 		
 		//Editor's scipts
-        wp_enqueue_script('menu-editor', $this->plugin_dir_url.'/js/menu-editor.js', array('jquery'), '1.0');
+        wp_enqueue_script(
+			'menu-editor', 
+			$this->plugin_dir_url.'/js/menu-editor.js', 
+			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'), 
+			'1.0'
+		);
 	}
 	
   /**
