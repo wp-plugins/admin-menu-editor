@@ -686,9 +686,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				continue;
 			};
 			
-			//Skip hidden entries
-			if (!empty($topmenu['hidden'])) continue;
-			
 			//Skip leading menu separators. Fixes a superfluous separator showing up
 			//in WP 3.0 (multisite mode) when there's a custom menu and the current user
 			//can't access its first item ("Super Admin").
@@ -696,9 +693,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			
 			$first_nonseparator_found = true;
 			
-			//Build the WP item structure, using defaults where necessary
+			//Apply defaults & filters
 			$topmenu = $this->apply_defaults($topmenu);
 			$topmenu = $this->apply_menu_filters($topmenu, 'menu');
+			
+			//Skip hidden entries
+			if (!empty($topmenu['hidden'])) continue;
+			
+			//Build the menu structure that WP expects
 			$menu[] = array(
 					$topmenu['menu_title'],
 					$topmenu['access_level'],
@@ -720,10 +722,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					//Skip missing items, unless they're user-created
 					$custom = $this->get_menu_field($item, 'custom', false);
 					if ( !empty($item['missing']) && !$custom ) continue;
-					//Skip hidden items
-					if (!empty($item['hidden'])) {
-						continue;
-					}
 					
 					//Special case : plugin pages that have been moved to a different menu.
 					//If the file field hasn't already been modified, we'll need to adjust it
@@ -741,6 +739,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					
 					$item = $this->apply_defaults($item);
 					$item = $this->apply_menu_filters($item, 'submenu', $topmenu['file']);
+					
+					//Skip hidden items
+					if (!empty($item['hidden'])) {
+						continue;
+					}
+					
 					$submenu[$topmenu['file']][] = array(
 						$item['menu_title'],
 						$item['access_level'],
@@ -756,6 +760,39 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		
 		return array($menu, $submenu, $title_lookup);
+	}
+	
+	/**
+	 * Prevent the "Menu Editor" menu item from becoming inaccessible.
+	 * 
+	 * @param array $item
+	 * @return array
+	 */
+	function hook_custom_admin_submenu($item){
+		//To stop the user from accidentally shooting themselves in the foot, we make
+		//any dangerous changes made to the "Menu Editor" menu have no effect.
+		if ( !empty($item['file']) && ($item['file'] == 'menu_editor') ){
+			//Reset the important fields back to the default values.
+			$item['access_level'] = null;
+			$item['page_title'] = null;
+			$item['window_title'] = null;
+			$item = $this->apply_defaults($item);
+			$item['hidden'] = false; //Can't hide me!
+		}
+		return $item;
+	}
+	
+	/**
+	 * Prevent the menu that contains the "Menu Editor" entry from being hidden.
+	 * 
+	 * @param array $menu
+	 * @return array
+	 */
+	function hook_custom_admin_menu($menu){
+		if ( !empty($menu['items']) && array_key_exists('menu_editor', $menu['items']) ){
+			$menu['hidden'] = false;
+		}
+		return $menu;
 	}
 	
   /**
