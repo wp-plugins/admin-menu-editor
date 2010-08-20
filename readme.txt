@@ -3,8 +3,8 @@ Contributors: whiteshadow
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A6P9S6CE3SRSW
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 3.0
-Tested up to: 3.0
-Stable tag: 1.0
+Tested up to: 3.1-alpha
+Stable tag: 1.0.1
 
 Lets you directly edit the WordPress admin menu. You can re-order, hide or rename existing menus, add custom menus and more. 
 
@@ -60,6 +60,11 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 
 
 == Changelog ==
+
+= 1.0.1 =
+* Added "Super Admin" to the "Required capability" dropdown.
+* Prevent users from accidentally making the menu editor inaccessible.
+* WordPress 3.0.1 compatibility made official.
 
 = 1.0 =
 * Added a "Feedback" link.
