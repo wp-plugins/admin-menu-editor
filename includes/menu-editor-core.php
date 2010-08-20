@@ -870,6 +870,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	natcasesort($all_capabilities);
 	
 	$all_roles = $this->get_all_roles();
+	//Multi-site installs also get the virtual "Super Admin" role
+	if ( is_multisite() ){
+		$all_roles['super_admin'] = 'Super Admin';
+	}
 	asort($all_roles);
 ?>
 <div id='ws_menu_editor'>
@@ -1058,7 +1062,23 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		
 		return $roles;
 	}
-	
+
+	/**
+	 * Create a virtual 'super_admin' capability that only super admins have.
+	 * This function accomplishes that by by filtering 'user_has_cap' calls.
+	 * 
+	 * @param array $allcaps All capabilities belonging to the current user, cap => true/false.
+	 * @param array $required_caps The required capabilities.
+	 * @param array $args The capability passed to current_user_can, the current user's ID, and other args.
+	 * @return array Filtered version of $allcaps
+	 */
+	function hook_user_has_cap($allcaps, $required_caps, $args){
+		if ( in_array('super_admin', $required_caps) ){
+			$allcaps['super_admin'] = is_multisite() && is_super_admin($args[1]);
+		}
+		return $allcaps;
+	}
+
   /**
    * Output the JavaScript that adds the "Feedback" widget to screen meta.
    *
