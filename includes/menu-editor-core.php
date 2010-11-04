@@ -772,11 +772,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//To stop the user from accidentally shooting themselves in the foot, we make
 		//any dangerous changes made to the "Menu Editor" menu have no effect.
 		if ( !empty($item['file']) && ($item['file'] == 'menu_editor') ){
-			//Reset the important fields back to the default values.
-			$item['access_level'] = null;
-			$item['page_title'] = null;
-			$item['window_title'] = null;
-			$item = $this->apply_defaults($item);
+			//Ensure the user doesn't change the required capability to something they don't have themselves
+            if ( !empty($item['access_level']) && !current_user_can($item['access_level']) ){
+                $item['access_level'] = null;
+                $item = $this->apply_defaults($item); 
+            }
 			$item['hidden'] = false; //Can't hide me!
 		}
 		return $item;
