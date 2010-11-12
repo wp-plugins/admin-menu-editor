@@ -770,13 +770,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 */
 	function hook_custom_admin_submenu($item){
 		//To stop the user from accidentally shooting themselves in the foot, we make
-		//any dangerous changes made to the "Menu Editor" menu have no effect.
+		//it impossible to explicitly hide the "Menu Editor" menu.
 		if ( !empty($item['file']) && ($item['file'] == 'menu_editor') ){
-			//Ensure the user doesn't change the required capability to something they don't have themselves
-            if ( !empty($item['access_level']) && !current_user_can($item['access_level']) ){
-                $item['access_level'] = null;
-                $item = $this->apply_defaults($item); 
-            }
 			$item['hidden'] = false; //Can't hide me!
 		}
 		return $item;
@@ -849,6 +844,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$url = remove_query_arg('noheader');
 
 		if ($data){
+		    //Ensure the user doesn't change the required capability to something they themselves don't have.
+            if ( isset($data['options-general.php']['items']['menu_editor']) ){
+                $item = $data['options-general.php']['items']['menu_editor'];
+                if ( !empty($item['access_level']) && !current_user_can($item['access_level']) ){
+                    $item['access_level'] = null;
+                    $data['options-general.php']['items']['menu_editor'] = $item;
+                }
+            }
+          
 			//Save the custom menu
 			$this->options['custom_menu'] = $data;
 			$this->save_options();
