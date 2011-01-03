@@ -35,6 +35,9 @@ function outputWpMenu(menu){
 		outputTopMenu(menu[filename]);
 		i++;
 	}
+	
+	//Automatically select the first top-level menu
+	$('#ws_menu_box .ws_menu:first').click();
 }
 
 /*
@@ -113,6 +116,25 @@ function buildTopMenu(menu){
 	}
 	if (getFieldValue(menu, 'custom', false)) {
 		addMenuFlag(menu_obj, 'custom_item');
+	}
+	
+	if ( !menu.separator ){
+		//Allow the user to drag menu items to top-level menus
+		menu_obj.droppable({
+			'hoverClass' : 'ws_menu_drop_hover',
+			
+			'accept' : (function(thing){
+				return thing.hasClass('ws_item');
+			}),
+			
+			'drop' : (function(event, ui){
+				var droppedItemData = readItemState(ui.draggable);
+				var new_item = buildMenuItem(droppedItemData);
+				var submenu = $('#' + menu_obj.data('submenu_id'));
+				submenu.append(new_item);
+				ui.draggable.remove();
+			})
+		});
 	}
 	
 	return menu_obj;
@@ -216,6 +238,7 @@ var knownMenuFields = {
         standardCaption : true,
 		type : 'text',
 		defaultValue: '',
+		addDropdown : 'ws_page_selector',
 		visible: true
 	},
 	'page_title' : {
@@ -350,14 +373,28 @@ function buildEditboxField(entry, field_name, field_settings){
 	if(entry[field_name]==null){
 		className += ' ws_input_default';
 	}
+	
+	var hasDropdown = (typeof(field_settings['addDropdown']) != 'undefined') && field_settings.addDropdown;
+	if ( hasDropdown ){
+		className += ' ws_has_dropdown';
+	}
 		
 	var editField = $('<div>' + (field_settings.standardCaption?(field_settings.caption+'<br>'):'') + '</div>')
 		.attr('class', className)
 		.append(inputBox);
 		
-	if ( (typeof(field_settings['addDropdown']) != 'undefined') && field_settings.addDropdown ){
+	if ( hasDropdown ){
 		//Add a dropdown button
-		editField.append('<input type="button" class="button ws_dropdown_button" value="&#9660;" tabindex="-1">');
+		var dropdownId = 'ws_cap_selector';
+		if ( typeof(field_settings.addDropdown) == 'string' ){
+			dropdownId = field_settings.addDropdown;
+		}
+		editField.append(
+			$('<input type="button" value="&#9660;">')
+				.addClass('button ws_dropdown_button')
+				.attr('tabindex', '-1')
+				.data('dropdownId', dropdownId)
+		);
 	}
 	
 	editField
@@ -625,9 +662,6 @@ $(document).ready(function(){
 		knownMenuFields['open_in'].visible = true;
 	};	
 
-	//Show the menu
-    outputWpMenu(customMenu);
-    
     //Make the top menu box sortable (we only need to do this once)
     var mainMenuBox = $('#ws_menu_box');
     makeBoxSortable(mainMenuBox);
@@ -740,6 +774,7 @@ $(document).ready(function(){
 	$('#ws_menu_editor .ws_field_value').live('click', fieldValueChange);
 	//jQuery 1.3.x can't catch 'change' events with live(), 
 	//so we handle that by using event delegation instead.
+	//TODO: Update for jQuery 1.4.2 in WP 3.0
 	$('#ws_menu_editor').change(function(event){
 		var target = $(event.target);
 		if ( target.is('.ws_field_value') ){
@@ -764,120 +799,141 @@ $(document).ready(function(){
 	});
 	
 	
-	//Event handlers for the capability dropdown
-	var capList = $('#ws_cap_selector');
-	var currentCapListOwner = null;
-	var timeoutForgetOwner = 0;
-	
+	/***************************************************************************
+	                  Dropdown list for combobox fields
+	 ***************************************************************************/
+	 
+ 	var availableDropdowns = {
+ 		'ws_cap_selector' : {
+ 			list : $('#ws_cap_selector'),
+ 			currentOwner : null,
+ 			timeoutForgetOwner : 0
+ 		},
+ 		'ws_page_selector' : {
+ 			list : $('#ws_page_selector'),
+ 			currentOwner : null,
+ 			timeoutForgetOwner : 0
+ 		}
+ 	}
+	 
 	//Show/hide the capability dropdown list when the button is clicked   
 	$('#ws_menu_editor input.ws_dropdown_button').live('click',function(event){
-		var list = capList;
-		
 		var button = $(this);
 		var inputBox = button.parent().find('input.ws_field_value');
 		
-		clearTimeout(timeoutForgetOwner);
-		timeoutForgetOwner = 0;
+		var dropdown = availableDropdowns[button.data('dropdownId')];
+		
+		clearTimeout(dropdown.timeoutForgetOwner);
+		dropdown.timeoutForgetOwner = 0;
 		
 		//If we already own the list, hide it and rescind ownership.
-		if ( currentCapListOwner == this ){
-			list.hide();
+		if ( dropdown.currentOwner == this ){
+			dropdown.list.hide();
 			
-			currentCapListOwner = null;
+			dropdown.currentOwner = null;
 			inputBox.focus();
 			
 			return;
 		}
-		currentCapListOwner = this; //Got ye now!
+		dropdown.currentOwner = this; //Got ye now!
 		
 		//Move the dropdown near to the button
 		var inputPos = inputBox.offset();
-		list.css({
+		dropdown.list.css({
 			position: 'absolute',
 			left: inputPos.left,
 			top: inputPos.top + inputBox.outerHeight()
 		});
 		
 		//Pre-select the current capability (will clear selection if there's no match)
-		list.val(inputBox.val());
+		dropdown.list.val(inputBox.val());
 		
-		list.show();
-		list.focus();
+		dropdown.list.show();
+		dropdown.list.focus();
 	});
 	
 	//Also show it when the user presses the down arrow in the input field  
-	$('#ws_menu_editor .ws_edit_field-access_level input.ws_field_value').live('keyup', function(event){
+	$('#ws_menu_editor .ws_has_dropdown input.ws_field_value').live('keyup', function(event){
 		if ( event.which == 40 ){
 			$(this).parent().find('input.ws_dropdown_button').click();
 		}
 	});
 	
+	//Event handlers for the dropdowns themselves
+	var dropdownNodes = $('.ws_dropdown');
+	
 	//Hide capability dropdown when it loses focus
-	capList.blur(function(event){
-		capList.hide();
+	dropdownNodes.blur(function(event){
+		var dropdown = availableDropdowns[$(this).attr('id')];
+		
+		dropdown.list.hide();
 		/*
 		* Hackiness : make sure the list doesn't disappear & immediately reappear 
 		* when the event that caused it to lose focus was the user clicking on the
 		* dropdown button.
 		*/
-		timeoutForgetOwner = setTimeout(
+		dropdown.timeoutForgetOwner = setTimeout(
 			(function(){
-				currentCapListOwner = null;
+				dropdown.currentOwner = null;
 			}), 
 			200
 		);
 	});
 	
-	capList.keydown(function(event){
+	dropdownNodes.keydown(function(event){
+		var dropdown = availableDropdowns[$(this).attr('id')];
+		
 		//Also hide it when the user presses Esc
 		if ( event.which == 27 ){
-			var inputBox = $(currentCapListOwner).parent().find('input.ws_field_value');
+			var inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
 			
-			capList.hide();
-			if ( currentCapListOwner ){
-				$(currentCapListOwner).parent().find('input.ws_field_value').focus();
+			dropdown.list.hide();
+			if ( dropdown.currentOwner ){
+				$(dropdown.currentOwner).parent().find('input.ws_field_value').focus();
 			}
-			currentCapListOwner = null;
+			dropdown.currentOwner = null;
 			
 		//Select an item & hide the list when the user presses Enter or Tab
 		} else if ( (event.which == 13) || (event.which == 9) ){
-			capList.hide();
+			dropdown.list.hide();
 			
-			var inputBox = $(currentCapListOwner).parent().find('input.ws_field_value');
-			if ( capList.val() ){
-				inputBox.val(capList.val());
+			var inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
+			if ( dropdown.list.val() ){
+				inputBox.val(dropdown.list.val());
 				inputBox.change();
 			}
 			
 			inputBox.focus();
-			currentCapListOwner = null;
+			dropdown.currentOwner = null;
 			
 			event.preventDefault();
 		}
 	});
 	
 	//Eat Tab keys to prevent focus theft. Required to make the "select item on Tab" thing work. 
-	capList.keyup(function(event){
+	dropdownNodes.keyup(function(event){
 		if ( event.which == 9 ){
 			event.preventDefault();
 		}
 	})
 	
 	
-	//Update the input & hide the list when an option is clicked 
-	capList.click(function(){
-		if ( !currentCapListOwner || !capList.val() ){
+	//Update the input & hide the list when an option is clicked
+	dropdownNodes.click(function(){
+		var dropdown = availableDropdowns[$(this).attr('id')];
+		
+		if ( !dropdown.currentOwner || !dropdown.list.val() ){
 			return;
 		}
-		capList.hide();
+		dropdown.list.hide();
 		
-		var inputBox = $(currentCapListOwner).parent().find('input.ws_field_value');
-		inputBox.val(capList.val()).change().focus();
-		currentCapListOwner = null;
+		var inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
+		inputBox.val(dropdown.list.val()).change().focus();
+		dropdown.currentOwner = null;
 	});
 	
 	//Highlight an option when the user mouses over it (doesn't work in IE)
-	capList.mousemove(function(event){
+	dropdownNodes.mousemove(function(event){
 		if ( !event.target ){
 			return;
 		}
@@ -1351,6 +1407,9 @@ $(document).ready(function(){
 		}
 	}); 
 	
+	
+	//Finally, show the menu
+    outputWpMenu(customMenu);
   });
 	
 })(jQuery);

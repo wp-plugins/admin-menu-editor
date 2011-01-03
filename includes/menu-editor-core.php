@@ -134,13 +134,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		wp_enqueue_script('jquery-json', $this->plugin_dir_url.'/js/jquery.json-1.3.js', array('jquery'), '1.3');
 		//jQuery sort plugin
 		wp_enqueue_script('jquery-sort', $this->plugin_dir_url.'/js/jquery.sort.js', array('jquery'));
+		//jQuery UI Droppable
+		wp_enqueue_script('jquery-ui-droppable');
 		
 		//Editor's scipts
         wp_enqueue_script(
 			'menu-editor', 
 			$this->plugin_dir_url.'/js/menu-editor.js', 
 			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'), 
-			'1.0'
+			'1.1'
 		);
 	}
 	
@@ -150,7 +152,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return void
    */
 	function enqueue_styles(){
-		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '1.0');
+		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '1.1');
 	}
 
   /**
@@ -245,6 +247,33 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    */
 	function hook_admin_xml_ns(){
 		global $title;
+		if ( empty($title) ){
+			$title = $this->get_real_page_title();
+		}		
+	}
+	
+	/**
+	 * Fix the page title for move plugin pages.
+	 * The 'admin_title' filter is only available in WP 3.1+
+	 * 
+	 * @param string $admin_title The current admin title.
+	 * @param string $title The current page title. 
+	 * @return string New admin title.
+	 */
+	function hook_admin_title($admin_title, $title){
+		if ( empty($title) ){
+			$admin_title = $this->get_real_page_title() . $admin_title;
+		}
+		return $admin_title;
+	}
+	
+	/**
+	 * Get the correct page title for a plugin page that's been moved to a different menu.
+	 *  
+	 * @return string
+	 */
+	function get_real_page_title(){
+		global $title;
 		global $pagenow;
 		global $plugin_page;
 		
@@ -253,8 +282,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if ( isset($this->title_lookups[$file]) ){
 				$title = esc_html( strip_tags( $this->title_lookups[$file] ) );
 			}
-		}		
-	}
+		}
+		
+		return $title;
+	}	
+	
 
   /**
    * Loop over the Dashboard submenus and remove pages for which the current user does not have privs.
@@ -988,7 +1020,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 <?php
 	//Createa a pop-up capability selector
-	$capSelector = array('<select id="ws_cap_selector" size="10">');
+	$capSelector = array('<select id="ws_cap_selector" class="ws_dropdown" size="10">');
 	
 	$capSelector[] = '<optgroup label="Roles">';
  	foreach($all_roles as $role_id => $role_name){
@@ -1012,6 +1044,39 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
  	$capSelector[] = '</select>';
  	
  	echo implode("\n", $capSelector);
+
+ 	//Create a pop-up page selector
+ 	$pageSelector = array('<select id="ws_page_selector" class="ws_dropdown" size="10">');
+ 	foreach($default_menu as $toplevel){
+ 		if ( $toplevel['separator'] ) continue;
+ 		
+ 		$top_title = strip_tags( preg_replace('@<span[^>]*>.*</span>@i', '', $this->get_menu_field($toplevel, 'menu_title')) );
+ 		
+ 		if ( empty($toplevel['items'])) {
+ 			//This menu has no items, so it can only link to itself
+ 			$pageSelector[] = sprintf(
+			 	'<option value="%s">%s -&gt; %s</option>',
+			 	esc_attr($this->get_menu_field($toplevel, 'file')),
+			 	$top_title,
+			 	$top_title
+		 	);
+		} else {
+			//When a menu has some items, it's own URL is ignored by WP and the first item is used instead.
+		 	foreach($toplevel['items'] as $subitem){
+		 		$sub_title = strip_tags( preg_replace('@<span[^>]*>.*</span>@i', '', $this->get_menu_field($subitem, 'menu_title')) );
+		 		
+		 		$pageSelector[] = sprintf(
+				 	'<option value="%s">%s -&gt; %s</option>',
+				 	esc_attr($this->get_menu_field($subitem, 'file')),
+				 	$top_title,
+				 	$sub_title		 	
+			 	);
+		 	}
+	 	}
+ 	}
+ 	
+ 	$pageSelector[] = '</select>';
+ 	echo implode("\n", $pageSelector);
 ?>
 
 <span id="ws-ame-screen-meta-contents" style="display:none;">

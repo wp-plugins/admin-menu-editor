@@ -112,14 +112,9 @@
 	background-repeat: no-repeat;
 	background-position: center;
 	
-	border-top-right-radius: 3px;
-	border-top-left-radius: 3px;
-	
-	-moz-border-radius-topright: 3px;
-	-moz-border-radius-topleft: 3px;
-	
-	-webkit-border-top-right-radius: 3px;
-	-webkit-border-top-left-radius: 3px;
+	border-radius: 3px;
+	-moz-border-radius: 3px;
+	-webkit-border-radius: 3px;
 }
 
 a.ws_edit_link:hover {
@@ -135,6 +130,24 @@ a.ws_edit_link:hover {
 	background-image: url('../images/bullet_arrow_down2.png');
 	padding-bottom: 1px;
 	background-position: center 3px;
+	
+	border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
+	
+	-moz-border-radius-bottomright: 0;
+	-moz-border-radius-bottomleft: 0;
+	
+	-webkit-border-bottom-right-radius: 0;
+	-webkit-border-bottom-left-radius: 0;
+}
+
+
+.ws_menu_drop_hover {
+	background-color: #43b529 !important;
+}
+
+.ws_container.ui-sortable-helper * {
+	cursor: move !important;
 }
 
 /****************************************
@@ -223,7 +236,7 @@ a.ws_edit_link:hover {
 	margin-top: 0px;
 }
 
-/* Dropdown button for the capability field */
+/* Dropdown button for combo-box fields */
 #ws_menu_editor .ws_dropdown_button {
 	display : block;
 	float: left;
@@ -257,10 +270,10 @@ a.ws_edit_link:hover {
 }
 
 /* 
-The capability field's appearance and size need to be changed 
+The appearance and size of combobox fields need to be changed 
 to accomodate the dropdown button.
 */
-#ws_menu_editor .ws_edit_field-access_level input.ws_field_value {
+#ws_menu_editor .ws_has_dropdown input.ws_field_value {
 	width: 230px;
 	margin-right: 0;
 	border-right: 0;
@@ -390,7 +403,7 @@ a.ws_button:hover {
        Capability selector
 *************************************/
 
-select#ws_cap_selector {
+#wpbody select.ws_dropdown {
 	width: 252px;
 	height: 20em;
 	
@@ -402,13 +415,13 @@ select#ws_cap_selector {
 	font-size: 12px;
 }
 
-select#ws_cap_selector option {
+#wpbody select.ws_dropdown option {
 	font-family : "Lucida Grande",Verdana,Arial,"Bitstream Vera Sans",sans-serif;
 	font-size: 12px;
 	padding: 3px;
 }
 
-select#ws_cap_selector optgroup option {
+#wpbody select.ws_dropdown optgroup option {
 	padding-left: 10px;
 }
 
