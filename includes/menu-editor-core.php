@@ -794,34 +794,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		return array($menu, $submenu, $title_lookup);
 	}
 	
-	/**
-	 * Prevent the "Menu Editor" menu item from becoming inaccessible.
-	 * 
-	 * @param array $item
-	 * @return array
-	 */
-	function hook_custom_admin_submenu($item){
-		//To stop the user from accidentally shooting themselves in the foot, we make
-		//it impossible to explicitly hide the "Menu Editor" menu.
-		if ( !empty($item['file']) && ($item['file'] == 'menu_editor') ){
-			$item['hidden'] = false; //Can't hide me!
-		}
-		return $item;
-	}
-	
-	/**
-	 * Prevent the menu that contains the "Menu Editor" entry from being hidden.
-	 * 
-	 * @param array $menu
-	 * @return array
-	 */
-	function hook_custom_admin_menu($menu){
-		if ( !empty($menu['items']) && array_key_exists('menu_editor', $menu['items']) ){
-			$menu['hidden'] = false;
-		}
-		return $menu;
-	}
-	
   /**
    * Upgrade a menu tree to the currently used structure
    * Does nothing if the menu is already up to date.
