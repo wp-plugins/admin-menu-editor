@@ -17,8 +17,9 @@ if ( ! defined( 'WP_PLUGIN_DIR' ) )
 	
 
 //Load JSON functions for PHP < 5.2
-if (!class_exists('Services_JSON')){
-	require ABSPATH . WPINC . '/class-json.php';
+if ((!function_exists('json_encode') || !function_exists('json_decode')) && !class_exists('Services_JSON') ){
+	$class_json_path = ABSPATH . WPINC . '/class-json.php'; 
+	if ( file_exists($class_json_path) ) require $class_json_path;
 }
 
 class MenuEd_ShadowPluginFramework {
