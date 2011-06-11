@@ -2,7 +2,7 @@
 
 /**
  * @author W-Shadow
- * @copyright 2008-2010
+ * @copyright 2008-2011
  */
  
 //Make sure the needed constants are defined
@@ -17,13 +17,18 @@ if ( ! defined( 'WP_PLUGIN_DIR' ) )
 	
 
 //Load JSON functions for PHP < 5.2
-if ((!function_exists('json_encode') || !function_exists('json_decode')) && !class_exists('Services_JSON') ){
-	$class_json_path = ABSPATH . WPINC . '/class-json.php'; 
-	if ( file_exists($class_json_path) ) require $class_json_path;
+if ( !(function_exists('json_encode') && function_exists('json_decode')) && !(class_exists('Services_JSON') || class_exists('Moxiecode_JSON')) ){
+	$class_json_path = ABSPATH.WPINC.'/class-json.php';
+	$class_moxiecode_json_path = ABSPATH.WPINC.'/js/tinymce/plugins/spellchecker/classes/utils/JSON.php';
+	if ( file_exists($class_json_path) ){
+		require $class_json_path;
+	} elseif ( file_exists($class_moxiecode_json_path) ) {
+		require $class_moxiecode_json_path;
+	}
 }
 
 class MenuEd_ShadowPluginFramework {
-	public static $framework_version = '0.4';
+	public static $framework_version = '0.4.1';
 	
 	public $is_mu_plugin = null; //True if installed in the mu-plugins directory, false otherwise
 	
@@ -180,9 +185,16 @@ class MenuEd_ShadowPluginFramework {
     	if ( function_exists('json_decode') ){
     		return json_decode($data, $assoc);
     	}
-        $flag = $assoc?SERVICES_JSON_LOOSE_TYPE:0;
-        $json = new Services_JSON($flag);
-        return( $json->decode($data) );
+    	if ( class_exists('Services_JSON') ){
+    		$flag = $assoc?SERVICES_JSON_LOOSE_TYPE:0;
+	        $json = new Services_JSON($flag);
+	        return( $json->decode($data) );
+    	} elseif ( class_exists('Moxiecode_JSON') ){
+    		$json = new Moxiecode_JSON();
+    		return $json->decode($data);
+    	} else {
+    		trigger_error('No JSON parser available', E_USER_ERROR);
+    	}    
     }
 
   /**
@@ -192,10 +204,19 @@ class MenuEd_ShadowPluginFramework {
    * @return string
    */
     function json_encode($data) {
-        $json = new Services_JSON();
-        return( $json->encodeUnsafe($data) );
-    }
-    
+    	if ( function_exists('json_encode') ){
+    		return json_encode($data);
+    	}
+    	if ( class_exists('Services_JSON') ){
+    		$json = new Services_JSON();
+        	return( $json->encodeUnsafe($data) );
+    	} elseif ( class_exists('Moxiecode_JSON') ){
+    		$json = new Moxiecode_JSON();
+    		return $json->encode($data);
+    	} else {
+    		trigger_error('No JSON parser available', E_USER_ERROR);
+   		}        
+    }    
 
 	
   /**
