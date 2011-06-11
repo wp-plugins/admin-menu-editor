@@ -831,17 +831,25 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			die("Access denied");
 		}
 		
-		$action = isset($_POST['action'])?$_POST['action']:(isset($_GET['action'])?$_GET['action']:'');
+		$post = $_POST;
+		$get = $_GET;
+		if ( function_exists('wp_magic_quotes') ){
+			//Ceterum censeo, WP shouldn't mangle superglobals.
+			$post = stripslashes_deep($post); 
+			$get = stripslashes_deep($get);
+		}
+		
+		$action = isset($post['action'])?$post['action']:(isset($get['action'])?$get['action']:'');
 		do_action('admin_menu_editor_header', $action);
 		
 	//Handle form submissions
-	if (isset($_POST['data'])){
+	if (isset($post['data'])){
 		check_admin_referer('menu-editor-form');
 		
 		//Try to decode a menu tree encoded as JSON
-		$data = $this->json_decode($_POST['data'], true);
+		$data = $this->json_decode($post['data'], true);
 		if (!$data || count(($data) < 2) ){
-			$fixed = stripslashes($_POST['data']);
+			$fixed = stripslashes($post['data']);
 			$data = $this->json_decode( $fixed, true );
 		}
 	
