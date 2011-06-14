@@ -848,13 +848,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		
 		//Try to decode a menu tree encoded as JSON
 		$data = $this->json_decode($post['data'], true);
-		if (!$data || count(($data) < 2) ){
+		if (!$data || (count($data) < 2) ){
 			$fixed = stripslashes($post['data']);
 			$data = $this->json_decode( $fixed, true );
 		}
 	
 		$url = remove_query_arg('noheader');
-
 		if ($data){
 		    //Ensure the user doesn't change the required capability to something they themselves don't have.
             if ( isset($data['options-general.php']['items']['menu_editor']) ){
