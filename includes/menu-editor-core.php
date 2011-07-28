@@ -842,46 +842,46 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$action = isset($post['action'])?$post['action']:(isset($get['action'])?$get['action']:'');
 		do_action('admin_menu_editor_header', $action);
 		
-	//Handle form submissions
-	if (isset($post['data'])){
-		check_admin_referer('menu-editor-form');
-		
-		//Try to decode a menu tree encoded as JSON
-		$data = $this->json_decode($post['data'], true);
-		if (!$data || (count($data) < 2) ){
-			$fixed = stripslashes($post['data']);
-			$data = $this->json_decode( $fixed, true );
+		//Handle form submissions
+		if (isset($post['data'])){
+			check_admin_referer('menu-editor-form');
+
+			//Try to decode a menu tree encoded as JSON
+			$data = $this->json_decode($post['data'], true);
+			if (!$data || (count($data) < 2) ){
+				$fixed = stripslashes($post['data']);
+				$data = $this->json_decode( $fixed, true );
+			}
+
+			$url = remove_query_arg('noheader');
+			if ($data){
+				//Ensure the user doesn't change the required capability to something they themselves don't have.
+				if ( isset($data['options-general.php']['items']['menu_editor']) ){
+					$item = $data['options-general.php']['items']['menu_editor'];
+					if ( !empty($item['access_level']) && !current_user_can($item['access_level']) ){
+						$item['access_level'] = null;
+						$data['options-general.php']['items']['menu_editor'] = $item;
+					}
+				}
+
+				//Save the custom menu
+				$this->options['custom_menu'] = $data;
+				$this->save_options();
+				//Redirect back to the editor and display the success message
+				wp_redirect( add_query_arg('message', 1, $url) );
+			} else {
+				//Or redirect & display the error message
+				wp_redirect( add_query_arg('message', 2, $url) );
+			}
+			die();
 		}
-	
-		$url = remove_query_arg('noheader');
-		if ($data){
-		    //Ensure the user doesn't change the required capability to something they themselves don't have.
-            if ( isset($data['options-general.php']['items']['menu_editor']) ){
-                $item = $data['options-general.php']['items']['menu_editor'];
-                if ( !empty($item['access_level']) && !current_user_can($item['access_level']) ){
-                    $item['access_level'] = null;
-                    $data['options-general.php']['items']['menu_editor'] = $item;
-                }
-            }
-          
-			//Save the custom menu
-			$this->options['custom_menu'] = $data;
-			$this->save_options();
-			//Redirect back to the editor and display the success message
-			wp_redirect( add_query_arg('message', 1, $url) );
-		} else {
-			//Or redirect & display the error message
-			wp_redirect( add_query_arg('message', 2, $url) );
+
+		//Attach a "Feedback" link to the screen meta panel.
+		$this->print_uservoice_widget();
+		//Kindly remind the user to give me money
+		if ( !apply_filters('admin_menu_editor_is_pro', false) ){
+			$this->print_upgrade_notice();
 		}
-		die();
-	}
-	
-	//Attach a "Feedback" link to the screen meta panel.
-	$this->print_uservoice_widget();
-	//Kindly remind the user to give me money
-	if ( !apply_filters('admin_menu_editor_is_pro', false) ){
-		$this->print_upgrade_notice();
-	}	
 ?>
 <div class="wrap">
 <h2>
@@ -998,7 +998,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 </div>
 
 <?php
-	//Createa a pop-up capability selector
+	//Create a pop-up capability selector
 	$capSelector = array('<select id="ws_cap_selector" class="ws_dropdown" size="10">');
 	
 	$capSelector[] = '<optgroup label="Roles">';
