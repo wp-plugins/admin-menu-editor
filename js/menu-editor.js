@@ -1005,23 +1005,31 @@ $(document).ready(function(){
 		
 		//Remove the original menu and submenu		
 		selection.remove();
-		$('#'+selection.data('submenu_id')).remove;
+		$('#'+selection.data('submenu_id')).remove();
 	});
 	
 	//Paste menu
 	$('#ws_paste_menu').click(function () {
 		//Check if anything has been copied/cut
 		if (!menu_in_clipboard) return;
+
+		var menu = $.extend(true, {}, menu_in_clipboard);
+
+		//The user shouldn't need to worry about giving separators a unique filename.
+		if (menu.separator) {
+			menu.defaults.file = 'separator_'+randomMenuId();
+		}
+
 		//Get the selected menu
 		var selection = $('#ws_menu_box .ws_active');
 		
 		if (selection.length > 0) {
 			//If a menu is selected add the pasted item after it
-			outputTopMenu(menu_in_clipboard, selection);
+			outputTopMenu(menu, selection);
 		} else {
 			//Otherwise add the pasted item at the end
-			outputTopMenu(menu_in_clipboard);
-		};
+			outputTopMenu(menu);
+		}
 	});
 	
 	//New menu
@@ -1154,8 +1162,10 @@ $(document).ready(function(){
 	$('#ws_paste_item').click(function () {
 		//Check if anything has been copied/cut
 		if (!item_in_clipboard) return;
+
 		//Create a new editor widget for the copied item
-		var new_item = buildMenuItem(item_in_clipboard);
+		var item = $.extend(true, {}, item_in_clipboard);
+		var new_item = buildMenuItem(item);
 		
 		//Get the selected menu
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
@@ -1165,7 +1175,7 @@ $(document).ready(function(){
 		} else {
 			//Otherwise add the pasted item at the end
 			$('#ws_submenu_box .ws_submenu:visible').append(new_item); 
-		};
+		}
 		
 		new_item.show();
 	});
