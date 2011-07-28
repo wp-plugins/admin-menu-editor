@@ -95,9 +95,9 @@ function buildTopMenu(menu){
 	var contents = [];
 	contents.push(
 		'<div class="ws_item_head">',
-			'<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
+			menu.separator ? '' : '<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
 			'<span class="ws_item_title">',
-				((menu.menu_title!=null)?menu.menu_title:menu.defaults.menu_title),
+				((menu.menu_title!=null) ? menu.menu_title : menu.defaults.menu_title),
 			'&nbsp;</span>',
 		'</div>',
 		'<div class="ws_editbox" style="display: none;"></div>'
