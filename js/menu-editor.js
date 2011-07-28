@@ -292,7 +292,7 @@ var knownMenuFields = {
         advanced: true,
         type: 'checkbox',
         defaultValue: false,
-        visible: true
+        visible: false
     }
 };
 
@@ -604,7 +604,7 @@ function readAllFields(container){
 var item_flags = {
 	'custom_item' : 'This is a custom menu item',
 	'unused' : 'This item was automatically (re)inserted into your custom menu because it is present in the default WordPress menu',
-	'missing' : 'This item is not present in the default WordPress menu. Tick the &quot;Custom&quot; checkbox if you want it to be visible anyway.',
+	'missing' : 'This item is not present in the default WordPress menu.',
 	'hidden' : 'This item is hidden' 
 }
  
@@ -660,9 +660,9 @@ var ws_paste_count = 0;
 $(document).ready(function(){
 	if (window.wsMenuEditorPro) {
 		knownMenuFields['open_in'].visible = true;
-	};	
-
-    //Make the top menu box sortable (we only need to do this once)
+	}
+	
+	//Make the top menu box sortable (we only need to do this once)
     var mainMenuBox = $('#ws_menu_box');
     makeBoxSortable(mainMenuBox);
     
