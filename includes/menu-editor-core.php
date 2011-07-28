@@ -1174,7 +1174,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		<script type="text/javascript">
 		(function($){
 			$('#screen-meta-links').append(
-				'<div id="ws-ame-feedback-widget-wrap" class="hide-if-no-js screen-meta-toggle">' +
+				'<div id="ws-ame-feedback-widget-wrap">' +
 					'<a href="http://feedback.w-shadow.com/forums/58572-admin-menu-editor" id="ws-ame-feedback-widget" class="show-settings" target="_blank" title="Open the user feedback forum">Feedback</a>' +
 				'</div>'
 			);
@@ -1193,7 +1193,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		<script type="text/javascript">
 		(function($){
 			$('#screen-meta-links').append(
-				'<div id="ws-pro-version-notice" class="hide-if-no-js screen-meta-toggle">' +
+				'<div id="ws-pro-version-notice">' +
 					'<a href="http://wpplugins.com/plugin/146/admin-menu-editor-pro" id="ws-pro-version-notice-link" class="show-settings" target="_blank" title="View Pro version details">Upgrade to Pro</a>' +
 				'</div>'
 			);
