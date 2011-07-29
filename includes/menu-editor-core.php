@@ -918,6 +918,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	
 	//Create a list of all known capabilities and roles. Used for the dropdown list on the access field.
 	$all_capabilities = $this->get_all_capabilities();
+	//"level_X" capabilities are deprecated so we don't want people using them.
+	//This would look better with array_filter() and an anonymous function  as a callback.
+	for($level = 0; $level <= 10; $level++){
+		$cap = 'level_' . $level;
+		if ( isset($all_capabilities[$cap]) ){
+			unset($all_capabilities[$cap]);
+		}
+	}
 	$all_capabilities = array_keys($all_capabilities);
 	natcasesort($all_capabilities);
 	
