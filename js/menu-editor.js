@@ -800,21 +800,21 @@ $(document).ready(function(){
 	
 	
 	/***************************************************************************
-	                  Dropdown list for combobox fields
+	 Dropdown list for combobox fields
 	 ***************************************************************************/
-	 
- 	var availableDropdowns = {
- 		'ws_cap_selector' : {
- 			list : $('#ws_cap_selector'),
- 			currentOwner : null,
- 			timeoutForgetOwner : 0
- 		},
- 		'ws_page_selector' : {
- 			list : $('#ws_page_selector'),
- 			currentOwner : null,
- 			timeoutForgetOwner : 0
- 		}
- 	}
+
+	var availableDropdowns = {
+		'ws_cap_selector' : {
+			list : $('#ws_cap_selector'),
+			currentOwner : null,
+			timeoutForgetOwner : 0
+		},
+		'ws_page_selector' : {
+			list : $('#ws_page_selector'),
+			currentOwner : null,
+			timeoutForgetOwner : 0
+		}
+	};
 	 
 	//Show/hide the capability dropdown list when the button is clicked   
 	$('#ws_menu_editor input.ws_dropdown_button').live('click',function(event){
