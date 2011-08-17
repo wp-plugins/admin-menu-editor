@@ -226,6 +226,32 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->filter_menu();
 		}
 	}
+
+	/**
+	 * Activate the 'menu_order' filter.
+	 *
+	 * @return bool
+	 */
+	function hook_custom_menu_order(){
+		return true;
+	}
+
+	/**
+	 * Override the order of the top-level menu entries.
+	 *
+	 * @param array $menu_order
+	 * @return array
+	 */
+	function hook_menu_order($menu_order){
+		$custom_menu_order = array();
+		foreach($this->custom_menu as $topmenu){
+			$filename = $this->get_menu_field($topmenu, 'file');
+			if ( in_array($filename, $menu_order) ){
+				$custom_menu_order[] = $filename;
+			}
+		}
+		return $custom_menu_order;
+	}
 	
 	/**
 	 * Determine if the current user may use the menu editor.
@@ -1107,6 +1133,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
    * @return array Associative array with capability names as keys
    */
 	function get_all_capabilities(){
+		/** @var WP_Roles $wp_roles */
 		global $wp_roles;
 		
 		$capabilities = array();
@@ -1116,7 +1143,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		}
 		
 		//Iterate over all known roles and collect their capabilities
-		foreach($wp_roles->roles as $role_id => $role){
+		foreach($wp_roles->roles as $role){
 			if ( !empty($role['capabilities']) && is_array($role['capabilities']) ){ //Being defensive here
 				$capabilities = array_merge($capabilities, $role['capabilities']);
 			}
@@ -1142,6 +1169,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
    * @return array Associative array with role IDs as keys and role display names as values
    */
 	function get_all_roles(){
+		/** @var WP_Roles $wp_roles */
 		global $wp_roles;
 		$roles = array();
 		
