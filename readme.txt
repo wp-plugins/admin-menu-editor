@@ -3,8 +3,8 @@ Contributors: whiteshadow
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A6P9S6CE3SRSW
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 3.0
-Tested up to: 3.2
-Stable tag: 1.1.3
+Tested up to: 3.2.1
+Stable tag: 1.1.4
 
 Lets you directly edit the WordPress admin menu. You can re-order, hide or rename existing menus, add custom menus and more. 
 
@@ -60,6 +60,19 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 
 
 == Changelog ==
+
+= 1.1.4 =
+* Fixed the updater's cron hook not being removed when the plugin is deactivated.
+* Fixed updates not showing up in some situations.
+* Fixed the "Feedback" button not responding to mouse clicks in some browsers.
+* Fixed "Feedback" button style to be consistent with other WP screen meta buttons.
+* Enforce the custom menu order by using the 'menu_order' filter. Fixes Jetpack menu not staying put.
+* You can now copy/paste as many menu separators as you like without worrying about some of them mysteriously disappearing on save.
+* Fixed a long-standing copying related bug where copied menus would all still refer to the same JS object instance.
+* Added ALT attributes to the toolbar icon images.
+* Removed the "Custom" checkbox. In retrospect, all it did was confuse people.
+* Made it impossible to edit separator properties.
+* Removed the deprecated "level_X" capabilities from the "Required capability" dropdown. You can still type them in manually if you want.
 
 = 1.1.3 = 
 * Tests for WordPress 3.2 compatibility.
