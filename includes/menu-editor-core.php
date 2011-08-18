@@ -243,6 +243,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return array
 	 */
 	function hook_menu_order($menu_order){
+		if (empty($this->custom_menu)){
+			return $menu_order;
+		}
 		$custom_menu_order = array();
 		foreach($this->custom_menu as $topmenu){
 			$filename = $this->get_menu_field($topmenu, 'file');
