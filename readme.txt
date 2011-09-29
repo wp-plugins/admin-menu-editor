@@ -61,6 +61,10 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 
 == Changelog ==
 
+= 1.1.5 =
+* Fixed an error where there would be no custom menu to show.
+* Removed the "Feedback" button due to lack of use. You can still provide feedback via blog comments or email, of course.
+
 = 1.1.4 =
 * Fixed the updater's cron hook not being removed when the plugin is deactivated.
 * Fixed updates not showing up in some situations.
