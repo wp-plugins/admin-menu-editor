@@ -905,8 +905,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			die();
 		}
 
-		//Attach a "Feedback" link to the screen meta panel.
-		$this->print_uservoice_widget();
 		//Kindly remind the user to give me money
 		if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 			$this->print_upgrade_notice();
@@ -1203,25 +1201,6 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		return $allcaps;
 	}
 
-  /**
-   * Output the JavaScript that adds the "Feedback" widget to screen meta.
-   *
-   * @return void
-   */
-	function print_uservoice_widget(){
-		?>
-		<script type="text/javascript">
-		(function($){
-			$('#screen-meta-links').append(
-				'<div id="ws-ame-feedback-widget-wrap">' +
-					'<a href="http://feedback.w-shadow.com/forums/58572-admin-menu-editor" id="ws-ame-feedback-widget" class="show-settings" target="_blank" title="Open the user feedback forum">Feedback</a>' +
-				'</div>'
-			);
-		})(jQuery);
-		</script>
-		<?php
-	}
-	
   /**
    * Output the "Upgrade to Pro" message
    *
