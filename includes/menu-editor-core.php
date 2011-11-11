@@ -15,8 +15,11 @@ if ( !class_exists('WPMenuEditor') ) :
 
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
-	protected $default_wp_menu = null; //Holds the default WP menu for later use in the editor
+	protected $default_wp_menu = null;    //Holds the default WP menu for later use in the editor
 	protected $default_wp_submenu = null; //Holds the default WP menu for later use
+	private $filtered_wp_menu = null;     //The final, ready-for-display top-level menu and sub-menu.
+	private $filtered_wp_submenu = null;
+
 	protected $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
 	                                    //fix the titles of moved plugin pages.
 	private $custom_menu = null;        //The current custom menu with defaults merged in
@@ -218,12 +221,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			}
 			//Merge in data from the default menu
 			$tree = $this->menu_merge($this->options['custom_menu'], $menu, $submenu);
-			//Apply the custom menu
-			list($menu, $submenu, $this->title_lookups) = $this->tree2wp($tree);
 			//Save for later - the editor page will need it
 			$this->custom_menu = $tree;
+			//Apply the custom menu
+			list($menu, $submenu, $this->title_lookups) = $this->tree2wp($tree);
 			//Re-filter the menu (silly WP should do that itself, oh well)
 			$this->filter_menu();
+			$this->filtered_wp_menu = $menu;
+			$this->filtered_wp_submenu = $submenu;
 		}
 	}
 
@@ -247,8 +252,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			return $menu_order;
 		}
 		$custom_menu_order = array();
-		foreach($this->custom_menu as $topmenu){
-			$filename = $this->get_menu_field($topmenu, 'file');
+		foreach($this->filtered_wp_menu as $topmenu){
+			$filename = $topmenu[2];
 			if ( in_array($filename, $menu_order) ){
 				$custom_menu_order[] = $filename;
 			}
@@ -819,7 +824,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				}
 			}
 		}
-		
 		return array($menu, $submenu, $title_lookup);
 	}
 	
