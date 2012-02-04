@@ -1199,7 +1199,9 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 	 * @return array Filtered version of $allcaps
 	 */
 	function hook_user_has_cap($allcaps, $required_caps, $args){
-		if ( in_array('super_admin', $required_caps) ){
+		//Be careful not to overwrite a super_admin cap added by other plugins 
+		//For example, Advanced Access Manager also adds this capability. 
+		if ( in_array('super_admin', $required_caps) && !isset($allcaps['super_admin']) ){
 			$allcaps['super_admin'] = is_multisite() && is_super_admin($args[1]);
 		}
 		return $allcaps;
