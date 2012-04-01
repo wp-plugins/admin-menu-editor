@@ -21,7 +21,7 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 
 The [Pro version](http://w-shadow.com/AdminMenuEditor/) of the plugin lets you also import/export menu configurations, make menu items open in a new window, and use shortcodes in the Dashboard menu.
 
-[Suggest new features and improvements here](http://feedback.w-shadow.com/forums/58572-admin-menu-editor)
+[Suggest new features and improvements here](http://w-shadow.com/admin-menu-editor-pro/contact/)
 
 **Notes**
 
