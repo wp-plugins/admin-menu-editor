@@ -287,7 +287,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 	
 	/**
-	 * Fix the page title for move plugin pages.
+	 * Fix the page title for moved plugin pages.
 	 * The 'admin_title' filter is only available in WP 3.1+
 	 * 
 	 * @param string $admin_title The current admin title.
@@ -328,7 +328,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return void
    */
 	function filter_menu(){
-		global $menu, $submenu, $_wp_submenu_nopriv, $_wp_menu_nopriv;
+		global $submenu, $_wp_submenu_nopriv;
 		
 		foreach ( array( 'submenu' ) as $sub_loop ) {
 			foreach ($$sub_loop as $parent => $sub) {
@@ -681,26 +681,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return int
    */
 	function compare_position($a, $b){
-		if ($a['position']!==null) {
-			$p1 = $a['position'];
-		} else {
-			if ( isset($a['defaults']['position']) ){
-				$p1 = $a['defaults']['position'];
-			} else {
-				$p1 = 0;
-			}
-		}
-
-		if ($b['position']!==null) {
-			$p2 = $b['position'];
-		} else {
-			if ( isset($b['defaults']['position']) ){
-				$p2 = $b['defaults']['position'];
-			} else {
-				$p2 = 0;
-			}
-		}
-
+		$p1 = $this->get_menu_field($a, 'position', 0);
+		$p2 = $this->get_menu_field($b, 'position', 0);
 		return $p1 - $p2;
 	}
 	
@@ -859,7 +841,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	function page_menu_editor(){
 		global $menu, $submenu;
 		global $wp_roles;
-		
+
 		if ( !$this->current_user_can_edit_menu() ){
 			die("Access denied");
 		}
@@ -950,7 +932,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	//Create a list of all known capabilities and roles. Used for the dropdown list on the access field.
 	$all_capabilities = $this->get_all_capabilities();
 	//"level_X" capabilities are deprecated so we don't want people using them.
-	//This would look better with array_filter() and an anonymous function  as a callback.
+	//This would look better with array_filter() and an anonymous function as a callback.
 	for($level = 0; $level <= 10; $level++){
 		$cap = 'level_' . $level;
 		if ( isset($all_capabilities[$cap]) ){

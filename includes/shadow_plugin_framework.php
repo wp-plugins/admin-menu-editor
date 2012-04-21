@@ -175,7 +175,7 @@ class MenuEd_ShadowPluginFramework {
 	
 	
   /**
-   * Backwards fompatible json_decode.
+   * Backwards compatible json_decode.
    *
    * @param string $data
    * @param bool $assoc Decode objects as associative arrays.
