@@ -32,6 +32,9 @@ function outputWpMenu(menu){
 	//Display the new menu
 	var i = 0;
 	for (var filename in menu){
+		if (!menu.hasOwnProperty(filename)){
+			continue;
+		}
 		outputTopMenu(menu[filename]);
 		i++;
 	}
@@ -145,14 +148,17 @@ function buildTopMenu(menu){
  */
 function buildSubmenu(items){
 	//Create a container for menu items, even if there are none
-	var submenu = $('<div class="ws_submenu"style="display:none;"></div>');
+	var submenu = $('<div class="ws_submenu" style="display:none;"></div>');
 	submenu.attr('id', 'ws-submenu-'+(wsIdCounter++));
 	
 	//Only show menus that have items. 
 	//Skip arrays (with a length) because filled menus are encoded as custom objects.
-	var entry = null 
+	var entry = null;
 	if (items && (typeof items != 'Array')){
 		for (var item_file in items){
+			if (!items.hasOwnProperty(item_file)){
+				continue;
+			}
 			entry = buildMenuItem(items[item_file]);
 			if ( entry ){
 				submenu.append(entry);
@@ -172,7 +178,7 @@ function buildSubmenu(items){
 function buildMenuItem(entry){
 	if (!entry.defaults) {
 		return null
-	};
+	}
 	
 	var item = $('<div class="ws_container ws_item">')
 		.data('defaults', entry.defaults)
@@ -300,19 +306,20 @@ var knownMenuFields = {
  * Create editors for the visible fields of a menu entry and append them to the specified node.
  */
 function buildEditboxFields(containerNode, entry){
-	var fields = knownMenuFields;
-    
-    var basicFields = $('<div class="ws_edit_panel ws_basic"></div>').appendTo(containerNode);
+	var basicFields = $('<div class="ws_edit_panel ws_basic"></div>').appendTo(containerNode);
     var advancedFields = $('<div class="ws_edit_panel ws_advanced"></div>').appendTo(containerNode);
     
     if ( hideAdvancedSettings ){
     	advancedFields.css('display', 'none');
     }
 	
-	for (var field_name in fields){
-		var field = buildEditboxField(entry, field_name, fields[field_name]);
+	for (var field_name in knownMenuFields){
+		if (!knownMenuFields.hasOwnProperty(field_name)) {
+			continue;
+		}
+		var field = buildEditboxField(entry, field_name, knownMenuFields[field_name]);
 		if (field){
-            if (fields[field_name].advanced){
+            if (knownMenuFields[field_name].advanced){
                 advancedFields.append(field);
             } else {
                 basicFields.append(field);
@@ -336,10 +343,10 @@ function buildEditboxField(entry, field_name, field_settings){
 	if (typeof entry[field_name] === 'undefined') {
 		return null; //skip fields this entry doesn't have
 	}
-	
+
 	var default_value = (typeof entry.defaults[field_name] != 'undefined')?entry.defaults[field_name]:field_settings.defaultValue;
 	var value = (entry[field_name]!=null)?entry[field_name]:default_value;
-	
+
 	//Build a form field of the appropriate type 
 	var inputBox = null;
 	switch(field_settings.type){
@@ -347,6 +354,9 @@ function buildEditboxField(entry, field_name, field_settings){
 			inputBox = $('<select class="ws_field_value">');
 			var option = null;
 			for( var optionTitle in field_settings.options ){
+				if (!field_settings.options.hasOwnProperty(optionTitle)) {
+					continue;
+				}
 				option = $('<option>')
 					.val(field_settings.options[optionTitle])
 					.text(optionTitle);
@@ -356,33 +366,33 @@ function buildEditboxField(entry, field_name, field_settings){
 				option.appendTo(inputBox);
 			}
 			break;
-            
+
         case 'checkbox':
             inputBox = $('<label><input type="checkbox"'+(value?' checked="checked"':'')+ ' class="ws_field_value"> '+
                 field_settings.caption+'</label>'
             );
             break;
-            
+
 		case 'text':
 		default:
 			inputBox = $('<input type="text" class="ws_field_value">').val(value);
 	}
-	
-	
+
+
 	var className = "ws_edit_field ws_edit_field-"+field_name;
 	if(entry[field_name]==null){
 		className += ' ws_input_default';
 	}
-	
+
 	var hasDropdown = (typeof(field_settings['addDropdown']) != 'undefined') && field_settings.addDropdown;
 	if ( hasDropdown ){
 		className += ' ws_has_dropdown';
 	}
-		
+
 	var editField = $('<div>' + (field_settings.standardCaption?(field_settings.caption+'<br>'):'') + '</div>')
 		.attr('class', className)
 		.append(inputBox);
-		
+
 	if ( hasDropdown ){
 		//Add a dropdown button
 		var dropdownId = 'ws_cap_selector';
@@ -396,17 +406,17 @@ function buildEditboxField(entry, field_name, field_settings){
 				.data('dropdownId', dropdownId)
 		);
 	}
-	
+
 	editField
 		.append('<img src="'+imagesUrl+'/transparent16.png" class="ws_reset_button" title="Reset to default value">&nbsp;</img>')
 		.data('field_name', field_name)
 		.data('default_value', default_value);
-		
+
 	if ( !field_settings.visible ){
 		editField.css('display', 'none');
 	}
-		
-	return editField;	
+
+	return editField;
 }
 
 /*
@@ -417,6 +427,9 @@ function getCurrentFieldValues(entry){
 	var values = {};
 	
 	for (var field_name in knownMenuFields){
+		if (!knownMenuFields.hasOwnProperty(field_name)) {
+			continue;
+		}
 		if (typeof entry[field_name] === 'undefined') {
 			continue; //skip fields this entry doesn't have
 		}
@@ -480,7 +493,7 @@ function readMenuTreeState(){
 	var menu_position = 0;
 		
 	//Gather all menus and their items
-	$('#ws_menu_box .ws_menu').each(function(i) {
+	$('#ws_menu_box .ws_menu').each(function() {
 		var menu = readMenuState(this, menu_position++);
 		
 		//Attach the current menu to the main struct
@@ -517,7 +530,7 @@ function readMenuState(menu_div, position){
 	//Gather the menu's items, if any
 	menu.items = {};
 	var item_position = 0;
-	$('#'+menu_div.data('submenu_id')).find('.ws_item').each(function (i) {
+	$('#'+menu_div.data('submenu_id')).find('.ws_item').each(function () {
 		var item = readItemState(this, item_position++);
 		menu.items[ (item.file?item.file:item.defaults.file) ] = item;
 	});
@@ -534,7 +547,7 @@ function readMenuState(menu_div, position){
  *
  */
 function readItemState(item_div, position){
-	var item_div = $(item_div);
+	item_div = $(item_div);
 	var item = readAllFields(item_div);
 	
 	item.defaults = item_div.data('defaults');
@@ -598,15 +611,15 @@ function readAllFields(container){
 
 
 /***************************************************************************
-                         Flag manipulation
+ Flag manipulation
  ***************************************************************************/
 
 var item_flags = {
-	'custom_item' : 'This is a custom menu item',
-	'unused' : 'This item was automatically (re)inserted into your custom menu because it is present in the default WordPress menu',
-	'missing' : 'This item is not present in the default WordPress menu.',
-	'hidden' : 'This item is hidden' 
-}
+	'custom_item':'This is a custom menu item',
+	'unused':'This item was automatically (re)inserted into your custom menu because it is present in the default WordPress menu',
+	'missing':'This item is not present in the default WordPress menu.',
+	'hidden':'This item is hidden'
+};
  
 function addMenuFlag(item, flag){
 	item = $(item);
@@ -624,7 +637,6 @@ function addMenuFlag(item, flag){
 
 function removeMenuFlag(item, flag){
 	item = $(item);
-	var item_class = 'ws_' + flag;
 	var img_class = 'ws_' + flag + '_flag';
 	
 	item.removeClass('ws_' + flag);
@@ -643,17 +655,8 @@ function menuHasFlag(item, flag){
 	return $(item).hasClass('ws_'+flag);
 }
 
-function clearMenuFlags(item){
-	item = $(item);
-	item.find('.ws_flag').remove();
-	for(var flag in item_flags){
-		item.removeClass('ws_'+flag);
-	}	
-}
-
 //Cut & paste stuff
 var menu_in_clipboard = null;
-var submenu_in_clipboard = null;
 var item_in_clipboard = null;
 var ws_paste_count = 0;
 
@@ -679,7 +682,7 @@ $(document).ready(function(){
 		}
 		
 		//Highlight the active item and un-highlight the previous one
-		container.addClass('ws_active')
+		container.addClass('ws_active');
 		container.siblings('.ws_active').removeClass('ws_active');
 		if ( container.hasClass('ws_menu') ){
 			//Show/hide the appropriate submenu
@@ -740,11 +743,12 @@ $(document).ready(function(){
     function fieldValueChange(){
         var input = $(this);
 		var field = input.parents('.ws_edit_field').first();
-        
+
+	    var value = null;
         if ( input.attr('type') == 'checkbox' ){
-            var value = input.is(':checked');
+            value = input.is(':checked');
         } else {
-            var value = input.val();
+            value = input.val();
         }
 		
 		if ( field.data('default_value') != value ) {
@@ -817,7 +821,7 @@ $(document).ready(function(){
 	};
 	 
 	//Show/hide the capability dropdown list when the button is clicked   
-	$('#ws_menu_editor input.ws_dropdown_button').live('click',function(event){
+	$('#ws_menu_editor input.ws_dropdown_button').live('click',function(){
 		var button = $(this);
 		var inputBox = button.parent().find('input.ws_field_value');
 		
@@ -863,7 +867,7 @@ $(document).ready(function(){
 	var dropdownNodes = $('.ws_dropdown');
 	
 	//Hide capability dropdown when it loses focus
-	dropdownNodes.blur(function(event){
+	dropdownNodes.blur(function(){
 		var dropdown = availableDropdowns[$(this).attr('id')];
 		
 		dropdown.list.hide();
@@ -882,10 +886,11 @@ $(document).ready(function(){
 	
 	dropdownNodes.keydown(function(event){
 		var dropdown = availableDropdowns[$(this).attr('id')];
+		var inputBox = null;
 		
 		//Also hide it when the user presses Esc
 		if ( event.which == 27 ){
-			var inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
+			inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
 			
 			dropdown.list.hide();
 			if ( dropdown.currentOwner ){
@@ -897,7 +902,7 @@ $(document).ready(function(){
 		} else if ( (event.which == 13) || (event.which == 9) ){
 			dropdown.list.hide();
 			
-			var inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
+			inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
 			if ( dropdown.list.val() ){
 				inputBox.val(dropdown.list.val());
 				inputBox.change();
@@ -915,7 +920,7 @@ $(document).ready(function(){
 		if ( event.which == 9 ){
 			event.preventDefault();
 		}
-	})
+	});
 	
 	
 	//Update the input & hide the list when an option is clicked
@@ -1307,7 +1312,7 @@ $(document).ready(function(){
 				'action' : 'export_custom_menu',
 				'_ajax_nonce' : exportMenuNonce
 			},
-			function(data, textStatus){
+			function(data){
 				button.val('Export');
 				button.removeAttr('disabled');
 				
@@ -1355,20 +1360,20 @@ $(document).ready(function(){
 		$('#import_dialog .hide-when-uploading').show();
 		
 		$('#import_dialog').dialog('open');
-	})
+	});
 	
 	$('#import_file_selector').change(function(){
 		if ( $(this).val() ){
 			$('#ws_start_import').removeAttr('disabled');
 		} else {
 			$('#ws_start_import').attr('disabled', 'disabled');
-		};
+		}
 	});
 	
 	//AJAXify the upload form
 	$('#import_menu_form').ajaxForm({
 		dataType : 'json',
-		beforeSubmit: function(formData, $form, options) { 
+		beforeSubmit: function(formData) {
 			
 			//Check if the user has selected a file
 			for(var i = 0; i < formData.length; i++){
@@ -1390,7 +1395,7 @@ $(document).ready(function(){
 				//Whoops, the user closed the dialog while the upload was in progress.
 				//Discard the response silently.
 				return;				
-			};
+			}
 			
 			if ( typeof data['error'] != 'undefined' ){
 				alert(data.error);
