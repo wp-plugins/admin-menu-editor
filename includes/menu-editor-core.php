@@ -25,7 +25,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private $custom_menu = null;        //The current custom menu with defaults merged in
 	public $menu_format_version = 4;
     
-    private $templates = null; //Template arrays for various menu structures. See the constructor for details.
+    //Template arrays for various menu structures. See the constructor for details.
+	private $basic_defaults;
+	private $blank_menu;
 
 	function init(){
 		//Determine if the plugin is active network-wide (i.e. either installed in 
@@ -50,50 +52,39 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$this->magic_hook_priority = 99999;
 		
         //Build some template arrays
-        $this->templates['basic_defaults'] = array(
+        $this->basic_defaults = array(
+	        //Fields that apply to all menu items.
             'page_title' => '',
 			'menu_title' => '',
 			'access_level' => 'read',  
-			'file' => '',          
-			'css_class' => '',
-			'hookname' => '',
-			'icon_url' => '',
-			'position' => 0,
-			'separator' => false,
-			'custom' => false,
-			'open_in' => 'same_window', //'new_window', 'iframe' or 'same_window' (the default)
+			'file' => '',
+	        'position' => 0,
+
+	        //Fields that apply only to top level menus.
+	        'css_class' => '',
+	        'hookname' => '',
+	        'icon_url' => '',
+	        'separator' => false,
+
+	        //Internal fields that may not map directly to WP menu structures.
+	        'menu_id' => '',
+	        'url' => '',
+	        'is_plugin_page' => false,
+	        'custom' => false,
+	        'open_in' => 'same_window', //'new_window', 'iframe' or 'same_window' (the default)
         );
-        
-        //Template for a basic top-level menu
-        $this->templates['blank_menu'] = array(
-			'page_title' => null,
-			'menu_title' => null,
-			'access_level' => null,  
-			'file' => null,          
-			'css_class' => null,
-			'hookname' => null,
-			'icon_url' => null,
-			'position' => null,
-			'separator' => null,
-			'custom' => null,
-			'open_in' => null, 
-			'defaults' => $this->templates['basic_defaults'],
-			'items' => array(),
-		);
-		//Template for menu items
-		$this->templates['blank_item'] = array(
-			'menu_title' => null,
-			'access_level' => null,
-			'file' => null,
-			'page_title' => null,
-			'position' => null,
-            'custom' => null,
-			'open_in' => null,
-			'defaults' => $this->templates['basic_defaults'],
-		 );
+
+		//Template for a basic menu item.
+		$blank_menu = array_fill_keys(array_keys($this->basic_defaults), null);
+		$blank_menu['items'] = array();
+		$blank_menu['defaults'] = $this->basic_defaults;
+		$this->blank_menu = $blank_menu;
 
 		//AJAXify screen options
-		add_action( 'wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options') );		 
+		add_action( 'wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options') );
+
+		//Activate the 'menu_order' filter. See self::hook_menu_order().
+		add_filter('custom_menu_order', '__return_true');
 	}
 	
   /**
@@ -107,7 +98,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( !$this->load_options() ){
 			$this->import_settings();
 		}
-		
 		parent::activate();
 	}
 	
@@ -123,7 +113,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				return true;
 			}
 		}
-		
 		return false;
 	}
 
@@ -188,29 +177,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			add_action("admin_print_styles-$page", array(&$this, 'enqueue_styles'));
 			
 			//Make a placeholder for our screen options (hacky)
-			add_meta_box("ws-ame-screen-options", "You should never see this", array(&$this, 'noop'), $page);
-		}
-		
-		//WP 3.0 in multisite mode has two separators with the same filename. This plugin 
-		//expects all top-level menus to have unique filenames/URLs. 
-		$first_separator1 = -1;
-		$last_separator1 = -1;
-		foreach($menu as $index => $item){
-			if ( $item[2] == 'separator1' ){
-				$last_separator1 = $index;
-				if ( $first_separator1 == -1 ){
-					$first_separator1 = $index;
-				}
-			}
-		}
-		if ( $first_separator1 != $last_separator1 ){
-			$menu[$first_separator1][2] = 'separator0';
+			add_meta_box("ws-ame-screen-options", "You should never see this", '__return_false', $page);
 		}
 		
 		//Store the "original" menus for later use in the editor
 		$this->default_wp_menu = $menu;
 		$this->default_wp_submenu = $submenu;
-		
+
 		//Is there a custom menu to use?
 		if ( !empty($this->options['custom_menu']) ){
 			//Check if we need to upgrade the menu structure
@@ -230,15 +203,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->filtered_wp_menu = $menu;
 			$this->filtered_wp_submenu = $submenu;
 		}
-	}
-
-	/**
-	 * Activate the 'menu_order' filter.
-	 *
-	 * @return bool
-	 */
-	function hook_custom_menu_order(){
-		return true;
 	}
 
 	/**
@@ -274,23 +238,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 	}
 	
-  /**
-   * Intercept a handy action to fix the page title for moved plugin pages.
-   *
-   * @return void
-   */
-	function hook_admin_xml_ns(){
-		global $title;
-		if ( empty($title) ){
-			$title = $this->get_real_page_title();
-		}		
-	}
-	
 	/**
 	 * Fix the page title for moved plugin pages.
 	 * The 'admin_title' filter is only available in WP 3.1+
 	 * 
-	 * @param string $admin_title The current admin title.
+	 * @param string $admin_title The current admin title (full).
 	 * @param string $title The current page title. 
 	 * @return string New admin title.
 	 */
@@ -355,53 +307,57 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		return $this->json_encode($tree);
 	}
 
-  /**
-   * Convert a WP menu structure to an associative array
-   *
-   * @param array $item An element of the $menu array
-   * @param integer $pos The position (index) of the menu item
-   * @return array
-   */
-	function menu2assoc($item, $pos=0){
+	/**
+	 * Convert a WP menu structure to an associative array.
+	 *
+	 * @param array $item An menu item.
+	 * @param int $position The position (index) of the the menu item.
+	 * @param string $parent The slug of the parent menu that owns this item. Blank for top level menus.
+	 * @return array
+	 */
+	function menu2assoc($item, $position = 0, $parent = '') {
+		static $separator_count = 0;
 		$item = array(
-			'menu_title' => $item[0],
+			'menu_title'   => $item[0],
 			'access_level' => $item[1],
-			'file' => $item[2],
-			'page_title' => $item[3],
-			'css_class' => $item[4],
-			'hookname' => (isset($item[5])?$item[5]:''), //ID
-			'icon_url' => (isset($item[6])?$item[6]:''),
-			'position' => $pos,
+			'file'         => $item[2],
+			'page_title'   => (isset($item[3]) ? $item[3] : ''),
+			'css_class'    => (isset($item[4]) ? $item[4] : ''),
+			'hookname'     => (isset($item[5]) ? $item[5] : ''), //Used as the ID attr. of the generated HTML tag.
+			'icon_url'     => (isset($item[6]) ? $item[6] : ''),
+			'position'     => $position,
+			'parent'       => $parent,
 		);
-		$item['separator'] = strpos($item['css_class'], 'wp-menu-separator') !== false;
+
+		if ( empty($parent) ) {
+			$item['separator'] = empty($item['file']) || empty($item['menu_title']) || (strpos($item['css_class'], 'wp-menu-separator') !== false);
+			//WP 3.0 in multisite mode has two separators with the same filename. Fix by reindexing separators.
+			if ( $item['separator'] ) {
+				$item['file'] = 'separator_' . ($separator_count++);
+			}
+		} else {
+			//Submenus can't contain separators.
+			$item['separator'] = false;
+		}
+
 		//Flag plugin pages
-		$item['is_plugin_page'] = (get_plugin_page_hook($item['file'], '') != null);
-        
-		return array_merge($this->templates['basic_defaults'], $item);
+		$hasHook = (get_plugin_page_hook($item['file'], '') != null);
+		$item['is_plugin_page'] = $hasHook;
+
+		$item['url'] = $this->get_menu_url($item['file'], '', $hasHook);
+		$item['menu_id'] = $this->unique_menu_id($item, $parent);
+
+		return array_merge($this->basic_defaults, $item);
 	}
 
-  /**
-   * Convert a WP submenu structure to an associative array
-   *
-   * @param array $item An element of the $submenu array
-   * @param integer $pos The position (index) of that element
-   * @param string $parent Parent file that this menu item belongs to.
-   * @return array
-   */
-	function submenu2assoc($item, $pos = 0, $parent = ''){
-		$item = array(
-			'menu_title' => $item[0],
-			'access_level' => $item[1],
-			'file' => $item[2],
-			'page_title' => (isset($item[3])?$item[3]:''),
-			'position' => $pos,
-		 );
-		//Save the default parent menu
-		$item['parent'] = $parent;
-		//Flag plugin pages
-		$item['is_plugin_page'] = (get_plugin_page_hook($item['file'], $parent) != null);
-        
-		return array_merge($this->templates['basic_defaults'], $item);
+	private function get_menu_url($item, $parent = '', $has_hook = null) {
+		if ( is_array($item) ) {
+			$item = $this->get_menu_field($item, 'file');
+		}
+		if ( $has_hook === null ) {
+			$has_hook = (get_plugin_page_hook($item, $parent) != null);
+		}
+		return $item;//TODO: Proper URL generation
 	}
 
   /**
@@ -413,25 +369,21 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return array An array with two elements containing menu and submenu defaults.
    */
 	function build_lookups($menu, $submenu){
-		//Process the top menu
-		$menu_defaults = array();
+		$defaults = array();
+
 		foreach($menu as $pos => $item){
 			$item = $this->menu2assoc($item, $pos);
-			$menu_defaults[$item['file']] = $item; //index by filename
+			$defaults[$this->unique_menu_id($item)] = $item;
 		}
 
-		//Process the submenu
-		$submenu_defaults = array();
 		foreach($submenu as $parent => $items){
 			foreach($items as $pos => $item){
-				$item = $this->submenu2assoc($item, $pos, $parent);
-				//File itself is not guaranteed to be unique, so we use a surrogate ID to identify submenus.
-				$uid = $this->unique_submenu_id($item['file'], $parent);
-				$submenu_defaults[$uid] = $item;
+				$item = $this->menu2assoc($item, $pos, $parent);
+				$defaults[$this->unique_menu_id($item, $parent)] = $item;
 			}
 		}
 
-		return array($menu_defaults, $submenu_defaults);
+		return $defaults;
 	}
 
   /**
@@ -444,17 +396,18 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return array Updated menu tree
    */
 	function menu_merge($tree, $menu, $submenu){
-		list($menu_defaults, $submenu_defaults) = $this->build_lookups($menu, $submenu);
+		$defaults = $this->build_lookups($menu, $submenu);
 		
 		//Iterate over all menus and submenus and look up default values
 		foreach ($tree as &$topmenu){
 			$topfile = $this->get_menu_field($topmenu, 'file');
+			$top_uid = $this->unique_menu_id($topmenu);
 			//Is this menu present in the default WP menu?
-			if (isset($menu_defaults[$topfile])){
+			if (isset($defaults[$top_uid])){
 				//Yes, load defaults from that item
-				$topmenu['defaults'] = $menu_defaults[$topfile];
+				$topmenu['defaults'] = $defaults[$top_uid];
 				//Note that the original item was used
-				$menu_defaults[$topfile]['used'] = true;
+				$defaults[$top_uid]['used'] = true;
 			} else {
 				//Record the menu as missing, unless it's a menu separator
 				if ( empty($topmenu['separator']) ){
@@ -472,13 +425,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if (is_array($topmenu['items'])) {
 				//Iterate over submenu items
 				foreach ($topmenu['items'] as $file => &$item){
-					$uid = $this->unique_submenu_id($item, $topfile);
+					$uid = $this->unique_menu_id($item, $topfile);
 					
 					//Is this item present in the default WP menu?
-					if (isset($submenu_defaults[$uid])){
+					if (isset($defaults[$uid])){
 						//Yes, load defaults from that item
-						$item['defaults'] = $submenu_defaults[$uid];
-						$submenu_defaults[$uid]['used'] = true;
+						$item['defaults'] = $defaults[$uid];
+						$defaults[$uid]['used'] = true;
 					} else {
 						//Record as missing
 						$item['missing'] = true;
@@ -499,39 +452,28 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//that are not marked as used. The missing items are handled elsewhere (e.g. tree2wp()),
 		//but lets merge in the unused items now.
 
-		//Find and merge unused toplevel menus
-		foreach ($menu_defaults as $topfile => $topmenu){
+		//Find and merge unused menus
+		foreach ($defaults as $item){
 			//Skip used menus and separators
-			if ( !empty($topmenu['used']) || !empty($topmenu['separator'])) {
+			if ( !empty($item['used']) || !empty($item['separator'])) {
 				continue;
-			};
+			}
 
 			//Found an unused item. Build the tree entry.
-			$entry = $this->templates['blank_menu'];
-			$entry['defaults'] = $topmenu;
-			$entry['items'] = array(); //prepare a place for menu items, if any.
-			//Note that this item is unused
-			$entry['unused'] = true;
-			//Add the new entry to the menu tree
-			$tree[$topfile] = $entry;
-		}
-		unset($topmenu);
-
-		//Find and merge submenu items
-		foreach($submenu_defaults as $uid => $item){
-			if ( !empty($item['used']) ) continue;
-			//Found an unused item. Build an entry and attach it under the default toplevel menu.
-			$entry = $this->templates['blank_item'];
+			$entry = $this->blank_menu;
 			$entry['defaults'] = $item;
-			//Note that this item is unused
-			$entry['unused'] = true;
+			$entry['unused'] = true; //Note that this item is unused
 
-			//Check if the toplevel menu exists
-			if (isset($tree[$item['parent']])) {
-				//Okay, insert the item.
-				$tree[$item['parent']]['items'][$item['file']] = $entry;
+			//Add the new entry to the menu tree
+			if ( !empty($item['parent']) ) {
+				if (isset($tree[$item['parent']])) {
+					//Okay, insert the item.
+					$tree[$item['parent']]['items'][$item['file']] = $entry;
+				} else {
+					//Ooops? This should never happen. Some kind of inconsistency?
+				}
 			} else {
-				//Ooops? This should never happen. Some kind of inconsistency?
+				$tree[$item['file']] = $entry;
 			}
 		}
 
@@ -542,25 +484,24 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 	
   /**
-   * Generate an ID that uniquely identifies a given submenu item. 
+   * Generate an ID that semi-uniquely identifies a given menu item.
    *
-   * @param string|array $file Menu item in question
-   * @param string $parent Parent menu. Optional. If $file is an array, the function will try to get the parent value from $file['defaults'] instead.
+   * @param string|array $item The menu item in question.
+   * @param string $parent_file The parent menu.
    * @return string Unique ID
    */
-	function unique_submenu_id($file, $parent = ''){
-		if ( is_array($file) ){
-			if ( isset($file['defaults']) && isset($file['defaults']['parent']) ){
-				$parent = $file['defaults']['parent'];
+	function unique_menu_id($item, $parent_file = ''){
+		$item_file = is_array($item) ? $this->get_menu_field($item, 'file') : $item;
+		if ( is_array($item) ){
+			//Maybe it already has an ID?
+			$menu_id = $this->get_menu_field($item, 'menu_id');
+			if ( !empty($menu_id) ) {
+				return $menu_id;
 			}
-			$file = $this->get_menu_field($file, 'file');
-		}
-		
-		if ( !empty($parent) ){
-			return $parent . '::' . $file;
 		} else {
-			return $file;
+			$item_file = $item;
 		}
+		return $parent_file . '>' . $item_file;
 	}
 
   /**
@@ -572,25 +513,19 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    */
 	function wp2tree($menu, $submenu){
 		$tree = array();
-		$separator_count = 0;
 		foreach ($menu as $pos => $item){
 			
-			$tree_item = $this->templates['blank_menu'];
+			$tree_item = $this->blank_menu;
 			$tree_item['defaults'] = $this->menu2assoc($item, $pos);
-			$tree_item['separator'] = empty($item[2]) || empty($item[0]) || (strpos($item[4], 'wp-menu-separator') !== false);
-			
-			if ( empty($tree_item['defaults']['file']) ){
-				$tree_item['defaults']['file'] = 'separator_'.$separator_count;
-				$separator_count++;
-			}
+			$tree_item['separator'] = $tree_item['defaults']['separator'];
 			
 			//Attach submenu items
 			$parent = $tree_item['defaults']['file'];
 			if ( isset($submenu[$parent]) ){
 				foreach($submenu[$parent] as $pos => $subitem){
 					$tree_item['items'][$subitem[2]] = array_merge(
-						$this->templates['blank_item'],
-						array('defaults' => $this->submenu2assoc($subitem, $pos, $parent))
+						$this->blank_menu,
+						array('defaults' => $this->menu2assoc($subitem, $pos, $parent))
 					);
 				}				
 			}
@@ -820,12 +755,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		
 		//Append new fields, if any
 		foreach($tree as &$menu){
-			$menu = array_merge($this->templates['blank_menu'], $menu);
-            $menu['defaults'] = array_merge($this->templates['basic_defaults'], $menu['defaults']);
+			$menu = array_merge($this->blank_menu, $menu);
+            $menu['defaults'] = array_merge($this->basic_defaults, $menu['defaults']);
             
 			foreach($menu['items'] as $item_file => $item){
-				$item = array_merge($this->templates['blank_item'], $item);
-                $item['defaults'] = array_merge($this->templates['basic_defaults'], $item['defaults']);
+				$item = array_merge($this->blank_menu, $item);
+                $item['defaults'] = array_merge($this->basic_defaults, $item['defaults']);
 				$menu['items'][$item_file] = $item;
 			}
 		}
@@ -1227,18 +1162,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		$this->save_options();
 		die('1');
 	}
-	
-	/**
-	 * A callback for the stub meta box added to the plugin's page. Does nothing.  
-	 * 
-	 * @return void
-	 */
-	function noop(){
-		//nihil
-	}
-	
+
 } //class
 
 endif;
-
-?>
