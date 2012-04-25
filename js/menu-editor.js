@@ -1,9 +1,11 @@
 //(c) W-Shadow
 
+/*global wsEditorData, defaultMenu, customMenu */
+/** @namespace wsEditorData */
+
 var wsIdCounter = 0;
 
 (function ($){
-	
 /*
  * Utility function for generating pseudo-random alphanumeric menu IDs.
  * Rationale: Simpler than atomically auto-incrementing or globally unique IDs.
@@ -12,7 +14,7 @@ function randomMenuId(size){
 	if ( typeof size == 'undefined' ){
 		size = 5;
 	}
-	
+
     var text = "";
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -21,14 +23,14 @@ function randomMenuId(size){
 
     return text;
 }
-	
+
 function outputWpMenu(menu){
 	//Remove the current menu data
 	$('#ws_menu_box').empty();
 	$('#ws_submenu_box').empty();
 	//Kill autocomplete boxes
 	$('.ac_results').remove();
-	
+
 	//Display the new menu
 	var i = 0;
 	for (var filename in menu){
@@ -38,7 +40,7 @@ function outputWpMenu(menu){
 		outputTopMenu(menu[filename]);
 		i++;
 	}
-	
+
 	//Automatically select the first top-level menu
 	$('#ws_menu_box .ws_menu:first').click();
 }
@@ -46,7 +48,7 @@ function outputWpMenu(menu){
 /*
  * Create edit widgets for a top-level menu and its submenus and append them all to the DOM.
  *
- * Inputs : 
+ * Inputs :
  *	menu - an object containing menu data
  *	afterNode - if specified, the new menu widget will be inserted after this node. Otherwise,
  *	            it will be added to the end of the list.
@@ -56,11 +58,11 @@ function outputWpMenu(menu){
 function outputTopMenu(menu, afterNode){
 	//Create a container for menu items, even if there are none
 	var submenu = buildSubmenu(menu.items);
-	
+
 	//Create the menu widget
 	var menu_obj = buildTopMenu(menu);
 	menu_obj.data('submenu_id', submenu.attr('id'));
-	
+
 	//Display
 	submenu.appendTo('#ws_submenu_box');
 	if ( typeof afterNode != 'undefined' ){
@@ -68,7 +70,7 @@ function outputTopMenu(menu, afterNode){
 	} else {
 		menu_obj.appendTo('#ws_menu_box');
 	}
-	
+
 	return {
 		'menu' : menu_obj,
 		'submenu' : submenu
@@ -83,7 +85,7 @@ function buildTopMenu(menu){
 	if ( menu.separator ) {
 		subclass = subclass + ' ws_menu_separator';
 	}
-	
+
 	//Create the menu HTML
 	var menu_obj = $('<div></div>')
 		.attr('class', "ws_container ws_menu "+subclass)
@@ -91,7 +93,7 @@ function buildTopMenu(menu){
 		.data('defaults', menu.defaults)
 		.data('initial_values', getCurrentFieldValues(menu))
 		.data('field_editors_created', false);
-	
+
 	//Add a header and a container for property editors (to improve performance
 	//the editors themselves are created later, when the user tries to access them
 	//for the first time).
@@ -106,7 +108,7 @@ function buildTopMenu(menu){
 		'<div class="ws_editbox" style="display: none;"></div>'
 	);
 	menu_obj.append(contents.join(''));
-	
+
 	//Apply flags based on the item's state
 	if (menu.missing && !getFieldValue(menu, 'custom', false)) {
 		addMenuFlag(menu_obj, 'missing');
@@ -120,16 +122,16 @@ function buildTopMenu(menu){
 	if (getFieldValue(menu, 'custom', false)) {
 		addMenuFlag(menu_obj, 'custom_item');
 	}
-	
+
 	if ( !menu.separator ){
 		//Allow the user to drag menu items to top-level menus
 		menu_obj.droppable({
 			'hoverClass' : 'ws_menu_drop_hover',
-			
+
 			'accept' : (function(thing){
 				return thing.hasClass('ws_item');
 			}),
-			
+
 			'drop' : (function(event, ui){
 				var droppedItemData = readItemState(ui.draggable);
 				var new_item = buildMenuItem(droppedItemData);
@@ -139,7 +141,7 @@ function buildTopMenu(menu){
 			})
 		});
 	}
-	
+
 	return menu_obj;
 }
 
@@ -150,8 +152,8 @@ function buildSubmenu(items){
 	//Create a container for menu items, even if there are none
 	var submenu = $('<div class="ws_submenu" style="display:none;"></div>');
 	submenu.attr('id', 'ws-submenu-'+(wsIdCounter++));
-	
-	//Only show menus that have items. 
+
+	//Only show menus that have items.
 	//Skip arrays (with a length) because filled menus are encoded as custom objects.
 	var entry = null;
 	if (items && (typeof items != 'Array')){
@@ -165,10 +167,10 @@ function buildSubmenu(items){
 			}
 		}
 	}
-	
+
 	//Make the submenu sortable
 	makeBoxSortable(submenu);
-	
+
 	return submenu;
 }
 
@@ -179,12 +181,12 @@ function buildMenuItem(entry){
 	if (!entry.defaults) {
 		return null
 	}
-	
+
 	var item = $('<div class="ws_container ws_item">')
 		.data('defaults', entry.defaults)
 		.data('initial_values', getCurrentFieldValues(entry))
 		.data('field_editors_created', false);
-	
+
 	//Add a header and a container for property editors (to improve performance
 	//the editors themselves are created later, when the user tries to access them
 	//for the first time).
@@ -199,7 +201,7 @@ function buildMenuItem(entry){
 		'<div class="ws_editbox" style="display: none;"></div>'
 	);
 	item.append(contents.join(''));
-		
+
 	//Apply flags based on the item's state
 	if (entry.missing && !getFieldValue(entry, 'custom', false)) {
 		addMenuFlag(item, 'missing');
@@ -213,13 +215,13 @@ function buildMenuItem(entry){
 	if (getFieldValue(entry, 'custom', false)) {
 		addMenuFlag(item, 'custom_item');
 	}
-	
+
 	return item;
 }
 
 /*
  * List of all menu fields that have an associated editor
- */ 
+ */
 var knownMenuFields = {
 	'menu_title' : {
 		caption : 'Menu title',
@@ -308,11 +310,11 @@ var knownMenuFields = {
 function buildEditboxFields(containerNode, entry){
 	var basicFields = $('<div class="ws_edit_panel ws_basic"></div>').appendTo(containerNode);
     var advancedFields = $('<div class="ws_edit_panel ws_advanced"></div>').appendTo(containerNode);
-    
-    if ( hideAdvancedSettings ){
+
+    if ( wsEditorData.hideAdvancedSettings ){
     	advancedFields.css('display', 'none');
     }
-	
+
 	for (var field_name in knownMenuFields){
 		if (!knownMenuFields.hasOwnProperty(field_name)) {
 			continue;
@@ -326,12 +328,12 @@ function buildEditboxFields(containerNode, entry){
             }
 		}
 	}
-	
+
 	//Add a link that shows/hides advanced fields
 	containerNode.append(
 		'<div class="ws_toggle_container"><a href="#" class="ws_toggle_advanced_fields"'+
-		(hideAdvancedSettings?'':' style="display:none;"')+'>'+
-		(hideAdvancedSettings?captionShowAdvanced:captionHideAdvanced)
+		(wsEditorData.hideAdvancedSettings ? '' : ' style="display:none;"')+'>'+
+		(wsEditorData.hideAdvancedSettings ? wsEditorData.captionShowAdvanced : wsEditorData.captionHideAdvanced)
 		+'</a></div>'
 	);
 }
@@ -347,7 +349,7 @@ function buildEditboxField(entry, field_name, field_settings){
 	var default_value = (typeof entry.defaults[field_name] != 'undefined')?entry.defaults[field_name]:field_settings.defaultValue;
 	var value = (entry[field_name]!=null)?entry[field_name]:default_value;
 
-	//Build a form field of the appropriate type 
+	//Build a form field of the appropriate type
 	var inputBox = null;
 	switch(field_settings.type){
 		case 'select':
@@ -408,7 +410,7 @@ function buildEditboxField(entry, field_name, field_settings){
 	}
 
 	editField
-		.append('<img src="'+imagesUrl+'/transparent16.png" class="ws_reset_button" title="Reset to default value">&nbsp;</img>')
+		.append('<img src="' + wsEditorData.imagesUrl + '/transparent16.png" class="ws_reset_button" title="Reset to default value">&nbsp;</img>')
 		.data('field_name', field_name)
 		.data('default_value', default_value);
 
@@ -420,12 +422,12 @@ function buildEditboxField(entry, field_name, field_settings){
 }
 
 /*
- * Get the current values of all menu fields (ignores defaults). 
- * Returns an object containing each field as a separate property. 
+ * Get the current values of all menu fields (ignores defaults).
+ * Returns an object containing each field as a separate property.
  */
 function getCurrentFieldValues(entry){
 	var values = {};
-	
+
 	for (var field_name in knownMenuFields){
 		if (!knownMenuFields.hasOwnProperty(field_name)) {
 			continue;
@@ -435,18 +437,18 @@ function getCurrentFieldValues(entry){
 		}
 		values[field_name] = entry[field_name];
 	}
-	
+
 	values.defaults = entry.defaults;
-	
+
 	return values;
 }
 
 /*
- * Get the current value of a single menu field. 
+ * Get the current value of a single menu field.
  *
- * If the specified field is not set, this function will attempt to retrieve it 
+ * If the specified field is not set, this function will attempt to retrieve it
  * from the "defaults" property of the menu object. If *that* fails, it will return
- * the value of the optional third argument defaultValue. 
+ * the value of the optional third argument defaultValue.
  */
 function getFieldValue(entry, fieldName, defaultValue){
 	if ( (typeof entry[fieldName] === 'undefined') || (entry[fieldName] === null) ) {
@@ -477,10 +479,10 @@ function makeBoxSortable(menuBox){
                        Parsing & encoding menu inputs
  ***************************************************************************/
 
-/* 
+/*
  * Encode the current menu structure as JSON
  *
- * Returns : 
+ * Returns :
  *	A JSON-encoded string representing the current menu tree loaded in the editor.
  */
 function encodeMenuAsJSON(){
@@ -491,41 +493,41 @@ function encodeMenuAsJSON(){
 function readMenuTreeState(){
 	var tree = {};
 	var menu_position = 0;
-		
+
 	//Gather all menus and their items
 	$('#ws_menu_box .ws_menu').each(function() {
 		var menu = readMenuState(this, menu_position++);
-		
+
 		//Attach the current menu to the main struct
 		var filename = (menu.file !== null)?menu.file:menu.defaults.file;
 		tree[filename] = menu;
 	});
-	
+
 	return tree;
 }
 
 /*
  * Extract the settings of a top-level menu from its editor widget(s).
  *
- * Inputs : 
+ * Inputs :
  * 	menu_div - DOM node, typically one with the .ws_menu class.
  *  position - The current menu position (int).
  *
- * Output : 
- *  A menu object in the tree format.  	
+ * Output :
+ *  A menu object in the tree format.
  *
  */
 function readMenuState(menu_div, position){
 	menu_div = $(menu_div);
 	var menu = readAllFields(menu_div);
-	
+
 	menu.defaults = menu_div.data('defaults');
-	
+
 	menu.position = position;
 	menu.defaults.position = position; //the real default value will later overwrite this
-	
+
 	menu.separator = menu_div.hasClass('ws_menu_separator');
-	menu.hidden = menu_div.hasClass('ws_hidden'); 
+	menu.hidden = menu_div.hasClass('ws_hidden');
 
 	//Gather the menu's items, if any
 	menu.items = {};
@@ -534,34 +536,34 @@ function readMenuState(menu_div, position){
 		var item = readItemState(this, item_position++);
 		menu.items[ (item.file?item.file:item.defaults.file) ] = item;
 	});
-	
+
 	return menu;
 }
 
 /*
  * Extract the current menu item settings from its editor widget.
  *
- * Inputs : 
- *	item_div - DOM node containing the editor widget, usually with the .ws_item class.  
- *	position - Menu item position among its sibling menu items.   
+ * Inputs :
+ *	item_div - DOM node containing the editor widget, usually with the .ws_item class.
+ *	position - Menu item position among its sibling menu items.
  *
  */
 function readItemState(item_div, position){
 	item_div = $(item_div);
 	var item = readAllFields(item_div);
-	
+
 	item.defaults = item_div.data('defaults');
-	
+
 	//Save the position data
 	if ( typeof position == 'undefined' ){
 		position = 0;
 	}
 	item.position = position;
 	item.defaults.position = position;
-	
+
 	//Check if the item is hidden
 	item.hidden = item_div.hasClass('ws_hidden');
-	
+
 	return item;
 }
 
@@ -569,31 +571,31 @@ function readItemState(item_div, position){
  * Extract the values of all menu/item fields present in a container node
  *
  * Inputs:
- *	container - a jQuery collection representing the node to read.  
+ *	container - a jQuery collection representing the node to read.
  */
 function readAllFields(container){
 	if ( !container.hasClass('ws_container') ){
 		container = container.parents('ws_container').first();
 	}
-	
+
 	if ( !container.data('field_editors_created') ){
 		return container.data('initial_values');
 	}
-	
+
 	var state = {};
-	
+
 	//Iterate over all fields of the item
 	container.find('.ws_edit_field').each(function() {
 		var field = $(this);
-		
+
 		//Get the name of this field
-		field_name = field.data('field_name');
+		var field_name = field.data('field_name');
 		//Skip if unnamed
 		if (!field_name) return true;
-		
+
 		//Find the field (usually an input or select element).
-		input_box = field.find('.ws_field_value');
-		
+		var input_box = field.find('.ws_field_value');
+
 		//Save null if default used, custom value otherwise
 		if (field.hasClass('ws_input_default')){
 			state[field_name] = null;
@@ -605,7 +607,7 @@ function readAllFields(container){
             }
 		}
 	});
-	
+
 	return state;
 }
 
@@ -620,13 +622,13 @@ var item_flags = {
 	'missing':'This item is not present in the default WordPress menu.',
 	'hidden':'This item is hidden'
 };
- 
+
 function addMenuFlag(item, flag){
 	item = $(item);
-	
+
 	var item_class = 'ws_' + flag;
 	var img_class = 'ws_' + flag + '_flag';
-	
+
 	item.addClass(item_class);
 	//Add the flag image
 	var flag_container = item.find('.ws_flag_container');
@@ -638,7 +640,7 @@ function addMenuFlag(item, flag){
 function removeMenuFlag(item, flag){
 	item = $(item);
 	var img_class = 'ws_' + flag + '_flag';
-	
+
 	item.removeClass('ws_' + flag);
 	item.find('.' + img_class).remove();
 }
@@ -661,18 +663,18 @@ var item_in_clipboard = null;
 var ws_paste_count = 0;
 
 $(document).ready(function(){
-	if (window.wsMenuEditorPro) {
+	if (wsEditorData.wsMenuEditorPro) {
 		knownMenuFields['open_in'].visible = true;
 	}
-	
+
 	//Make the top menu box sortable (we only need to do this once)
     var mainMenuBox = $('#ws_menu_box');
     makeBoxSortable(mainMenuBox);
-    
+
 	/***************************************************************************
 	                  Event handlers for editor widgets
 	 ***************************************************************************/
-	
+
 	//Highlight the clicked menu item and show it's submenu
 	var currentVisibleSubmenu = null;
     $('#ws_menu_editor .ws_container').live('click', (function () {
@@ -680,7 +682,7 @@ $(document).ready(function(){
 		if ( container.hasClass('ws_active') ){
 			return;
 		}
-		
+
 		//Highlight the active item and un-highlight the previous one
 		container.addClass('ws_active');
 		container.siblings('.ws_active').removeClass('ws_active');
@@ -692,19 +694,19 @@ $(document).ready(function(){
 			currentVisibleSubmenu = $('#'+container.data('submenu_id')).show();
 		}
     }));
-    
+
     //Show/hide a menu's properties
     $('#ws_menu_editor .ws_edit_link').live('click', (function () {
-    	var container = $(this).parents('.ws_container').first(); 
+    	var container = $(this).parents('.ws_container').first();
 		var box = container.find('.ws_editbox');
-		
-		//For performance, the property editors for each menu are only created 
+
+		//For performance, the property editors for each menu are only created
 		//when the user tries to access access them for the first time.
 		if ( !container.data('field_editors_created') ){
 			buildEditboxFields(box, container.data('initial_values'));
 			container.data('field_editors_created', true);
 		}
-		
+
 		$(this).toggleClass('ws_edit_link_expanded');
 		//show/hide the editbox
 		if ($(this).hasClass('ws_edit_link_expanded')){
@@ -715,7 +717,7 @@ $(document).ready(function(){
 			box.hide();
 		}
     }));
-    
+
     //The "Default" button : Reset to default value when clicked
     $('#ws_menu_editor .ws_reset_button').live('click', (function () {
         //Find the field div (it holds the default value)
@@ -731,14 +733,14 @@ $(document).ready(function(){
                     input.removeAttr('checked');
                 }
             } else {
-                input.val(field.data('default_value'));   
+                input.val(field.data('default_value'));
             }
 			field.addClass('ws_input_default');
 			//Trigger the change event to ensure consistency
 			input.change();
-		}	
+		}
 	}));
-	
+
 	//When a field is edited, change it's appearance if it's contents don't match the default value.
     function fieldValueChange(){
         var input = $(this);
@@ -750,11 +752,11 @@ $(document).ready(function(){
         } else {
             value = input.val();
         }
-		
+
 		if ( field.data('default_value') != value ) {
 			field.removeClass('ws_input_default');
 		}
-		
+
         var fieldName = field.data('field_name');
 		if ( fieldName == 'menu_title' ){
             //If the changed field is the menu title, update the header
@@ -776,7 +778,7 @@ $(document).ready(function(){
 		}
     }
 	$('#ws_menu_editor .ws_field_value').live('click', fieldValueChange);
-	//jQuery 1.3.x can't catch 'change' events with live(), 
+	//jQuery 1.3.x can't catch 'change' events with live(),
 	//so we handle that by using event delegation instead.
 	//TODO: Update for jQuery 1.4.2 in WP 3.0
 	$('#ws_menu_editor').change(function(event){
@@ -785,24 +787,24 @@ $(document).ready(function(){
 			fieldValueChange.call(target, event);
 		}
 	});
-	
+
 	//Show/hide advanced fields
 	$('#ws_menu_editor .ws_toggle_advanced_fields').live('click', function(){
 		var self = $(this);
 		var advancedFields = self.parents('.ws_container').first().find('.ws_advanced');
-		
+
 		if ( advancedFields.is(':visible') ){
 			advancedFields.hide();
-			self.text(captionShowAdvanced);
+			self.text(wsEditorData.captionShowAdvanced);
 		} else {
 			advancedFields.show();
-			self.text(captionHideAdvanced);
+			self.text(wsEditorData.captionHideAdvanced);
 		}
-		
+
 		return false;
 	});
-	
-	
+
+
 	/***************************************************************************
 	 Dropdown list for combobox fields
 	 ***************************************************************************/
@@ -819,28 +821,28 @@ $(document).ready(function(){
 			timeoutForgetOwner : 0
 		}
 	};
-	 
-	//Show/hide the capability dropdown list when the button is clicked   
+
+	//Show/hide the capability dropdown list when the button is clicked
 	$('#ws_menu_editor input.ws_dropdown_button').live('click',function(){
 		var button = $(this);
 		var inputBox = button.parent().find('input.ws_field_value');
-		
+
 		var dropdown = availableDropdowns[button.data('dropdownId')];
-		
+
 		clearTimeout(dropdown.timeoutForgetOwner);
 		dropdown.timeoutForgetOwner = 0;
-		
+
 		//If we already own the list, hide it and rescind ownership.
 		if ( dropdown.currentOwner == this ){
 			dropdown.list.hide();
-			
+
 			dropdown.currentOwner = null;
 			inputBox.focus();
-			
+
 			return;
 		}
 		dropdown.currentOwner = this; //Got ye now!
-		
+
 		//Move the dropdown near to the button
 		var inputPos = inputBox.offset();
 		dropdown.list.css({
@@ -848,108 +850,108 @@ $(document).ready(function(){
 			left: inputPos.left,
 			top: inputPos.top + inputBox.outerHeight()
 		});
-		
+
 		//Pre-select the current capability (will clear selection if there's no match)
 		dropdown.list.val(inputBox.val());
-		
+
 		dropdown.list.show();
 		dropdown.list.focus();
 	});
-	
-	//Also show it when the user presses the down arrow in the input field  
+
+	//Also show it when the user presses the down arrow in the input field
 	$('#ws_menu_editor .ws_has_dropdown input.ws_field_value').live('keyup', function(event){
 		if ( event.which == 40 ){
 			$(this).parent().find('input.ws_dropdown_button').click();
 		}
 	});
-	
+
 	//Event handlers for the dropdowns themselves
 	var dropdownNodes = $('.ws_dropdown');
-	
+
 	//Hide capability dropdown when it loses focus
 	dropdownNodes.blur(function(){
 		var dropdown = availableDropdowns[$(this).attr('id')];
-		
+
 		dropdown.list.hide();
 		/*
-		* Hackiness : make sure the list doesn't disappear & immediately reappear 
+		* Hackiness : make sure the list doesn't disappear & immediately reappear
 		* when the event that caused it to lose focus was the user clicking on the
 		* dropdown button.
 		*/
 		dropdown.timeoutForgetOwner = setTimeout(
 			(function(){
 				dropdown.currentOwner = null;
-			}), 
+			}),
 			200
 		);
 	});
-	
+
 	dropdownNodes.keydown(function(event){
 		var dropdown = availableDropdowns[$(this).attr('id')];
 		var inputBox = null;
-		
+
 		//Also hide it when the user presses Esc
 		if ( event.which == 27 ){
 			inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
-			
+
 			dropdown.list.hide();
 			if ( dropdown.currentOwner ){
 				$(dropdown.currentOwner).parent().find('input.ws_field_value').focus();
 			}
 			dropdown.currentOwner = null;
-			
+
 		//Select an item & hide the list when the user presses Enter or Tab
 		} else if ( (event.which == 13) || (event.which == 9) ){
 			dropdown.list.hide();
-			
+
 			inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
 			if ( dropdown.list.val() ){
 				inputBox.val(dropdown.list.val());
 				inputBox.change();
 			}
-			
+
 			inputBox.focus();
 			dropdown.currentOwner = null;
-			
+
 			event.preventDefault();
 		}
 	});
-	
-	//Eat Tab keys to prevent focus theft. Required to make the "select item on Tab" thing work. 
+
+	//Eat Tab keys to prevent focus theft. Required to make the "select item on Tab" thing work.
 	dropdownNodes.keyup(function(event){
 		if ( event.which == 9 ){
 			event.preventDefault();
 		}
 	});
-	
-	
+
+
 	//Update the input & hide the list when an option is clicked
 	dropdownNodes.click(function(){
 		var dropdown = availableDropdowns[$(this).attr('id')];
-		
+
 		if ( !dropdown.currentOwner || !dropdown.list.val() ){
 			return;
 		}
 		dropdown.list.hide();
-		
+
 		var inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
 		inputBox.val(dropdown.list.val()).change().focus();
 		dropdown.currentOwner = null;
 	});
-	
+
 	//Highlight an option when the user mouses over it (doesn't work in IE)
 	dropdownNodes.mousemove(function(event){
 		if ( !event.target ){
 			return;
 		}
-		
+
 		var option = $(event.target);
 		if ( !option.attr('selected') && option.attr('value')){
 			option.attr('selected', 'selected');
 		}
-	});	
-	
-    
+	});
+
+
     /*************************************************************************
 	                           Menu toolbar buttons
 	 *************************************************************************/
@@ -958,11 +960,11 @@ $(document).ready(function(){
 		//Get the selected menu
 		var selection = $('#ws_menu_box .ws_active');
 		if (!selection.length) return;
-		
+
 		//Mark the menu as hidden/visible
 		//selection.toggleClass('ws_hidden');
 		toggleMenuFlag(selection, 'hidden');
-		
+
 		//Also mark all of it's submenus as hidden/visible
 		if ( menuHasFlag(selection,'hidden') ){
 			$('#' + selection.data('submenu_id') + ' .ws_item').each(function(){
@@ -974,13 +976,13 @@ $(document).ready(function(){
 			});
 		}
 	});
-	
+
 	//Delete menu
 	$('#ws_delete_menu').click(function () {
 		//Get the selected menu
 		var selection = $('#ws_menu_box .ws_active');
 		if (!selection.length) return;
-		
+
 		if (confirm('Delete this menu?')){
 			//Delete the submenu first
 			$('#' + selection.data('submenu_id')).remove();
@@ -988,31 +990,31 @@ $(document).ready(function(){
 			selection.remove();
 		}
 	});
-	
+
 	//Copy menu
 	$('#ws_copy_menu').click(function () {
 		//Get the selected menu
 		var selection = $('#ws_menu_box .ws_active');
 		if (!selection.length) return;
-		
+
 		//Store a copy of the current menu state in clipboard
 		menu_in_clipboard = readMenuState(selection);
 	});
-	
+
 	//Cut menu
 	$('#ws_cut_menu').click(function () {
 		//Get the selected menu
 		var selection = $('#ws_menu_box .ws_active');
 		if (!selection.length) return;
-		
+
 		//Store a copy of the current menu state in clipboard
 		menu_in_clipboard = readMenuState(selection);
-		
-		//Remove the original menu and submenu		
+
+		//Remove the original menu and submenu
 		selection.remove();
 		$('#'+selection.data('submenu_id')).remove();
 	});
-	
+
 	//Paste menu
 	$('#ws_paste_menu').click(function () {
 		//Check if anything has been copied/cut
@@ -1027,7 +1029,7 @@ $(document).ready(function(){
 
 		//Get the selected menu
 		var selection = $('#ws_menu_box .ws_active');
-		
+
 		if (selection.length > 0) {
 			//If a menu is selected add the pasted item after it
 			outputTopMenu(menu, selection);
@@ -1036,13 +1038,13 @@ $(document).ready(function(){
 			outputTopMenu(menu);
 		}
 	});
-	
+
 	//New menu
 	$('#ws_new_menu').click(function () {
 		ws_paste_count++;
-		
+
 		//The new menu starts out rather bare
-		var randomId = 'custom_menu_'+randomMenuId();		
+		var randomId = 'custom_menu_'+randomMenuId();
 		var menu = {
 			menu_title : null,
 			page_title : null,
@@ -1052,7 +1054,7 @@ $(document).ready(function(){
 			icon_url : null,
 			hookname : null,
 			position : null,
-			custom : null, 
+			custom : null,
 			open_in: null,
 			items : {}, //No items
 			defaults : {
@@ -1069,20 +1071,20 @@ $(document).ready(function(){
 				separator: false
 			}
 		};
-		
+
 		//Insert the new menu
-		result = outputTopMenu(menu);
-				
+		var result = outputTopMenu(menu);
+
 		//The menus's editbox is always open
 		result.menu.find('.ws_edit_link').click();
 	});
-	
+
 	//New separator
 	$('#ws_new_separator').click(function () {
 		ws_paste_count++;
-		
+
 		//The new menu starts out rather bare
-		var randomId = 'separator_'+randomMenuId();		
+		var randomId = 'separator_'+randomMenuId();
 		var menu = {
 			menu_title : null,
 			page_title : null,
@@ -1093,7 +1095,7 @@ $(document).ready(function(){
 			hookname : null,
 			position : null,
 			separator : true, //Flag as a separator
-			custom : null, 
+			custom : null,
 			open_in : null,
 			items : {}, //No items
 			defaults : {
@@ -1105,16 +1107,16 @@ $(document).ready(function(){
 				icon_url : '',
 				hookname : '',
 				position : 0,
-				custom: false, //Separators don't need to flagged as custom to be retained. 
+				custom: false, //Separators don't need to flagged as custom to be retained.
 				open_in: 'same_window',
 				separator: true
 			}
 		};
-		
+
 		//Insert the new menu
-		result = outputTopMenu(menu);
+		outputTopMenu(menu);
 	});
-	
+
 	/*************************************************************************
 	                          Item toolbar buttons
 	 *************************************************************************/
@@ -1123,46 +1125,46 @@ $(document).ready(function(){
 		//Get the selected item
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
 		if (!selection.length) return;
-		
+
 		//Mark the item as hidden/visible
 		toggleMenuFlag(selection, 'hidden');
 	});
-	
+
 	//Delete menu
 	$('#ws_delete_item').click(function () {
 		//Get the selected menu
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
 		if (!selection.length) return;
-		
+
 		if (confirm('Delete this menu item?')){
 			//Delete the item
 			selection.remove();
 		}
 	});
-	
+
 	//Copy item
 	$('#ws_copy_item').click(function () {
 		//Get the selected item
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
 		if (!selection.length) return;
-		
+
 		//Store a copy of item state in the clipboard
 		item_in_clipboard = readItemState(selection);
 	});
-	
+
 	//Cut item
 	$('#ws_cut_item').click(function () {
 		//Get the selected item
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
 		if (!selection.length) return;
-		
+
 		//Store a copy of item state in the clipboard
 		item_in_clipboard = readItemState(selection);
-		
-		//Remove the original item		
+
+		//Remove the original item
 		selection.remove();
 	});
-	
+
 	//Paste item
 	$('#ws_paste_item').click(function () {
 		//Check if anything has been copied/cut
@@ -1171,26 +1173,26 @@ $(document).ready(function(){
 		//Create a new editor widget for the copied item
 		var item = $.extend(true, {}, item_in_clipboard);
 		var new_item = buildMenuItem(item);
-		
+
 		//Get the selected menu
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
 		if (selection.length > 0) {
 			//If an item is selected add the pasted item after it
-			selection.after(new_item); 
+			selection.after(new_item);
 		} else {
 			//Otherwise add the pasted item at the end
-			$('#ws_submenu_box .ws_submenu:visible').append(new_item); 
+			$('#ws_submenu_box .ws_submenu:visible').append(new_item);
 		}
-		
+
 		new_item.show();
 	});
-	
+
 	//New item
 	$('#ws_new_item').click(function () {
-		if ($('.ws_submenu:visible').length < 1) { 
-			return; //Abort if no submenu visible 
+		if ($('.ws_submenu:visible').length < 1) {
+			return; //Abort if no submenu visible
 		}
-		
+
 		ws_paste_count++;
 		var entry = {
 			menu_title : null,
@@ -1207,120 +1209,120 @@ $(document).ready(function(){
 				is_plugin_page : false,
 				custom: true,
 				open_in : 'same_window'
-			}		
+			}
 		};
-		
+
 		var menu = buildMenuItem(entry);
-		
+
 		//Insert the item into the box
 		$('#ws_submenu_box .ws_submenu:visible').append(menu);
-		
+
 		//The items's editbox is always open
 		menu.find('.ws_edit_link').click();
 	});
-	
+
 	function compareMenus(a, b){
 		function jsTrim(str){
 			return str.replace(/^\s+|\s+$/g, "");
 		}
-		
+
 		var aTitle = jsTrim( $(a).find('.ws_item_title').text() );
 		var bTitle = jsTrim( $(b).find('.ws_item_title').text() );
-		
+
 		aTitle = aTitle.toLowerCase();
 		bTitle = bTitle.toLowerCase();
-						
+
 		return aTitle > bTitle ? 1 : -1;
 	}
-	
+
 	//Sort items in ascending order
 	$('#ws_sort_ascending').click(function () {
 		var submenu = $('#ws_submenu_box .ws_submenu:visible');
-		if (submenu.length < 1) { 
-			return; //Abort if no submenu visible 
+		if (submenu.length < 1) {
+			return; //Abort if no submenu visible
 		}
-		
+
 		submenu.find('.ws_container').sort(compareMenus);
 	});
-	
+
 	//Sort items in descending order
 	$('#ws_sort_descending').click(function () {
 		var submenu = $('#ws_submenu_box .ws_submenu:visible');
-		if (submenu.length < 1) { 
-			return; //Abort if no submenu visible 
+		if (submenu.length < 1) {
+			return; //Abort if no submenu visible
 		}
-		
+
 		submenu.find('.ws_container').sort((function(a, b){
 			return -compareMenus(a, b);
 		}));
 	});
-	
+
 	//==============================================
 	//				Main buttons
 	//==============================================
-	
+
 	//Save Changes - encode the current menu as JSON and save
 	$('#ws_save_menu').click(function () {
 		var data = encodeMenuAsJSON();
 		$('#ws_data').val(data);
 		$('#ws_main_form').submit();
 	});
-	
+
 	//Load default menu - load the default WordPress menu
 	$('#ws_load_menu').click(function () {
 		if (confirm('Are you sure you want to load the default WordPress menu?')){
 			outputWpMenu(defaultMenu);
 		}
 	});
-	
+
 	//Reset menu - re-load the custom menu. Discards any changes made by user.
 	$('#ws_reset_menu').click(function () {
 		if (confirm('Undo all changes made in the current editing session?')){
 			outputWpMenu(customMenu);
 		}
 	});
-	
+
 	//Export menu - download the current menu as a file
-	$('#export_dialog').dialog({ 
+	$('#export_dialog').dialog({
 		autoOpen: false,
 		closeText: ' ',
 		modal: true,
 		minHeight: 100
 	});
-	
+
 	$('#ws_export_menu').click(function(){
 		var button = $(this);
 		button.attr('disabled', 'disabled');
 		button.val('Exporting...');
-		
+
 		$('#export_complete_notice, #download_menu_button').hide();
 		$('#export_progress_notice').show();
 		$('#export_dialog').dialog('open');
-		
+
 		//Encode and store the menu for download
 		var menu = readMenuTreeState();
 		var exportData = {
-			'format' : exportFormatString,
+			'format' : wsEditorData.exportFormatString,
 			'menu' : menu
 		};
 		exportData = $.toJSON(exportData);
-		
+
 		$.post(
-			adminAjaxUrl,
+			wsEditorData.adminAjaxUrl,
 			{
 				'data' : exportData,
 				'action' : 'export_custom_menu',
-				'_ajax_nonce' : exportMenuNonce
+				'_ajax_nonce' : wsEditorData.exportMenuNonce
 			},
 			function(data){
 				button.val('Export');
 				button.removeAttr('disabled');
-				
+
 				if ( typeof data['error'] != 'undefined' ){
 					$('#export_dialog').dialog('close');
 					alert(data.error);
 				}
-				
+
 				if ( (typeof data['download_url'] != 'undefined') && data.download_url ){
 					//window.location = data.download_url;
 					$('#download_menu_button').attr('href', data.download_url);
@@ -1331,37 +1333,37 @@ $(document).ready(function(){
 			'json'
 		);
 	});
-	
+
 	$('#ws_cancel_export').click(function(){
 		$('#export_dialog').dialog('close');
 	});
-	
+
 	$('#download_menu_button').click(function(){
 		$('#export_dialog').dialog('close');
 	});
-	
+
 	//Import menu - upload an exported menu and show it in the editor
-	$('#import_dialog').dialog({ 
+	$('#import_dialog').dialog({
 		autoOpen: false,
 		closeText: ' ',
 		modal: true
 	});
-	
+
 	$('#ws_cancel_import').click(function(){
 		$('#import_dialog').dialog('close');
 	});
-	
+
 	$('#ws_import_menu').click(function(){
 		$('#import_progress_notice, #import_progress_notice2, #import_complete_notice').hide();
 		$('#import_menu_form').resetForm();
 		//The "Upload" button is disabled until the user selects a file
-		$('#ws_start_import').attr('disabled', 'disabled'); 
-		
+		$('#ws_start_import').attr('disabled', 'disabled');
+
 		$('#import_dialog .hide-when-uploading').show();
-		
+
 		$('#import_dialog').dialog('open');
 	});
-	
+
 	$('#import_file_selector').change(function(){
 		if ( $(this).val() ){
 			$('#ws_start_import').removeAttr('disabled');
@@ -1369,12 +1371,13 @@ $(document).ready(function(){
 			$('#ws_start_import').attr('disabled', 'disabled');
 		}
 	});
-	
+
 	//AJAXify the upload form
+	//noinspection JSUnusedGlobalSymbols
 	$('#import_menu_form').ajaxForm({
 		dataType : 'json',
 		beforeSubmit: function(formData) {
-			
+
 			//Check if the user has selected a file
 			for(var i = 0; i < formData.length; i++){
 				if ( formData[i].name == 'menu' ){
@@ -1384,19 +1387,19 @@ $(document).ready(function(){
 					}
 				}
 			}
-			
+
 			$('#import_dialog .hide-when-uploading').hide();
 			$('#import_progress_notice').show();
-			
+
 			$('#ws_start_import').attr('disabled', 'disabled');
 		},
 		success: function(data){
 			if ( !$('#import_dialog').dialog('isOpen') ){
 				//Whoops, the user closed the dialog while the upload was in progress.
 				//Discard the response silently.
-				return;				
+				return;
 			}
-			
+
 			if ( typeof data['error'] != 'undefined' ){
 				alert(data.error);
 				//Let the user try again
@@ -1404,7 +1407,7 @@ $(document).ready(function(){
 				$('#import_dialog .hide-when-uploading').show();
 			}
 			$('#import_progress_notice').hide();
-			
+
 			if ( (typeof data['menu'] != 'undefined') && data.menu ){
 				//Whee, we got back a (seemingly) valid menu. A veritable miracle!
 				//Lets load it into the editor.
@@ -1416,17 +1419,17 @@ $(document).ready(function(){
 				setTimeout((function(){
 					//Close the import dialog
 					$('#import_dialog').dialog('close');
-				}), 500);				
+				}), 500);
 			}
-			
+
 		}
-	}); 
-	
-	
+	});
+
+
 	//Finally, show the menu
     outputWpMenu(customMenu);
   });
-	
+
 })(jQuery);
 
 //==============================================
@@ -1436,34 +1439,34 @@ $(document).ready(function(){
 jQuery(function($){
 	var screenOptions = $('#ws-ame-screen-meta-contents');
 	var checkbox = screenOptions.find('#ws-hide-advanced-settings');
-	
-	if ( hideAdvancedSettings ){
+
+	if ( wsEditorData.hideAdvancedSettings ){
 		checkbox.attr('checked', 'checked');
 	} else {
 		checkbox.removeAttr('checked');
 	}
-	
+
 	//Update editor state when settings change
 	checkbox.click(function(){
-		hideAdvancedSettings = $(this).attr('checked'); //Using '$(this)' instead of 'checkbox' due to jQuery bugs
-		if ( hideAdvancedSettings ){
+		wsEditorData.hideAdvancedSettings = $(this).attr('checked'); //Using '$(this)' instead of 'checkbox' due to jQuery bugs
+		if ( wsEditorData.hideAdvancedSettings ){
 			$('#ws_menu_editor div.ws_advanced').hide();
-			$('#ws_menu_editor a.ws_toggle_advanced_fields').text(captionShowAdvanced).show();
+			$('#ws_menu_editor a.ws_toggle_advanced_fields').text(wsEditorData.captionShowAdvanced).show();
 		} else {
 			$('#ws_menu_editor div.ws_advanced').show();
-			$('#ws_menu_editor a.ws_toggle_advanced_fields').text(captionHideAdvanced).hide();
+			$('#ws_menu_editor a.ws_toggle_advanced_fields').text(wsEditorData.captionHideAdvanced).hide();
 		}
-		
+
 		$.post(
-			adminAjaxUrl,
+			wsEditorData.adminAjaxUrl,
 			{
 				'action' : 'ws_ame_save_screen_options',
-				'hide_advanced_settings' : hideAdvancedSettings?1:0,
-				'_ajax_nonce' : hideAdvancedSettingsNonce
+				'hide_advanced_settings' : wsEditorData.hideAdvancedSettings ? 1 : 0,
+				'_ajax_nonce' : wsEditorData.hideAdvancedSettingsNonce
 			}
 		);
 	});
-	
+
 	//Move our options into the screen meta panel
 	$('#adv-settings').empty().append(screenOptions.show());
 });
