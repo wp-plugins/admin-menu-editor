@@ -16,7 +16,7 @@ abstract class ameMenuItem {
 	 * @param string $parent The slug of the parent menu that owns this item. Blank for top level menus.
 	 * @return array
 	 */
-	public static function menu2assoc($item, $position = 0, $parent = '') {
+	public static function fromWpItem($item, $position = 0, $parent = '') {
 		static $separator_count = 0;
 		$item = array(
 			'menu_title'   => $item[0],

@@ -277,13 +277,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$defaults = array();
 
 		foreach($menu as $pos => $item){
-			$item = ameMenuItem::menu2assoc($item, $pos);
+			$item = ameMenuItem::fromWpItem($item, $pos);
 			$defaults[ameMenuItem::unique_menu_id($item)] = $item;
 		}
 
 		foreach($submenu as $parent => $items){
 			foreach($items as $pos => $item){
-				$item = ameMenuItem::menu2assoc($item, $pos, $parent);
+				$item = ameMenuItem::fromWpItem($item, $pos, $parent);
 				$defaults[ameMenuItem::unique_menu_id($item)] = $item;
 			}
 		}
@@ -399,16 +399,16 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		foreach ($menu as $pos => $item){
 			
 			$tree_item = ameMenuItem::blank_menu();
-			$tree_item['defaults'] = ameMenuItem::menu2assoc($item, $pos);
+			$tree_item['defaults'] = ameMenuItem::fromWpItem($item, $pos);
 			$tree_item['separator'] = $tree_item['defaults']['separator'];
 			
-			//Attach submenu items
+			//Attach sub-menu items
 			$parent = $tree_item['defaults']['file'];
 			if ( isset($submenu[$parent]) ){
-				foreach($submenu[$parent] as $pos => $subitem){
+				foreach($submenu[$parent] as $position => $subitem){
 					$tree_item['items'][$subitem[2]] = array_merge(
 						ameMenuItem::blank_menu(),
-						array('defaults' => ameMenuItem::menu2assoc($subitem, $pos, $parent))
+						array('defaults' => ameMenuItem::fromWpItem($subitem, $position, $parent))
 					);
 				}				
 			}
