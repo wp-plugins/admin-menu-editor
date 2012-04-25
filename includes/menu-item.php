@@ -46,11 +46,11 @@ abstract class ameMenuItem {
 
 		//URL generation is not used yet.
 		if ( !$item['separator'] ) {
-			//$item['url'] = self::get_menu_url($item['file'], $parent);
+			//$item['url'] = self::get_url($item['file'], $parent);
 			$item['url'] = 'error-url-generation-disabled';
 		}
 
-		$item['menu_id'] = self::unique_menu_id($item);
+		$item['menu_id'] = self::unique_id($item);
 
 		return array_merge(self::basic_defaults(), $item);
 	}
@@ -125,11 +125,15 @@ abstract class ameMenuItem {
 	/**
 	  * Generate an ID that semi-uniquely identifies a given menu item.
 	  *
+	  * The ID is generated from the item's and its parent's file attributes.
+	  * Since WordPress technically allows two copies of the same menu to exist
+	  * in the same sub-menu, this combination is not necessarily unique.
+	  *
 	  * @param array $item The menu item in question.
 	  * @param string $parent_file The parent menu. If omitted, $item['defaults']['parent'] will be used.
 	  * @return string Unique ID
 	  */
-	public static function unique_menu_id($item, $parent_file = ''){
+	public static function unique_id($item, $parent_file = ''){
 		//Maybe it already has an ID?
 		$menu_id = self::get($item, 'menu_id');
 		if ( !empty($menu_id) ) {
@@ -218,7 +222,7 @@ abstract class ameMenuItem {
 	 * @param string $parent_slug
 	 * @return string An URL relative to the /wp-admin/ directory.
 	 */
-	private static function get_menu_url($item_slug, $parent_slug = '') {
+	private static function get_url($item_slug, $parent_slug = '') {
 		$menu_url = is_array($item_slug) ? self::get($item_slug, 'file') : $item_slug;
 		$parent_url = !empty($parent_slug) ? $parent_slug : 'admin.php';
 

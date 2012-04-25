@@ -278,13 +278,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		foreach($menu as $pos => $item){
 			$item = ameMenuItem::fromWpItem($item, $pos);
-			$defaults[ameMenuItem::unique_menu_id($item)] = $item;
+			$defaults[ameMenuItem::unique_id($item)] = $item;
 		}
 
 		foreach($submenu as $parent => $items){
 			foreach($items as $pos => $item){
 				$item = ameMenuItem::fromWpItem($item, $pos, $parent);
-				$defaults[ameMenuItem::unique_menu_id($item)] = $item;
+				$defaults[ameMenuItem::unique_id($item)] = $item;
 			}
 		}
 
@@ -305,7 +305,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		
 		//Iterate over all menus and submenus and look up default values
 		foreach ($tree as &$topmenu){
-			$top_uid = ameMenuItem::unique_menu_id($topmenu);
+			$top_uid = ameMenuItem::unique_id($topmenu);
 			//Is this menu present in the default WP menu?
 			if (isset($default_items[$top_uid])){
 				//Yes, load defaults from that item
@@ -329,7 +329,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if (is_array($topmenu['items'])) {
 				//Iterate over submenu items
 				foreach ($topmenu['items'] as &$item){
-					$uid = ameMenuItem::unique_menu_id($item);
+					$uid = ameMenuItem::unique_id($item);
 					
 					//Is this item present in the default WP menu?
 					if (isset($default_items[$uid])){
