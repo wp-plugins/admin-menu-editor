@@ -156,7 +156,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		wp_enqueue_script('jquery-ui-droppable');
 
 		//Editor's scipts
-	       wp_enqueue_script(
+		wp_enqueue_script(
 			'menu-editor',
 			$this->plugin_dir_url.'/js/menu-editor.js',
 			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'),
