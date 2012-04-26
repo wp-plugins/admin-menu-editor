@@ -160,7 +160,22 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'menu-editor',
 			$this->plugin_dir_url.'/js/menu-editor.js',
 			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'),
-			'1.1'
+			'1.2'
+		);
+
+		//The editor will need access to some of the plugin data.
+		wp_localize_script(
+			'menu-editor',
+			'wsEditorData',
+			array(
+				'imagesUrl' => $this->plugin_dir_url . '/images',
+				'adminAjaxUrl' => admin_url('admin-ajax.php'),
+				'hideAdvancedSettings' => (boolean)$this->options['hide_advanced_settings'],
+				'hideAdvancedSettingsNonce' => wp_create_nonce('ws_ame_save_screen_options'),
+				'captionShowAdvanced' => 'Show advanced options',
+				'captionHideAdvanced' => 'Hide advanced options',
+				'wsMenuEditorPro' => false, //Will be overwritten if extras are loaded
+			)
 		);
 	}
 
