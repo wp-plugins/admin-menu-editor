@@ -487,6 +487,10 @@ function makeBoxSortable(menuBox){
  */
 function encodeMenuAsJSON(){
 	var tree = readMenuTreeState();
+	tree.format = {
+		name: wsEditorData.menuFormatName,
+		version: wsEditorData.menuFormatVersion
+	};
 	return $.toJSON(tree);
 }
 
@@ -503,7 +507,9 @@ function readMenuTreeState(){
 		tree[filename] = menu;
 	});
 
-	return tree;
+	return {
+		tree: tree
+	};
 }
 
 /*
@@ -1271,14 +1277,14 @@ $(document).ready(function(){
 	//Load default menu - load the default WordPress menu
 	$('#ws_load_menu').click(function () {
 		if (confirm('Are you sure you want to load the default WordPress menu?')){
-			outputWpMenu(defaultMenu);
+			outputWpMenu(defaultMenu.tree);
 		}
 	});
 
 	//Reset menu - re-load the custom menu. Discards any changes made by user.
 	$('#ws_reset_menu').click(function () {
 		if (confirm('Undo all changes made in the current editing session?')){
-			outputWpMenu(customMenu);
+			outputWpMenu(customMenu.tree);
 		}
 	});
 
@@ -1300,12 +1306,7 @@ $(document).ready(function(){
 		$('#export_dialog').dialog('open');
 
 		//Encode and store the menu for download
-		var menu = readMenuTreeState();
-		var exportData = {
-			'format' : wsEditorData.exportFormatString,
-			'menu' : menu
-		};
-		exportData = $.toJSON(exportData);
+		var exportData = encodeMenuAsJSON();
 
 		$.post(
 			wsEditorData.adminAjaxUrl,
@@ -1408,11 +1409,11 @@ $(document).ready(function(){
 			}
 			$('#import_progress_notice').hide();
 
-			if ( (typeof data['menu'] != 'undefined') && data.menu ){
+			if ( (typeof data['tree'] != 'undefined') && data.tree ){
 				//Whee, we got back a (seemingly) valid menu. A veritable miracle!
 				//Lets load it into the editor.
 				$('#import_progress_notice2').show();
-				outputWpMenu(data.menu);
+				outputWpMenu(data.tree);
 				$('#import_progress_notice2').hide();
 				//Display a success notice, then automatically close the window after a few moments
 				$('#import_complete_notice').show();
@@ -1427,7 +1428,7 @@ $(document).ready(function(){
 
 
 	//Finally, show the menu
-    outputWpMenu(customMenu);
+    outputWpMenu(customMenu.tree);
   });
 
 })(jQuery);

@@ -8,9 +8,10 @@ if (class_exists('WPMenuEditor')){
 	);
 }
 
-//Load the "framework"
-require 'shadow_plugin_framework.php';
-require 'menu-item.php';
+$thisDirectory = dirname(__FILE__);
+require $thisDirectory . '/shadow_plugin_framework.php';
+require $thisDirectory . '/menu-item.php';
+require $thisDirectory . '/menu.php';
 
 if ( !class_exists('WPMenuEditor') ) :
 
@@ -24,7 +25,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	protected $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
 	                                    //fix the titles of moved plugin pages.
 	private $custom_menu = null;        //The current custom menu with defaults merged in
-	public $menu_format_version = 4;
+
+	//Our personal copy of the request vars, without any "magic quotes".
+	private $post = array();
+	private $get = array();
     
 	function init(){
 		//Determine if the plugin is active network-wide (i.e. either installed in 
@@ -40,6 +44,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$this->defaults = array(
 			'hide_advanced_settings' => true,
 			'menu_format_version' => 0,
+			'custom_menu' => null,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -49,12 +54,17 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$this->magic_hook_priority = 99999;
 		
 		//AJAXify screen options
-		add_action( 'wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options') );
+		add_action('wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options'));
 
 		//Activate the 'menu_order' filter. See self::hook_menu_order().
 		add_filter('custom_menu_order', '__return_true');
+
+		//Make sure we have access to the original, un-mangled request data.
+		//This is necessary because WordPress will stupidly apply "magic quotes"
+		//to the request vars even if this PHP misfeature is disabled.
+		add_action('plugins_loaded', array($this, 'capture_request_vars'));
 	}
-	
+
   /**
    * Activation hook
    * 
@@ -93,7 +103,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		global $menu, $submenu;
 		
 		//Menu reset (for emergencies). Executed by accessing http://example.com/wp-admin/?reset_admin_menu=1 
-		$reset_requested = isset($_GET['reset_admin_menu']) && $_GET['reset_admin_menu'];
+		$reset_requested = isset($this->get['reset_admin_menu']) && $this->get['reset_admin_menu'];
 		if ( $reset_requested && $this->current_user_can_edit_menu() ){
 			$this->options['custom_menu'] = null;
 			$this->save_options();
@@ -123,18 +133,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Is there a custom menu to use?
 		if ( !empty($this->options['custom_menu']) ){
-			//Check if we need to upgrade the menu structure
-			if ( empty($this->options['menu_format_version']) || ($this->options['menu_format_version'] < $this->menu_format_version) ){
-				$this->options['custom_menu'] = $this->upgrade_menu_structure($this->options['custom_menu']);
-				$this->options['menu_format_version'] = $this->menu_format_version;
-				$this->save_options();
-			}
+			$custom_menu = ameMenu::load_array($this->options['custom_menu']);
+
 			//Merge in data from the default menu
-			$tree = $this->menu_merge($this->options['custom_menu'], $menu, $submenu);
+			$custom_menu['tree'] = $this->menu_merge($custom_menu['tree'], $menu, $submenu);
 			//Save for later - the editor page will need it
-			$this->custom_menu = $tree;
+			$this->custom_menu = $custom_menu;
 			//Apply the custom menu
-			list($menu, $submenu, $this->title_lookups) = $this->tree2wp($tree);
+			list($menu, $submenu, $this->title_lookups) = $this->tree2wp($this->custom_menu['tree']);
+
 			//Re-filter the menu (silly WP should do that itself, oh well)
 			$this->filter_menu();
 			$this->filtered_wp_menu = $menu;
@@ -160,7 +167,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'menu-editor',
 			$this->plugin_dir_url.'/js/menu-editor.js',
 			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'),
-			'1.2'
+			'20120426'
 		);
 
 		//The editor will need access to some of the plugin data.
@@ -175,6 +182,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'captionShowAdvanced' => 'Show advanced options',
 				'captionHideAdvanced' => 'Hide advanced options',
 				'wsMenuEditorPro' => false, //Will be overwritten if extras are loaded
+				'menuFormatName' => ameMenu::format_name,
+				'menuFormatVersion' => ameMenu::format_version,
 			)
 		);
 	}
@@ -293,13 +302,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		foreach($menu as $pos => $item){
 			$item = ameMenuItem::fromWpItem($item, $pos);
-			$defaults[ameMenuItem::unique_id($item)] = $item;
+			$defaults[ameMenuItem::template_id($item)] = $item;
 		}
 
 		foreach($submenu as $parent => $items){
 			foreach($items as $pos => $item){
 				$item = ameMenuItem::fromWpItem($item, $pos, $parent);
-				$defaults[ameMenuItem::unique_id($item)] = $item;
+				$defaults[ameMenuItem::template_id($item)] = $item;
 			}
 		}
 
@@ -320,13 +329,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		
 		//Iterate over all menus and submenus and look up default values
 		foreach ($tree as &$topmenu){
-			$top_uid = ameMenuItem::unique_id($topmenu);
+			$template_id = ameMenuItem::template_id($topmenu);
 			//Is this menu present in the default WP menu?
-			if (isset($default_items[$top_uid])){
+			if (isset($default_items[$template_id])){
 				//Yes, load defaults from that item
-				$topmenu['defaults'] = $default_items[$top_uid];
+				$topmenu['defaults'] = $default_items[$template_id];
 				//Note that the original item was used
-				$default_items[$top_uid]['used'] = true;
+				$default_items[$template_id]['used'] = true;
 			} else {
 				//Record the menu as missing, unless it's a menu separator
 				if ( empty($topmenu['separator']) ){
@@ -344,13 +353,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if (is_array($topmenu['items'])) {
 				//Iterate over submenu items
 				foreach ($topmenu['items'] as &$item){
-					$uid = ameMenuItem::unique_id($item);
+					$template_id = ameMenuItem::template_id($item);
 					
 					//Is this item present in the default WP menu?
-					if (isset($default_items[$uid])){
+					if (isset($default_items[$template_id])){
 						//Yes, load defaults from that item
-						$item['defaults'] = $default_items[$uid];
-						$default_items[$uid]['used'] = true;
+						$item['defaults'] = $default_items[$template_id];
+						$default_items[$template_id]['used'] = true;
 					} else {
 						//Record as missing
 						$item['missing'] = true;
@@ -560,29 +569,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 	
   /**
-   * Upgrade a menu tree to the currently used structure
-   * Does nothing if the menu is already up to date.
-   *
-   * @param array $tree
-   * @return array
-   */
-	function upgrade_menu_structure($tree){
-		//Append new fields, if any
-		foreach($tree as &$menu){
-			$menu = array_merge(ameMenuItem::blank_menu(), $menu);
-            $menu['defaults'] = array_merge(ameMenuItem::basic_defaults(), $menu['defaults']);
-            
-			foreach($menu['items'] as $item_file => $item){
-				$item = array_merge(ameMenuItem::blank_menu(), $item);
-                $item['defaults'] = array_merge(ameMenuItem::basic_defaults(), $item['defaults']);
-				$menu['items'][$item_file] = $item;
-			}
-		}
-		
-		return $tree;
-	}
-	
-  /**
    * Output the menu editor page
    *
    * @return void
@@ -592,18 +578,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			wp_die("Access denied.");
 		}
 		
-		$post = $_POST;
-		$get = $_GET;
-		if ( function_exists('wp_magic_quotes') ){
-			//Ceterum censeo, WP shouldn't mangle superglobals.
-			$post = stripslashes_deep($post); 
-			$get = stripslashes_deep($get);
-		}
-		
-		$action = isset($post['action']) ? $post['action'] : (isset($get['action']) ? $get['action'] : '');
+		$action = isset($this->post['action']) ? $this->post['action'] : (isset($this->get['action']) ? $this->get['action'] : '');
 		do_action('admin_menu_editor_header', $action);
 		
-		$this->handle_form_submission($post);
+		$this->handle_form_submission($this->post);
 		$this->display_editor_ui();
 	}
 
@@ -612,32 +590,29 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			check_admin_referer('menu-editor-form');
 
 			//Try to decode a menu tree encoded as JSON
-			$data = $this->json_decode($post['data'], true);
-			if (!$data || (count($data) < 2) ){
-				$fixed = stripslashes($post['data']);
-				$data = $this->json_decode( $fixed, true );
-			}
-
 			$url = remove_query_arg('noheader');
-			if ($data){
-				//Ensure the user doesn't change the required capability to something they themselves don't have.
-				if ( isset($data['options-general.php']['items']['menu_editor']) ){
-					$item = $data['options-general.php']['items']['menu_editor'];
-					if ( !empty($item['access_level']) && !current_user_can($item['access_level']) ){
-						$item['access_level'] = null;
-						$data['options-general.php']['items']['menu_editor'] = $item;
-					}
-				}
-
-				//Save the custom menu
-				$this->options['custom_menu'] = $data;
-				$this->save_options();
-				//Redirect back to the editor and display the success message
-				wp_redirect( add_query_arg('message', 1, $url) );
-			} else {
+			try {
+				$menu = ameMenu::load_json($post['data'], true);
+			} catch (InvalidMenuException $ex) {
 				//Or redirect & display the error message
 				wp_redirect( add_query_arg('message', 2, $url) );
+				die();
 			}
+
+			//Ensure the user doesn't change the required capability to something they themselves don't have.
+			if ( isset($menu['tree']['options-general.php']['items']['menu_editor']) ){
+				$item = $menu['tree']['options-general.php']['items']['menu_editor'];
+				if ( !empty($item['access_level']) && !current_user_can($item['access_level']) ){
+					$item['access_level'] = null;
+					$menu['tree']['options-general.php']['items']['menu_editor'] = $item;
+				}
+			}
+
+			//Save the custom menu
+			$this->options['custom_menu'] = $menu;
+			$this->save_options();
+			//Redirect back to the editor and display the success message
+			wp_redirect( add_query_arg('message', 1, $url) );
 			die();
 		}
 	}
@@ -645,13 +620,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private function display_editor_ui() {
 		//Prepare a bunch of parameters for the editor.
 		$editor_data = array(
-			'message' => isset($_GET['message']) ? intval($_GET['message']) : null,
+			'message' => isset($this->get['message']) ? intval($this->get['message']) : null,
 			'images_url' => $this->plugin_dir_url . '/images',
 			'hide_advanced_settings' => $this->options['hide_advanced_settings'],
 		);
 
 		//Build a tree struct. for the default menu
-		$default_menu = $this->wp2tree($this->default_wp_menu, $this->default_wp_submenu);
+		$default_tree = $this->wp2tree($this->default_wp_menu, $this->default_wp_submenu);
+		$default_menu = ameMenu::load_array($default_tree);
 
 		//Is there a custom menu?
 		if (!empty($this->custom_menu)){
@@ -662,8 +638,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		//Encode both menus as JSON
-		$editor_data['default_menu_js'] = $this->json_encode($default_menu);
-		$editor_data['custom_menu_js'] = $this->json_encode($custom_menu);
+		$editor_data['default_menu_js'] = ameMenu::to_json($default_menu);
+		$editor_data['custom_menu_js'] = ameMenu::to_json($custom_menu);
 
 		//Create a list of all known capabilities and roles. Used for the dropdown list on the access field.
 		$all_capabilities = $this->get_all_capabilities();
@@ -689,7 +665,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Create a list of known admin pages for yet another selector.
 		$known_pages = array();
-	    foreach($default_menu as $toplevel){
+	    foreach($default_menu['tree'] as $toplevel){
 	        if ( $toplevel['separator'] ) continue;
 
 	        $top_title = strip_tags( preg_replace('@<span[^>]*>.*</span>@i', '', ameMenuItem::get($toplevel, 'menu_title')) );
@@ -799,9 +775,23 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			 )));
 		}
 		
-		$this->options['hide_advanced_settings'] = !empty($_POST['hide_advanced_settings']);
+		$this->options['hide_advanced_settings'] = !empty($this->post['hide_advanced_settings']);
 		$this->save_options();
 		die('1');
+	}
+
+	/**
+	 * Capture $_GET and $_POST in $this->get and $this->post.
+	 * Slashes added by "magic quotes" will be stripped.
+	 */
+	function capture_request_vars(){
+		$this->post = $_POST;
+		$this->get = $_GET;
+
+		if ( function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc() ) {
+			$this->post = stripslashes_deep($this->post);
+			$this->get = stripslashes_deep($this->get);
+		}
 	}
 
 } //class

@@ -50,7 +50,7 @@ abstract class ameMenuItem {
 			$item['url'] = 'error-url-generation-disabled';
 		}
 
-		$item['menu_id'] = self::unique_id($item);
+		$item['template_id'] = self::template_id($item, $parent);
 
 		return array_merge(self::basic_defaults(), $item);
 	}
@@ -77,12 +77,12 @@ abstract class ameMenuItem {
 	        'separator' => false,
 
 	        //Internal fields that may not map directly to WP menu structures.
-	        'menu_id' => '',
-	        'url' => '',
-	        'is_plugin_page' => false,
-	        'custom' => false,
-	        'open_in' => 'same_window', //'new_window', 'iframe' or 'same_window' (the default)
-        );
+			'open_in' => 'same_window', //'new_window', 'iframe' or 'same_window' (the default)
+			'template_id' => '', //The default menu item that this item is based on.
+			'is_plugin_page' => false,
+			'custom' => false,
+			'url' => '',
+		);
 
 		return $basic_defaults;
 	}
@@ -95,8 +95,15 @@ abstract class ameMenuItem {
 
 		//Template for a basic menu item.
 		$blank_menu = array_fill_keys(array_keys(self::basic_defaults()), null);
-		$blank_menu['items'] = array();
-		$blank_menu['defaults'] = self::basic_defaults();
+		$blank_menu = array_merge($blank_menu, array(
+			'items' => array(), //List of sub-menu items.
+
+			'custom' => false,  //True if item is made-from-scratch and has no template.
+			'missing' => false, //True if our template is no longer present in the default admin menu.
+			'unused' => false,  //True if this item was generated from an unused default menu.
+
+			'defaults' => self::basic_defaults(),
+		));
 		return $blank_menu;
 	}
 
@@ -123,7 +130,11 @@ abstract class ameMenuItem {
 	}
 
 	/**
-	  * Generate an ID that semi-uniquely identifies a given menu item.
+	  * Generate or retrieve an ID that semi-uniquely identifies the template
+	  * of the  given menu item.
+	  *
+	  * Note that custom items (i.e. those that do not point to any of the default
+	  * admin menu pages) have no template IDs.
 	  *
 	  * The ID is generated from the item's and its parent's file attributes.
 	  * Since WordPress technically allows two copies of the same menu to exist
@@ -131,13 +142,17 @@ abstract class ameMenuItem {
 	  *
 	  * @param array $item The menu item in question.
 	  * @param string $parent_file The parent menu. If omitted, $item['defaults']['parent'] will be used.
-	  * @return string Unique ID
+	  * @return string Template ID, or NULL if this is a custom item.
 	  */
-	public static function unique_id($item, $parent_file = ''){
+	public static function template_id($item, $parent_file = ''){
+		if ( self::get($item, 'custom') ) {
+			return null;
+		}
+
 		//Maybe it already has an ID?
-		$menu_id = self::get($item, 'menu_id');
-		if ( !empty($menu_id) ) {
-			return $menu_id;
+		$template_id = self::get($item, 'template_id');
+		if ( !empty($template_id) ) {
+			return $template_id;
 		}
 
 		if ( isset($item['defaults']['file']) ) {
@@ -199,6 +214,30 @@ abstract class ameMenuItem {
 		$item = apply_filters("custom_admin_{$item_type}", $item, $extra);
 		foreach($item as $field => $value){
 			$item[$field] = apply_filters("custom_admin_{$item_type}-$field", $value, $extra);
+		}
+
+		return $item;
+	}
+
+	/**
+	 * Recursively normalize a menu item and all of its sub-items.
+	 *
+	 * This will ensure that the item has all the required fields.
+	 *
+	 * @static
+	 * @param array $item
+	 * @return array
+	 */
+	public static function normalize($item) {
+		if ( isset($item['defaults']) ) {
+			$item['defaults'] = array_merge(self::basic_defaults(), $item['defaults']);
+		}
+		$item = array_merge(self::blank_menu(), $item);
+
+		if ( isset($item['items']) ) {
+			foreach($item['items'] as $index => $sub_item) {
+				$item['items'][$index] = self::normalize($sub_item);
+			}
 		}
 
 		return $item;
