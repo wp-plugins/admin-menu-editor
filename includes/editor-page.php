@@ -155,22 +155,8 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 </span>
 
 <script type='text/javascript'>
-
 var defaultMenu = <?php echo $editor_data['default_menu_js']; ?>;
 var customMenu = <?php echo $editor_data['custom_menu_js']; ?>;
-
-var imagesUrl = "<?php echo esc_js($images_url); ?>";
-
-var adminAjaxUrl = "<?php echo esc_js(admin_url('admin-ajax.php')); ?>";
-
-var hideAdvancedSettings = <?php echo $editor_data['hide_advanced_settings']?'true':'false'; ?>;
-var hideAdvancedSettingsNonce = '<?php echo esc_js(wp_create_nonce('ws_ame_save_screen_options'));  ?>';
-
-var captionShowAdvanced = 'Show advanced options';
-var captionHideAdvanced = 'Hide advanced options';
-
-window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
-
 </script>
 
 <?php
