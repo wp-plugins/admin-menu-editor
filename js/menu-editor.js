@@ -3,9 +3,15 @@
 /*global wsEditorData, defaultMenu, customMenu */
 /** @namespace wsEditorData */
 
+//TODO: wsEditorData.menuTemplates and all the associated infrastructure.
+//TODO: Disallow deletion of non-custom menus. It doesn't do anything anyway.
+//TODO: Allow pasting sub-menus in the top-level and vice versa. Caution: beware missing props on sub-items. Extend.
+//TODO: Add a "Profile" top-level menu somehow. It's specific to users without the user management caps.
+
 var wsIdCounter = 0;
 
 (function ($){
+
 /*
  * Utility function for generating pseudo-random alphanumeric menu IDs.
  * Rationale: Simpler than atomically auto-incrementing or globally unique IDs.
@@ -60,7 +66,7 @@ function outputTopMenu(menu, afterNode){
 	var submenu = buildSubmenu(menu.items);
 
 	//Create the menu widget
-	var menu_obj = buildTopMenu(menu);
+	var menu_obj = buildMenuItem(menu, true);
 	menu_obj.data('submenu_id', submenu.attr('id'));
 
 	//Display
@@ -75,74 +81,6 @@ function outputTopMenu(menu, afterNode){
 		'menu' : menu_obj,
 		'submenu' : submenu
 	};
-}
-
-/*
- * Create an edit widget for a top-level menu.
- */
-function buildTopMenu(menu){
-	var subclass = '';
-	if ( menu.separator ) {
-		subclass = subclass + ' ws_menu_separator';
-	}
-
-	//Create the menu HTML
-	var menu_obj = $('<div></div>')
-		.attr('class', "ws_container ws_menu "+subclass)
-		.attr('id', 'ws-topmenu-'+(wsIdCounter++))
-		.data('defaults', menu.defaults)
-		.data('initial_values', getCurrentFieldValues(menu))
-		.data('field_editors_created', false);
-
-	//Add a header and a container for property editors (to improve performance
-	//the editors themselves are created later, when the user tries to access them
-	//for the first time).
-	var contents = [];
-	contents.push(
-		'<div class="ws_item_head">',
-			menu.separator ? '' : '<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
-			'<span class="ws_item_title">',
-				((menu.menu_title!=null) ? menu.menu_title : menu.defaults.menu_title),
-			'&nbsp;</span>',
-		'</div>',
-		'<div class="ws_editbox" style="display: none;"></div>'
-	);
-	menu_obj.append(contents.join(''));
-
-	//Apply flags based on the item's state
-	if (menu.missing && !getFieldValue(menu, 'custom', false)) {
-		addMenuFlag(menu_obj, 'missing');
-	}
-	if (menu.hidden) {
-		addMenuFlag(menu_obj, 'hidden');
-	}
-	if (menu.unused) {
-		addMenuFlag(menu_obj, 'unused');
-	}
-	if (getFieldValue(menu, 'custom', false)) {
-		addMenuFlag(menu_obj, 'custom_item');
-	}
-
-	if ( !menu.separator ){
-		//Allow the user to drag menu items to top-level menus
-		menu_obj.droppable({
-			'hoverClass' : 'ws_menu_drop_hover',
-
-			'accept' : (function(thing){
-				return thing.hasClass('ws_item');
-			}),
-
-			'drop' : (function(event, ui){
-				var droppedItemData = readItemState(ui.draggable);
-				var new_item = buildMenuItem(droppedItemData);
-				var submenu = $('#' + menu_obj.data('submenu_id'));
-				submenu.append(new_item);
-				ui.draggable.remove();
-			})
-		});
-	}
-
-	return menu_obj;
 }
 
 /*
@@ -161,7 +99,7 @@ function buildSubmenu(items){
 			if (!items.hasOwnProperty(item_file)){
 				continue;
 			}
-			entry = buildMenuItem(items[item_file]);
+			entry = buildMenuItem(items[item_file], false);
 			if ( entry ){
 				submenu.append(entry);
 			}
@@ -174,18 +112,27 @@ function buildSubmenu(items){
 	return submenu;
 }
 
-/*
- * Create an edit widget for a menu entry and return it.
+/**
+ * Create an edit widget for a menu item.
+ *
+ * @param {Object} itemData
+ * @param {Boolean} isTopLevel Specify if this is a top-level menu or a sub-menu item. Defaults to false (= sub-item).
+ * @return {*} The created widget as a jQuery object.
  */
-function buildMenuItem(entry){
-	if (!entry.defaults) {
-		return null
-	}
+function buildMenuItem(itemData, isTopLevel) {
+	isTopLevel = (typeof isTopLevel == 'undefined') ? false : isTopLevel;
 
-	var item = $('<div class="ws_container ws_item">')
-		.data('defaults', entry.defaults)
-		.data('initial_values', getCurrentFieldValues(entry))
+	//Create the menu HTML
+	var item = $('<div></div>')
+		.attr('class', "ws_container")
+		.attr('id', 'ws-menu-item-' + (wsIdCounter++))
+		.data('menu_item', itemData)
 		.data('field_editors_created', false);
+
+	item.addClass(isTopLevel ? 'ws_menu' : 'ws_item');
+	if ( isTopLevel && itemData.separator ) {
+		item.addClass('ws_menu_separator');
+	}
 
 	//Add a header and a container for property editors (to improve performance
 	//the editors themselves are created later, when the user tries to access them
@@ -193,9 +140,9 @@ function buildMenuItem(entry){
 	var contents = [];
 	contents.push(
 		'<div class="ws_item_head">',
-			'<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
+			itemData.separator ? '' : '<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
 			'<span class="ws_item_title">',
-				((entry.menu_title!=null)?entry.menu_title:entry.defaults.menu_title),
+				((itemData.menu_title != null) ? itemData.menu_title : itemData.defaults.menu_title),
 			'&nbsp;</span>',
 		'</div>',
 		'<div class="ws_editbox" style="display: none;"></div>'
@@ -203,17 +150,30 @@ function buildMenuItem(entry){
 	item.append(contents.join(''));
 
 	//Apply flags based on the item's state
-	if (entry.missing && !getFieldValue(entry, 'custom', false)) {
-		addMenuFlag(item, 'missing');
+	var flags = ['hidden', 'unused', 'custom', 'missing'];
+	for (var i = 0; i < flags.length; i++) {
+		if (getFieldValue(itemData, flags[i], false)) {
+			addMenuFlag(item, flags[i]);
+		}
 	}
-	if (entry.hidden) {
-		addMenuFlag(item, 'hidden');
-	}
-	if (entry.unused) {
-		addMenuFlag(item, 'unused');
-	}
-	if (getFieldValue(entry, 'custom', false)) {
-		addMenuFlag(item, 'custom_item');
+
+	if ( isTopLevel && !itemData.separator ){
+		//Allow the user to drag menu items to top-level menus
+		item.droppable({
+			'hoverClass' : 'ws_menu_drop_hover',
+
+			'accept' : (function(thing){
+				return thing.hasClass('ws_item');
+			}),
+
+			'drop' : (function(event, ui){
+				var droppedItemData = readItemState(ui.draggable);
+				var new_item = buildMenuItem(droppedItemData, false);
+				var submenu = $('#' + item.data('submenu_id'));
+				submenu.append(new_item);
+				ui.draggable.remove();
+			})
+		});
 	}
 
 	return item;
@@ -222,6 +182,7 @@ function buildMenuItem(entry){
 /*
  * List of all menu fields that have an associated editor
  */
+//TODO: Extend a template object instead of listing all properties every time.
 var knownMenuFields = {
 	'menu_title' : {
 		caption : 'Menu title',
@@ -229,6 +190,7 @@ var knownMenuFields = {
 		advanced : false,
 		type : 'text',
 		defaultValue: '',
+		onlyForTopMenus: false,
 		visible: true
 	},
 	'access_level' : {
@@ -238,6 +200,7 @@ var knownMenuFields = {
 		type : 'text',
 		defaultValue: 'read',
 		addDropdown : true,
+		onlyForTopMenus: false,
 		visible: true
 	},
 	'file' : {
@@ -247,6 +210,7 @@ var knownMenuFields = {
 		type : 'text',
 		defaultValue: '',
 		addDropdown : 'ws_page_selector',
+		onlyForTopMenus: false,
 		visible: true
 	},
 	'page_title' : {
@@ -255,6 +219,7 @@ var knownMenuFields = {
 		advanced : true,
 		type : 'text',
 		defaultValue: '',
+		onlyForTopMenus: false,
 		visible: true
 	},
 	'open_in' : {
@@ -268,6 +233,7 @@ var knownMenuFields = {
 			'Frame' : 'iframe'
 		},
 		defaultValue: 'same_window',
+		onlyForTopMenus: false,
 		visible: false
 	},
 	'css_class' : {
@@ -276,6 +242,7 @@ var knownMenuFields = {
 		advanced : true,
 		type : 'text',
 		defaultValue: '',
+		onlyForTopMenus: true,
 		visible: true
 	},
 	'hookname' : {
@@ -284,6 +251,7 @@ var knownMenuFields = {
 		advanced : true,
 		type : 'text',
 		defaultValue: '',
+		onlyForTopMenus: true,
 		visible: true
 	},
 	'icon_url' : {
@@ -292,22 +260,17 @@ var knownMenuFields = {
 		advanced : true,
 		type : 'text',
 		defaultValue: 'div',
+		onlyForTopMenus: true,
 		visible: true
-	},
-    'custom' : {
-        caption : 'Custom',
-        standardCaption : false,
-        advanced: true,
-        type: 'checkbox',
-        defaultValue: false,
-        visible: false
-    }
+	}
 };
 
 /*
  * Create editors for the visible fields of a menu entry and append them to the specified node.
  */
-function buildEditboxFields(containerNode, entry){
+function buildEditboxFields(containerNode, entry, isTopLevel){
+	isTopLevel = (typeof isTopLevel == 'undefined') ? false : isTopLevel;
+
 	var basicFields = $('<div class="ws_edit_panel ws_basic"></div>').appendTo(containerNode);
     var advancedFields = $('<div class="ws_edit_panel ws_advanced"></div>').appendTo(containerNode);
 
@@ -319,9 +282,15 @@ function buildEditboxFields(containerNode, entry){
 		if (!knownMenuFields.hasOwnProperty(field_name)) {
 			continue;
 		}
-		var field = buildEditboxField(entry, field_name, knownMenuFields[field_name]);
+
+		var fieldSpec = knownMenuFields[field_name];
+		if (fieldSpec.onlyForTopMenus && !isTopLevel) {
+			continue;
+		}
+
+		var field = buildEditboxField(entry, field_name, fieldSpec);
 		if (field){
-            if (knownMenuFields[field_name].advanced){
+            if (fieldSpec.advanced){
                 advancedFields.append(field);
             } else {
                 basicFields.append(field);
@@ -346,8 +315,8 @@ function buildEditboxField(entry, field_name, field_settings){
 		return null; //skip fields this entry doesn't have
 	}
 
-	var default_value = (typeof entry.defaults[field_name] != 'undefined')?entry.defaults[field_name]:field_settings.defaultValue;
-	var value = (entry[field_name]!=null)?entry[field_name]:default_value;
+	var default_value = (typeof entry.defaults[field_name] != 'undefined') ? entry.defaults[field_name] : field_settings.defaultValue;
+	var value = (entry[field_name] != null) ? entry[field_name] : default_value;
 
 	//Build a form field of the appropriate type
 	var inputBox = null;
@@ -382,7 +351,7 @@ function buildEditboxField(entry, field_name, field_settings){
 
 
 	var className = "ws_edit_field ws_edit_field-"+field_name;
-	if(entry[field_name]==null){
+	if (entry[field_name] == null){
 		className += ' ws_input_default';
 	}
 
@@ -391,7 +360,7 @@ function buildEditboxField(entry, field_name, field_settings){
 		className += ' ws_has_dropdown';
 	}
 
-	var editField = $('<div>' + (field_settings.standardCaption?(field_settings.caption+'<br>'):'') + '</div>')
+	var editField = $('<div>' + (field_settings.standardCaption ? (field_settings.caption+'<br>') : '') + '</div>')
 		.attr('class', className)
 		.append(inputBox);
 
@@ -419,28 +388,6 @@ function buildEditboxField(entry, field_name, field_settings){
 	}
 
 	return editField;
-}
-
-/*
- * Get the current values of all menu fields (ignores defaults).
- * Returns an object containing each field as a separate property.
- */
-function getCurrentFieldValues(entry){
-	var values = {};
-
-	for (var field_name in knownMenuFields){
-		if (!knownMenuFields.hasOwnProperty(field_name)) {
-			continue;
-		}
-		if (typeof entry[field_name] === 'undefined') {
-			continue; //skip fields this entry doesn't have
-		}
-		values[field_name] = entry[field_name];
-	}
-
-	values.defaults = entry.defaults;
-
-	return values;
 }
 
 /*
@@ -500,7 +447,7 @@ function readMenuTreeState(){
 
 	//Gather all menus and their items
 	$('#ws_menu_box .ws_menu').each(function() {
-		var menu = readMenuState(this, menu_position++);
+		var menu = readItemState(this, menu_position++);
 
 		//Attach the current menu to the main struct
 		var filename = (menu.file !== null)?menu.file:menu.defaults.file;
@@ -512,63 +459,39 @@ function readMenuTreeState(){
 	};
 }
 
-/*
- * Extract the settings of a top-level menu from its editor widget(s).
- *
- * Inputs :
- * 	menu_div - DOM node, typically one with the .ws_menu class.
- *  position - The current menu position (int).
- *
- * Output :
- *  A menu object in the tree format.
- *
- */
-function readMenuState(menu_div, position){
-	menu_div = $(menu_div);
-	var menu = readAllFields(menu_div);
-
-	menu.defaults = menu_div.data('defaults');
-
-	menu.position = position;
-	menu.defaults.position = position; //the real default value will later overwrite this
-
-	menu.separator = menu_div.hasClass('ws_menu_separator');
-	menu.hidden = menu_div.hasClass('ws_hidden');
-
-	//Gather the menu's items, if any
-	menu.items = {};
-	var item_position = 0;
-	$('#'+menu_div.data('submenu_id')).find('.ws_item').each(function () {
-		var item = readItemState(this, item_position++);
-		menu.items[ (item.file?item.file:item.defaults.file) ] = item;
-	});
-
-	return menu;
-}
-
-/*
+/**
  * Extract the current menu item settings from its editor widget.
  *
- * Inputs :
- *	item_div - DOM node containing the editor widget, usually with the .ws_item class.
- *	position - Menu item position among its sibling menu items.
- *
+ * @param itemDiv DOM node containing the editor widget, usually with the .ws_item or .ws_menu class.
+ * @param {Integer} position Menu item position among its sibling menu items. Defaults to zero.
+ * @return {Object} A menu object in the tree format.
  */
-function readItemState(item_div, position){
-	item_div = $(item_div);
-	var item = readAllFields(item_div);
+function readItemState(itemDiv, position){
+	position = (typeof position == 'undefined') ? 0 : position;
 
-	item.defaults = item_div.data('defaults');
+	itemDiv = $(itemDiv);
+	var item = readAllFields(itemDiv);
+
+	item.defaults = itemDiv.data('menu_item').defaults;
 
 	//Save the position data
-	if ( typeof position == 'undefined' ){
-		position = 0;
-	}
 	item.position = position;
-	item.defaults.position = position;
+	item.defaults.position = position; //The real default value will later overwrite this
 
-	//Check if the item is hidden
-	item.hidden = item_div.hasClass('ws_hidden');
+	item.separator = itemDiv.hasClass('ws_menu_separator');
+	item.hidden = menuHasFlag(itemDiv, 'hidden');
+	item.custom = menuHasFlag(itemDiv, 'custom');
+
+	//Gather the menu's sub-items, if any
+	item.items = {};
+	var subMenuId = itemDiv.data('submenu_id');
+	if (subMenuId) {
+		var itemPosition = 0;
+		$('#' + subMenuId).find('.ws_item').each(function () {
+			var sub_item = readItemState(this, itemPosition++);
+			item.items[getFieldValue(sub_item, 'file', '')] = sub_item;
+		});
+	}
 
 	return item;
 }
@@ -585,7 +508,7 @@ function readAllFields(container){
 	}
 
 	if ( !container.data('field_editors_created') ){
-		return container.data('initial_values');
+		return container.data('menu_item');
 	}
 
 	var state = {};
@@ -623,7 +546,7 @@ function readAllFields(container){
  ***************************************************************************/
 
 var item_flags = {
-	'custom_item':'This is a custom menu item',
+	'custom':'This is a custom menu item',
 	'unused':'This item was automatically (re)inserted into your custom menu because it is present in the default WordPress menu',
 	'missing':'This item is not present in the default WordPress menu.',
 	'hidden':'This item is hidden'
@@ -709,7 +632,7 @@ $(document).ready(function(){
 		//For performance, the property editors for each menu are only created
 		//when the user tries to access access them for the first time.
 		if ( !container.data('field_editors_created') ){
-			buildEditboxFields(box, container.data('initial_values'));
+			buildEditboxFields(box, container.data('menu_item'), container.hasClass('ws_menu'));
 			container.data('field_editors_created', true);
 		}
 
@@ -767,14 +690,6 @@ $(document).ready(function(){
 		if ( fieldName == 'menu_title' ){
             //If the changed field is the menu title, update the header
 			field.parents('.ws_container').first().find('.ws_item_title').html(input.val()+'&nbsp;');
-		} else if ( fieldName == 'custom' ){
-            //Show/hide the custom flag
-            var myContainer = field.parents('.ws_container').first();
-            if ( value ){
-    			addMenuFlag(myContainer, 'custom_item');
-    		} else {
-    			removeMenuFlag(myContainer, 'custom_item');
-    		}
 		} else if (fieldName == 'file' ){
 			//A menu must always have a non-empty URL. If the user deletes the current value,
 			//reset back to the default.
@@ -784,15 +699,7 @@ $(document).ready(function(){
 		}
     }
 	$('#ws_menu_editor .ws_field_value').live('click', fieldValueChange);
-	//jQuery 1.3.x can't catch 'change' events with live(),
-	//so we handle that by using event delegation instead.
-	//TODO: Update for jQuery 1.4.2 in WP 3.0
-	$('#ws_menu_editor').change(function(event){
-		var target = $(event.target);
-		if ( target.is('.ws_field_value') ){
-			fieldValueChange.call(target, event);
-		}
-	});
+	$('#ws_menu_editor .ws_field_value').live('change', fieldValueChange);
 
 	//Show/hide advanced fields
 	$('#ws_menu_editor .ws_toggle_advanced_fields').live('click', function(){
@@ -1004,7 +911,7 @@ $(document).ready(function(){
 		if (!selection.length) return;
 
 		//Store a copy of the current menu state in clipboard
-		menu_in_clipboard = readMenuState(selection);
+		menu_in_clipboard = readItemState(selection);
 	});
 
 	//Cut menu
@@ -1014,7 +921,7 @@ $(document).ready(function(){
 		if (!selection.length) return;
 
 		//Store a copy of the current menu state in clipboard
-		menu_in_clipboard = readMenuState(selection);
+		menu_in_clipboard = readItemState(selection);
 
 		//Remove the original menu and submenu
 		selection.remove();
@@ -1050,33 +957,20 @@ $(document).ready(function(){
 		ws_paste_count++;
 
 		//The new menu starts out rather bare
-		var randomId = 'custom_menu_'+randomMenuId();
-		var menu = {
-			menu_title : null,
-			page_title : null,
-			access_level : null,
-			file : null,
-			css_class : null,
-			icon_url : null,
-			hookname : null,
-			position : null,
-			custom : null,
-			open_in: null,
-			items : {}, //No items
-			defaults : {
-				menu_title : 'Custom Menu '+ws_paste_count,
-				page_title : '',
+		var randomId = 'custom_menu_' + randomMenuId();
+		var menu = $.extend(true, {}, wsEditorData.blankMenuItem, {
+			custom: true, //Important : flag the new menu as custom, or it won't show up after saving.
+			items: {},
+			defaults: {
+				menu_title : 'Custom Menu ' + ws_paste_count,
 				access_level : 'read',
 				file : randomId,
 				css_class : 'menu-top',
 				icon_url : 'images/generic.png',
 				hookname : randomId,
-				open_in : 'same_window',
-				custom: true, //Important : flag the new menu as custom, or it won't show up after saving.
-				position : 0,
-				separator: false
+				custom: true
 			}
-		};
+		});
 
 		//Insert the new menu
 		var result = outputTopMenu(menu);
@@ -1091,33 +985,18 @@ $(document).ready(function(){
 
 		//The new menu starts out rather bare
 		var randomId = 'separator_'+randomMenuId();
-		var menu = {
-			menu_title : null,
-			page_title : null,
-			access_level : null,
-			file : null,
-			css_class : null,
-			icon_url : null,
-			hookname : null,
-			position : null,
-			separator : true, //Flag as a separator
-			custom : null,
-			open_in : null,
-			items : {}, //No items
-			defaults : {
-				menu_title : '',
-				page_title : '',
+		var menu = $.extend(true, {}, wsEditorData.blankMenuItem, {
+			separator: true, //Flag as a separator
+			custom: false,   //Separators don't need to flagged as custom to be retained.
+			items: {},
+			defaults: {
+				separator: true,
+				css_class : 'wp-menu-separator',
 				access_level : 'read',
 				file : randomId,
-				css_class : 'wp-menu-separator',
-				icon_url : '',
-				hookname : '',
-				position : 0,
-				custom: false, //Separators don't need to flagged as custom to be retained.
-				open_in: 'same_window',
-				separator: true
+				hookname : randomId
 			}
-		};
+		});
 
 		//Insert the new menu
 		outputTopMenu(menu);
@@ -1178,7 +1057,7 @@ $(document).ready(function(){
 
 		//Create a new editor widget for the copied item
 		var item = $.extend(true, {}, item_in_clipboard);
-		var new_item = buildMenuItem(item);
+		var new_item = buildMenuItem(item, false);
 
 		//Get the selected menu
 		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
@@ -1200,23 +1079,18 @@ $(document).ready(function(){
 		}
 
 		ws_paste_count++;
-		var entry = {
-			menu_title : null,
-			page_title : null,
-			access_level : null,
-			file : null,
-			custom : null,
-			open_in : null,
-			defaults : {
+
+		var entry = $.extend(true, {}, wsEditorData.blankMenuItem, {
+			custom: true,
+			items: {},
+			defaults: {
+				custom: true,
 				menu_title : 'Custom Item ' + ws_paste_count,
-				page_title : '',
 				access_level : 'read',
 				file : 'custom_item_'+randomMenuId(),
-				is_plugin_page : false,
-				custom: true,
 				open_in : 'same_window'
 			}
-		};
+		});
 
 		var menu = buildMenuItem(entry);
 
