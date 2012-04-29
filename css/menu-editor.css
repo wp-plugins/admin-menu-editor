@@ -233,7 +233,7 @@ a.ws_edit_link:hover {
 }
 
 #ws_menu_editor .ws_edit_field-custom input[type="checkbox"] {
-	margin-top: 0px;
+	margin-top: 0;
 }
 
 /* Dropdown button for combo-box fields */
@@ -336,7 +336,7 @@ to accomodate the dropdown button.
 }
 
 /* user-created items */
-.ws_custom_item_flag {
+.ws_custom_flag {
 	background-image: url('../images/page_white_add.png');
 }
 
@@ -357,7 +357,7 @@ to accomodate the dropdown button.
 
 /* These classes could be used to apply different styles to items depending on their flags */
 .ws_missing { } 
-.ws_custom_item { }
+.ws_custom { }
 .ws_hidden { }
 .ws_unused { }
 
