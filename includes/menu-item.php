@@ -99,8 +99,9 @@ abstract class ameMenuItem {
 			'items' => array(), //List of sub-menu items.
 
 			'custom' => false,  //True if item is made-from-scratch and has no template.
-			'missing' => false, //True if our template is no longer present in the default admin menu.
-			'unused' => false,  //True if this item was generated from an unused default menu.
+			'missing' => false, //True if our template is no longer present in the default admin menu. Note: Stored values will be ignored. Set upon merging.
+			'unused' => false,  //True if this item was generated from an unused default menu. Note: Stored values will be ignored. Set upon merging.
+			'hidden' => false,  //Hide/show the item. Hiding is purely cosmetic, the item remains accessible.
 
 			'defaults' => self::basic_defaults(),
 		));
@@ -233,6 +234,9 @@ abstract class ameMenuItem {
 			$item['defaults'] = array_merge(self::basic_defaults(), $item['defaults']);
 		}
 		$item = array_merge(self::blank_menu(), $item);
+
+		$item['unused'] = false;
+		$item['missing'] = false;
 
 		if ( isset($item['items']) ) {
 			foreach($item['items'] as $index => $sub_item) {

@@ -184,6 +184,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'wsMenuEditorPro' => false, //Will be overwritten if extras are loaded
 				'menuFormatName' => ameMenu::format_name,
 				'menuFormatVersion' => ameMenu::format_version,
+				'blankMenuItem' => ameMenuItem::blank_menu(),
 			)
 		);
 	}
@@ -329,23 +330,26 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		
 		//Iterate over all menus and submenus and look up default values
 		foreach ($tree as &$topmenu){
-			$template_id = ameMenuItem::template_id($topmenu);
-			//Is this menu present in the default WP menu?
-			if (isset($default_items[$template_id])){
-				//Yes, load defaults from that item
-				$topmenu['defaults'] = $default_items[$template_id];
-				//Note that the original item was used
-				$default_items[$template_id]['used'] = true;
-			} else {
-				//Record the menu as missing, unless it's a menu separator
-				if ( empty($topmenu['separator']) ){
-					$topmenu['missing'] = true;
-					//[Nasty] Fill the 'defaults' array for menu's that don't have it.
-					//This should never be required - saving a custom menu should set the defaults
-					//for all menus it contains automatically.
-					if ( empty($topmenu['defaults']) ){   
-						$tmp = $topmenu;
-						$topmenu['defaults'] = $tmp;
+
+			if ( !ameMenuItem::get($topmenu, 'custom') ) {
+				$template_id = ameMenuItem::template_id($topmenu);
+				//Is this menu present in the default WP menu?
+				if (isset($default_items[$template_id])){
+					//Yes, load defaults from that item
+					$topmenu['defaults'] = $default_items[$template_id];
+					//Note that the original item was used
+					$default_items[$template_id]['used'] = true;
+				} else {
+					//Record the menu as missing, unless it's a menu separator
+					if ( empty($topmenu['separator']) ){
+						$topmenu['missing'] = true;
+						//[Nasty] Fill the 'defaults' array for menu's that don't have it.
+						//This should never be required - saving a custom menu should set the defaults
+						//for all menus it contains automatically.
+						if ( empty($topmenu['defaults']) ){
+							$tmp = $topmenu;
+							$topmenu['defaults'] = $tmp;
+						}
 					}
 				}
 			}
@@ -353,19 +357,21 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if (is_array($topmenu['items'])) {
 				//Iterate over submenu items
 				foreach ($topmenu['items'] as &$item){
-					$template_id = ameMenuItem::template_id($item);
-					
-					//Is this item present in the default WP menu?
-					if (isset($default_items[$template_id])){
-						//Yes, load defaults from that item
-						$item['defaults'] = $default_items[$template_id];
-						$default_items[$template_id]['used'] = true;
-					} else {
-						//Record as missing
-						$item['missing'] = true;
-						if ( empty($item['defaults']) ){
-							$tmp = $item;
-							$item['defaults'] = $tmp;
+					if ( !ameMenuItem::get($item, 'custom') ) {
+						$template_id = ameMenuItem::template_id($item);
+
+						//Is this item present in the default WP menu?
+						if (isset($default_items[$template_id])){
+							//Yes, load defaults from that item
+							$item['defaults'] = $default_items[$template_id];
+							$default_items[$template_id]['used'] = true;
+						} else {
+							//Record as missing
+							$item['missing'] = true;
+							if ( empty($item['defaults']) ){
+								$tmp = $item;
+								$item['defaults'] = $tmp;
+							}
 						}
 					}
 				}
@@ -487,9 +493,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$first_nonseparator_found = false;
 		foreach ($tree as $topmenu){
 			
-			//Skip missing menus, unless they're user-created and thus might point to a non-standard file
-			$custom = ameMenuItem::get($topmenu, 'custom', false);
-			if ( !empty($topmenu['missing']) && !$custom ) {
+			//Skip missing menus.
+			if ( !empty($topmenu['missing']) ) {
 				continue;
 			}
 			
@@ -526,9 +531,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				
 				foreach ($items as $item) {
 					
-					//Skip missing items, unless they're user-created
-					$custom = ameMenuItem::get($item, 'custom', false);
-					if ( !empty($item['missing']) && !$custom ) continue;
+					//Skip missing items
+					if ( !empty($item['missing']) ) {
+						continue;
+					}
 					
 					//Special case : plugin pages that have been moved to a different menu.
 					//If the file field hasn't already been modified, we'll need to adjust it
