@@ -5,7 +5,6 @@
 
 //TODO: wsEditorData.menuTemplates and all the associated infrastructure.
 //TODO: Disallow deletion of non-custom menus. It doesn't do anything anyway.
-//TODO: Allow pasting sub-menus in the top-level and vice versa. Caution: beware missing props on sub-items. Extend.
 //TODO: Add a "Profile" top-level menu somehow. It's specific to users without the user management caps.
 
 var wsIdCounter = 0;
@@ -16,18 +15,18 @@ var wsIdCounter = 0;
  * Utility function for generating pseudo-random alphanumeric menu IDs.
  * Rationale: Simpler than atomically auto-incrementing or globally unique IDs.
  */
-function randomMenuId(size){
-	if ( typeof size == 'undefined' ){
-		size = 5;
-	}
+function randomMenuId(prefix, size){
+	prefix = (typeof prefix == 'undefined') ? 'custom_item_' : prefix;
+	size = (typeof size == 'undefined') ? 5 : size;
 
-    var text = "";
+    var suffix = "";
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    for( var i=0; i < size; i++ )
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
+    for( var i=0; i < size; i++ ) {
+        suffix += possible.charAt(Math.floor(Math.random() * possible.length));
+    }
 
-    return text;
+    return prefix + suffix;
 }
 
 function outputWpMenu(menu){
@@ -116,7 +115,7 @@ function buildSubmenu(items){
  * Create an edit widget for a menu item.
  *
  * @param {Object} itemData
- * @param {Boolean} isTopLevel Specify if this is a top-level menu or a sub-menu item. Defaults to false (= sub-item).
+ * @param {Boolean} [isTopLevel] Specify if this is a top-level menu or a sub-menu item. Defaults to false (= sub-item).
  * @return {*} The created widget as a jQuery object.
  */
 function buildMenuItem(itemData, isTopLevel) {
@@ -440,14 +439,14 @@ function readMenuTreeState(){
  * Extract the current menu item settings from its editor widget.
  *
  * @param itemDiv DOM node containing the editor widget, usually with the .ws_item or .ws_menu class.
- * @param {Integer} position Menu item position among its sibling menu items. Defaults to zero.
+ * @param {Integer} [position] Menu item position among its sibling menu items. Defaults to zero.
  * @return {Object} A menu object in the tree format.
  */
 function readItemState(itemDiv, position){
 	position = (typeof position == 'undefined') ? 0 : position;
 
 	itemDiv = $(itemDiv);
-	var item = readAllFields(itemDiv);
+	var item = $.extend({}, wsEditorData.blankMenuItem, itemDiv.data('menu_item'), readAllFields(itemDiv));
 
 	item.defaults = itemDiv.data('menu_item').defaults;
 
@@ -565,7 +564,6 @@ function menuHasFlag(item, flag){
 
 //Cut & paste stuff
 var menu_in_clipboard = null;
-var item_in_clipboard = null;
 var ws_paste_count = 0;
 
 $(document).ready(function(){
@@ -914,7 +912,19 @@ $(document).ready(function(){
 
 		//The user shouldn't need to worry about giving separators a unique filename.
 		if (menu.separator) {
-			menu.defaults.file = 'separator_'+randomMenuId();
+			menu.defaults.file = randomMenuId('separator_');
+		}
+
+		//If we're pasting from a sub-menu, we may need to fix some properties
+		//that are blank for sub-menu items but required for top-level menus.
+		if (getFieldValue(menu, 'css_class', '') == '') {
+			menu.css_class = 'menu-top';
+		}
+		if (getFieldValue(menu, 'icon_url', '') == '') {
+			menu.icon_url = 'images/generic.png';
+		}
+		if (getFieldValue(menu, 'hookname', '') == '') {
+			menu.hookname = randomMenuId();
 		}
 
 		//Get the selected menu
@@ -934,7 +944,7 @@ $(document).ready(function(){
 		ws_paste_count++;
 
 		//The new menu starts out rather bare
-		var randomId = 'custom_menu_' + randomMenuId();
+		var randomId = randomMenuId();
 		var menu = $.extend(true, {}, wsEditorData.blankMenuItem, {
 			custom: true, //Important : flag the new menu as custom, or it won't show up after saving.
 			items: {},
@@ -961,7 +971,7 @@ $(document).ready(function(){
 		ws_paste_count++;
 
 		//The new menu starts out rather bare
-		var randomId = 'separator_'+randomMenuId();
+		var randomId = randomMenuId('separator_');
 		var menu = $.extend(true, {}, wsEditorData.blankMenuItem, {
 			separator: true, //Flag as a separator
 			custom: false,   //Separators don't need to flagged as custom to be retained.
@@ -1011,7 +1021,7 @@ $(document).ready(function(){
 		if (!selection.length) return;
 
 		//Store a copy of item state in the clipboard
-		item_in_clipboard = readItemState(selection);
+		menu_in_clipboard = readItemState(selection);
 	});
 
 	//Cut item
@@ -1021,7 +1031,7 @@ $(document).ready(function(){
 		if (!selection.length) return;
 
 		//Store a copy of item state in the clipboard
-		item_in_clipboard = readItemState(selection);
+		menu_in_clipboard = readItemState(selection);
 
 		//Remove the original item
 		selection.remove();
@@ -1030,23 +1040,36 @@ $(document).ready(function(){
 	//Paste item
 	$('#ws_paste_item').click(function () {
 		//Check if anything has been copied/cut
-		if (!item_in_clipboard) return;
+		if (!menu_in_clipboard) return;
 
 		//Create a new editor widget for the copied item
-		var item = $.extend(true, {}, item_in_clipboard);
-		var new_item = buildMenuItem(item, false);
+		var item = $.extend(true, {}, menu_in_clipboard);
+
+		//We're pasting this item into a sub-menu, so it can't have a sub-menu of its own.
+		//Instead, any sub-menu items belonging to this item will be pasted after the item.
+		var newItems = [];
+		for (var file in item.items) {
+			if (item.items.hasOwnProperty(file)) {
+				newItems.push(buildMenuItem(item.items[file], false));
+			}
+		}
+		item.items = {};
+
+		newItems.unshift(buildMenuItem(item, false));
 
 		//Get the selected menu
-		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
-		if (selection.length > 0) {
-			//If an item is selected add the pasted item after it
-			selection.after(new_item);
-		} else {
-			//Otherwise add the pasted item at the end
-			$('#ws_submenu_box .ws_submenu:visible').append(new_item);
+		var visibleSubmenu = $('#ws_submenu_box .ws_submenu:visible');
+		var selection = visibleSubmenu.find('.ws_active');
+		for(var i = 0; i < newItems.length; i++) {
+			if (selection.length > 0) {
+				//If an item is selected add the pasted items after it
+				selection.after(newItems[i]);
+			} else {
+				//Otherwise add the pasted items at the end
+				visibleSubmenu.append(newItems[i]);
+			}
+			newItems[i].show();
 		}
-
-		new_item.show();
 	});
 
 	//New item
@@ -1064,7 +1087,7 @@ $(document).ready(function(){
 				custom: true,
 				menu_title : 'Custom Item ' + ws_paste_count,
 				access_level : 'read',
-				file : 'custom_item_'+randomMenuId(),
+				file : randomMenuId(),
 				open_in : 'same_window'
 			}
 		});

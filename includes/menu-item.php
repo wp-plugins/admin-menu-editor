@@ -71,9 +71,9 @@ abstract class ameMenuItem {
 	        'parent' => '',
 
 	        //Fields that apply only to top level menus.
-	        'css_class' => '',
+	        'css_class' => 'menu-top',
 	        'hookname' => '',
-	        'icon_url' => '',
+	        'icon_url' => 'images/generic.png',
 	        'separator' => false,
 
 	        //Internal fields that may not map directly to WP menu structures.
