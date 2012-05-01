@@ -179,52 +179,41 @@ function buildMenuItem(itemData, isTopLevel) {
 	return item;
 }
 
+//Editor field spec template.
+var baseField = {
+	caption : '[No caption]',
+    standardCaption : true,
+	advanced : false,
+	type : 'text',
+	defaultValue: '',
+	onlyForTopMenus: false,
+	addDropdown : false,
+	visible: true
+};
+
 /*
  * List of all menu fields that have an associated editor
  */
-//TODO: Extend a template object instead of listing all properties every time.
 var knownMenuFields = {
-	'menu_title' : {
-		caption : 'Menu title',
-        standardCaption : true,
-		advanced : false,
-		type : 'text',
-		defaultValue: '',
-		onlyForTopMenus: false,
-		visible: true
-	},
-	'access_level' : {
+	'menu_title' : $.extend({}, baseField, {
+		caption : 'Menu title'
+	}),
+	'access_level' : $.extend({}, baseField, {
 		caption: 'Required capability',
-        standardCaption : true,
-		advanced : false,
-		type : 'text',
 		defaultValue: 'read',
-		addDropdown : true,
-		onlyForTopMenus: false,
-		visible: true
-	},
-	'file' : {
+		addDropdown : true
+	}),
+	'file' : $.extend({}, baseField, {
 		caption: 'URL',
-		advanced : false,
-        standardCaption : true,
-		type : 'text',
-		defaultValue: '',
-		addDropdown : 'ws_page_selector',
-		onlyForTopMenus: false,
-		visible: true
-	},
-	'page_title' : {
+		addDropdown : 'ws_page_selector'
+	}),
+	'page_title' : $.extend({}, baseField, {
 		caption: "Window title",
         standardCaption : true,
-		advanced : true,
-		type : 'text',
-		defaultValue: '',
-		onlyForTopMenus: false,
-		visible: true
-	},
-	'open_in' : {
+		advanced : true
+	}),
+	'open_in' : $.extend({}, baseField, {
 		caption: 'Open in',
-        standardCaption : true,
 		advanced : true,
 		type : 'select',
 		options : {
@@ -233,36 +222,24 @@ var knownMenuFields = {
 			'Frame' : 'iframe'
 		},
 		defaultValue: 'same_window',
-		onlyForTopMenus: false,
 		visible: false
-	},
-	'css_class' : {
+	}),
+	'css_class' : $.extend({}, baseField, {
 		caption: 'CSS classes',
-        standardCaption : true,
 		advanced : true,
-		type : 'text',
-		defaultValue: '',
-		onlyForTopMenus: true,
-		visible: true
-	},
-	'hookname' : {
+		onlyForTopMenus: true
+	}),
+	'hookname' : $.extend({}, baseField, {
 		caption: 'Hook name',
-        standardCaption : true,
 		advanced : true,
-		type : 'text',
-		defaultValue: '',
-		onlyForTopMenus: true,
-		visible: true
-	},
-	'icon_url' : {
+		onlyForTopMenus: true
+	}),
+	'icon_url' : $.extend({}, baseField, {
 		caption: 'Icon URL',
-        standardCaption : true,
 		advanced : true,
-		type : 'text',
 		defaultValue: 'div',
-		onlyForTopMenus: true,
-		visible: true
-	}
+		onlyForTopMenus: true
+	})
 };
 
 /*
