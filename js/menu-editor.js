@@ -4,7 +4,6 @@
 /** @namespace wsEditorData */
 
 //TODO: wsEditorData.menuTemplates and all the associated infrastructure.
-//TODO: Disallow deletion of non-custom menus. It doesn't do anything anyway.
 //TODO: Add a "Profile" top-level menu somehow. It's specific to users without the user management caps.
 
 var wsIdCounter = 0;
@@ -149,7 +148,7 @@ function buildMenuItem(itemData, isTopLevel) {
 	item.append(contents.join(''));
 
 	//Apply flags based on the item's state
-	var flags = ['hidden', 'unused', 'custom', 'missing'];
+	var flags = ['hidden', 'unused', 'custom'];
 	for (var i = 0; i < flags.length; i++) {
 		if (getFieldValue(itemData, flags[i], false)) {
 			addMenuFlag(item, flags[i]);
@@ -194,6 +193,9 @@ var baseField = {
  * List of all menu fields that have an associated editor
  */
 var knownMenuFields = {
+	'template_id' : $.extend({}, baseField, {
+		caption : 'Template'
+	}),
 	'menu_title' : $.extend({}, baseField, {
 		caption : 'Menu title'
 	}),
@@ -291,8 +293,10 @@ function buildEditboxField(entry, field_name, field_settings){
 		return null; //skip fields this entry doesn't have
 	}
 
-	var default_value = (typeof entry.defaults[field_name] != 'undefined') ? entry.defaults[field_name] : field_settings.defaultValue;
-	var value = (entry[field_name] != null) ? entry[field_name] : default_value;
+	var hasADefaultValue = (typeof entry.defaults[field_name] != 'undefined') && (field_name != 'template_id');
+
+	var defaultValue = hasADefaultValue ? entry.defaults[field_name] : field_settings.defaultValue;
+	var value = (entry[field_name] != null) ? entry[field_name] : defaultValue;
 
 	//Build a form field of the appropriate type
 	var inputBox = null;
@@ -327,7 +331,12 @@ function buildEditboxField(entry, field_name, field_settings){
 
 
 	var className = "ws_edit_field ws_edit_field-"+field_name;
-	if (entry[field_name] == null){
+
+	if (!hasADefaultValue) {
+		className += ' ws_has_no_default';
+	}
+
+	if (hasADefaultValue && (entry[field_name] == null)) {
 		className += ' ws_input_default';
 	}
 
@@ -356,8 +365,7 @@ function buildEditboxField(entry, field_name, field_settings){
 
 	editField
 		.append('<img src="' + wsEditorData.imagesUrl + '/transparent16.png" class="ws_reset_button" title="Reset to default value">&nbsp;</img>')
-		.data('field_name', field_name)
-		.data('default_value', default_value);
+		.data('field_name', field_name);
 
 	if ( !field_settings.visible ){
 		editField.css('display', 'none');
@@ -524,7 +532,6 @@ function readAllFields(container){
 var item_flags = {
 	'custom':'This is a custom menu item',
 	'unused':'This item was automatically (re)inserted into your custom menu because it is present in the default WordPress menu',
-	'missing':'This item is not present in the default WordPress menu.',
 	'hidden':'This item is hidden'
 };
 
@@ -624,22 +631,30 @@ $(document).ready(function(){
 
     //The "Default" button : Reset to default value when clicked
     $('#ws_menu_editor .ws_reset_button').live('click', (function () {
-        //Find the field div (it holds the default value)
-        var field = $(this).parent();
+        //Find the field div (it holds the field name)
+        var field = $(this).parents('.ws_edit_field');
+	    var fieldName = field.data('field_name');
     	//Find the related input field
 		var input = field.find('.ws_field_value');
-		if ( (input.length > 0) && (field.length > 0) ) {
-			//Set the value to the default
-            if (input.attr('type') == 'checkbox'){
-                if ( field.data('default_value') ){
-                    input.attr('checked', 'checked');
-                } else {
-                    input.removeAttr('checked');
-                }
-            } else {
-                input.val(field.data('default_value'));
-            }
-			field.addClass('ws_input_default');
+
+		if ( (input.length > 0) && (field.length > 0) && fieldName ) {
+			//Extract the default value from the menu item.
+			var defaults = field.parents('.ws_container').first().data('menu_item').defaults;
+
+			//Set the value to the default, if one exists.
+			if (defaults && (typeof defaults[fieldName] != 'undefined')) {
+	            if (input.attr('type') == 'checkbox'){
+	                if (defaults[fieldName]){
+	                    input.attr('checked', 'checked');
+	                } else {
+	                    input.removeAttr('checked');
+	                }
+	            } else {
+	                input.val(defaults[fieldName]);
+	            }
+				field.addClass('ws_input_default');
+			}
+
 			//Trigger the change event to ensure consistency
 			input.change();
 		}
@@ -649,6 +664,7 @@ $(document).ready(function(){
     function fieldValueChange(){
         var input = $(this);
 		var field = input.parents('.ws_edit_field').first();
+	    var fieldName = field.data('field_name');
 
 	    var value = null;
         if ( input.attr('type') == 'checkbox' ){
@@ -657,18 +673,26 @@ $(document).ready(function(){
             value = input.val();
         }
 
-		if ( field.data('default_value') != value ) {
-			field.removeClass('ws_input_default');
-		}
+	    var defaults = field.parents('.ws_container').first().data('menu_item').defaults;
+	    var hasADefaultValue = defaults && (typeof defaults[fieldName] != 'undefined')  && (fieldName != 'template_id');
 
-        var fieldName = field.data('field_name');
+	    if (hasADefaultValue) {
+		    field.removeClass('ws_has_no_default');
+		    if (defaults[fieldName] != value) {
+				field.removeClass('ws_input_default');
+			}
+	    } else {
+		    field.addClass('ws_has_no_default').removeClass('ws_input_default');
+	    }
+
 		if ( fieldName == 'menu_title' ){
             //If the changed field is the menu title, update the header
 			field.parents('.ws_container').first().find('.ws_item_title').html(input.val()+'&nbsp;');
 		} else if (fieldName == 'file' ){
 			//A menu must always have a non-empty URL. If the user deletes the current value,
 			//reset back to the default.
-			if ( value == '' ){
+			//TODO: Handle the case where no default exists
+			if ((value == '') && hasADefaultValue){
 				field.find('.ws_reset_button').click();
 			}
 		}
