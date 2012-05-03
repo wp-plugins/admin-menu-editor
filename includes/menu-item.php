@@ -141,13 +141,17 @@ abstract class ameMenuItem {
 	  * Since WordPress technically allows two copies of the same menu to exist
 	  * in the same sub-menu, this combination is not necessarily unique.
 	  *
-	  * @param array $item The menu item in question.
+	  * @param array|string $item The menu item in question.
 	  * @param string $parent_file The parent menu. If omitted, $item['defaults']['parent'] will be used.
-	  * @return string Template ID, or NULL if this is a custom item.
+	  * @return string Template ID, or an empty string if this is a custom item.
 	  */
 	public static function template_id($item, $parent_file = ''){
+		if (is_string($item)) {
+			return $parent_file . '>' . $item;
+		}
+
 		if ( self::get($item, 'custom') ) {
-			return null;
+			return '';
 		}
 
 		//Maybe it already has an ID?
@@ -237,6 +241,7 @@ abstract class ameMenuItem {
 
 		$item['unused'] = false;
 		$item['missing'] = false;
+		$item['template_id'] = self::template_id($item);
 
 		if ( isset($item['items']) ) {
 			foreach($item['items'] as $index => $sub_item) {

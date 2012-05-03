@@ -211,8 +211,9 @@ a.ws_edit_link:hover {
 	color: gray;
 }
 
-/* No reset button for fields set to the default value */ 
-.ws_input_default .ws_reset_button {
+/* No reset button for fields set to the default value and fields without a default value */
+.ws_input_default  .ws_reset_button,
+.ws_has_no_default .ws_reset_button {
 	visibility: hidden;
 }
 
@@ -340,11 +341,6 @@ to accomodate the dropdown button.
 	background-image: url('../images/page_white_add.png');
 }
 
-/* items not present in the default menu */
-.ws_missing_flag {
-	background-image: url('../images/plugin_error.png');
-}
-
 /* unused items - those that are in the default menu but not in the custom one */
 .ws_unused_flag {
 	background-image: url('../images/plugin_add.png');
@@ -356,7 +352,6 @@ to accomodate the dropdown button.
 }
 
 /* These classes could be used to apply different styles to items depending on their flags */
-.ws_missing { } 
 .ws_custom { }
 .ws_hidden { }
 .ws_unused { }

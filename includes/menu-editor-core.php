@@ -326,8 +326,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return array Updated menu tree
    */
 	function menu_merge($tree, $menu, $submenu){
+		//TODO: Move this to the outer scope, {name, defaults}, $itemTemplates
 		$default_items = $this->build_lookups($menu, $submenu);
-		
+
 		//Iterate over all menus and submenus and look up default values
 		foreach ($tree as &$topmenu){
 
@@ -343,13 +344,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					//Record the menu as missing, unless it's a menu separator
 					if ( empty($topmenu['separator']) ){
 						$topmenu['missing'] = true;
-						//[Nasty] Fill the 'defaults' array for menu's that don't have it.
-						//This should never be required - saving a custom menu should set the defaults
-						//for all menus it contains automatically.
-						if ( empty($topmenu['defaults']) ){
-							$tmp = $topmenu;
-							$topmenu['defaults'] = $tmp;
-						}
 					}
 				}
 			}
@@ -368,10 +362,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 						} else {
 							//Record as missing
 							$item['missing'] = true;
-							if ( empty($item['defaults']) ){
-								$tmp = $item;
-								$item['defaults'] = $tmp;
-							}
 						}
 					}
 				}
@@ -382,9 +372,28 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		unset($topmenu);
 		unset($item);
 
-		//Note : Now we have some items marked as missing, and some items in lookup arrays
-		//that are not marked as used. The missing items are handled elsewhere (e.g. tree2wp()),
-		//but lets merge in the unused items now.
+		//Now we have some items marked as missing, and some items in lookup arrays
+		//that are not marked as used. Lets remove the missing items from the tree and
+		//merge in the unused items.
+		$filteredTree = array();
+		foreach($tree as $file => $topmenu) {
+			if ( $topmenu['missing'] ) {
+				continue;
+			}
+			$filteredSubmenu = array();
+			if (is_array($topmenu['items'])) {
+				foreach($topmenu['items'] as $index => $item) {
+					if ( !$item['missing'] ) {
+						$filteredSubmenu[$index] = $item;
+					}
+				}
+
+			}
+			$topmenu['items'] = $filteredSubmenu;
+			$filteredTree[$file] = $topmenu;
+		}
+
+		$tree = $filteredTree;
 
 		//Find and merge unused menus
 		foreach ($default_items as $item){
