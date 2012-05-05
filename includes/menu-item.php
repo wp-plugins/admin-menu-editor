@@ -23,9 +23,9 @@ abstract class ameMenuItem {
 			'access_level' => $item[1],
 			'file'         => $item[2],
 			'page_title'   => (isset($item[3]) ? $item[3] : ''),
-			'css_class'    => (isset($item[4]) ? $item[4] : ''),
+			'css_class'    => (isset($item[4]) ? $item[4] : 'menu-top'),
 			'hookname'     => (isset($item[5]) ? $item[5] : ''), //Used as the ID attr. of the generated HTML tag.
-			'icon_url'     => (isset($item[6]) ? $item[6] : ''),
+			'icon_url'     => (isset($item[6]) ? $item[6] : 'images/generic.png'),
 			'position'     => $position,
 			'parent'       => $parent,
 		);

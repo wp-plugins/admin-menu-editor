@@ -25,6 +25,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	protected $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
 	                                    //fix the titles of moved plugin pages.
 	private $custom_menu = null;        //The current custom menu with defaults merged in
+	private $item_templates = array();
 
 	//Our personal copy of the request vars, without any "magic quotes".
 	private $post = array();
@@ -135,8 +136,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( !empty($this->options['custom_menu']) ){
 			$custom_menu = ameMenu::load_array($this->options['custom_menu']);
 
+			//Generate item templates from the default menu.
+			$this->item_templates = $this->build_templates($this->default_wp_menu, $this->default_wp_submenu);
+
 			//Merge in data from the default menu
-			$custom_menu['tree'] = $this->menu_merge($custom_menu['tree'], $menu, $submenu);
+			$custom_menu['tree'] = $this->menu_merge($custom_menu['tree'], $this->item_templates);
 			//Save for later - the editor page will need it
 			$this->custom_menu = $custom_menu;
 			//Apply the custom menu
@@ -185,6 +189,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'menuFormatName' => ameMenu::format_name,
 				'menuFormatVersion' => ameMenu::format_version,
 				'blankMenuItem' => ameMenuItem::blank_menu(),
+				'itemTemplates' => $this->item_templates,
 			)
 		);
 	}
@@ -291,29 +296,56 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
   /**
-   * Populate lookup arrays with default values from $menu and $submenu. Used later to merge
+   * Populate a lookup array with default values from $menu and $submenu. Used later to merge
    * a custom menu with the native WordPress menu structure somewhat gracefully.
    *
    * @param array $menu
    * @param array $submenu
-   * @return array An array with two elements containing menu and submenu defaults.
+   * @return array An array of menu templates and their default values.
    */
-	function build_lookups($menu, $submenu){
-		$defaults = array();
+	function build_templates($menu, $submenu){
+		$templates = array();
 
+		$name_lookup = array();
 		foreach($menu as $pos => $item){
 			$item = ameMenuItem::fromWpItem($item, $pos);
-			$defaults[ameMenuItem::template_id($item)] = $item;
+			if ($item['separator']) {
+				continue;
+			}
+
+			$name = $this->sanitize_menu_title($item['menu_title']);
+			$name_lookup[$item['file']] = $name;
+
+			$templates[ameMenuItem::template_id($item)] = array(
+				'name' => $name,
+				'used' => false,
+				'defaults' => $item
+			);
 		}
 
 		foreach($submenu as $parent => $items){
 			foreach($items as $pos => $item){
 				$item = ameMenuItem::fromWpItem($item, $pos, $parent);
-				$defaults[ameMenuItem::template_id($item)] = $item;
+				$templates[ameMenuItem::template_id($item)] = array(
+					'name' => $name_lookup[$parent] . ' -> ' . $this->sanitize_menu_title($item['menu_title']),
+					'used' => false,
+					'defaults' => $item
+				);
 			}
 		}
 
-		return $defaults;
+		return $templates;
+	}
+
+	/**
+	 * Sanitize a menu title for display.
+	 * Removes HTML tags and update notification bubbles.
+	 *
+	 * @param string $title
+	 * @return string
+	 */
+	private function sanitize_menu_title($title) {
+		return strip_tags( preg_replace('@<span[^>]*>.*</span>@i', '', $title) );
 	}
 
   /**
@@ -321,25 +353,21 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * and marks missing items as such.
    *
    * @param array $tree A menu in plugin's internal form
-   * @param array $menu WordPress menu structure
-   * @param array $submenu WordPress submenu structure
+   * @param array $itemTemplates A lookup list of default menu items, used as templates for the custom menu.
    * @return array Updated menu tree
    */
-	function menu_merge($tree, $menu, $submenu){
-		//TODO: Move this to the outer scope, {name, defaults}, $itemTemplates
-		$default_items = $this->build_lookups($menu, $submenu);
-
+	function menu_merge($tree, $itemTemplates){
 		//Iterate over all menus and submenus and look up default values
 		foreach ($tree as &$topmenu){
 
 			if ( !ameMenuItem::get($topmenu, 'custom') ) {
 				$template_id = ameMenuItem::template_id($topmenu);
 				//Is this menu present in the default WP menu?
-				if (isset($default_items[$template_id])){
+				if (isset($itemTemplates[$template_id])){
 					//Yes, load defaults from that item
-					$topmenu['defaults'] = $default_items[$template_id];
+					$topmenu['defaults'] = $itemTemplates[$template_id]['defaults'];
 					//Note that the original item was used
-					$default_items[$template_id]['used'] = true;
+					$itemTemplates[$template_id]['used'] = true;
 				} else {
 					//Record the menu as missing, unless it's a menu separator
 					if ( empty($topmenu['separator']) ){
@@ -355,10 +383,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 						$template_id = ameMenuItem::template_id($item);
 
 						//Is this item present in the default WP menu?
-						if (isset($default_items[$template_id])){
+						if (isset($itemTemplates[$template_id])){
 							//Yes, load defaults from that item
-							$item['defaults'] = $default_items[$template_id];
-							$default_items[$template_id]['used'] = true;
+							$item['defaults'] = $itemTemplates[$template_id]['defaults'];
+							$itemTemplates[$template_id]['used'] = true;
 						} else {
 							//Record as missing
 							$item['missing'] = true;
@@ -396,27 +424,28 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$tree = $filteredTree;
 
 		//Find and merge unused menus
-		foreach ($default_items as $item){
+		foreach ($itemTemplates as $template_id => $template){
 			//Skip used menus and separators
-			if ( !empty($item['used']) || !empty($item['separator'])) {
+			if ( !empty($template['used']) || !empty($template['defaults']['separator'])) {
 				continue;
 			}
 
 			//Found an unused item. Build the tree entry.
 			$entry = ameMenuItem::blank_menu();
-			$entry['defaults'] = $item;
+			$entry['template_id'] = $template_id;
+			$entry['defaults'] = $template['defaults'];
 			$entry['unused'] = true; //Note that this item is unused
 
 			//Add the new entry to the menu tree
-			if ( !empty($item['parent']) ) {
-				if (isset($tree[$item['parent']])) {
+			if ( !empty($template['defaults']['parent']) ) {
+				if (isset($tree[$template['defaults']['parent']])) {
 					//Okay, insert the item.
-					$tree[$item['parent']]['items'][$item['file']] = $entry;
+					$tree[$template['defaults']['parent']]['items'][$template['defaults']['file']] = $entry;
 				} else {
 					//Ooops? This should never happen. Some kind of inconsistency?
 				}
 			} else {
-				$tree[$item['file']] = $entry;
+				$tree[$template['defaults']['file']] = $entry;
 			}
 		}
 
