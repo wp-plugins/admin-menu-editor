@@ -3,12 +3,34 @@
 /*global wsEditorData, defaultMenu, customMenu */
 /** @namespace wsEditorData */
 
-//TODO: wsEditorData.menuTemplates and all the associated infrastructure.
+//TODO: Review and refactor template stuff. What about old defaults? Import and such?
 //TODO: Add a "Profile" top-level menu somehow. It's specific to users without the user management caps.
 
 var wsIdCounter = 0;
 
 (function ($){
+
+var customItemTemplate = {
+	'name' : '< Custom >',
+	'defaults' : {
+		menu_title : 'Custom Menu',
+		access_level : 'read',
+		page_title : '',
+		css_class : 'menu-top',
+		hookname : '',
+		icon_url : 'images/generic.png',
+		open_in : 'same_window'
+	}
+};
+
+function getItemTemplateById(template_id) {
+	if (wsEditorData.itemTemplates.hasOwnProperty(template_id)) {
+		return wsEditorData.itemTemplates[template_id];
+	} else if (template_id == '') {
+		return customItemTemplate;
+	}
+	return null;
+}
 
 /*
  * Utility function for generating pseudo-random alphanumeric menu IDs.
@@ -193,9 +215,6 @@ var baseField = {
  * List of all menu fields that have an associated editor
  */
 var knownMenuFields = {
-	'template_id' : $.extend({}, baseField, {
-		caption : 'Template'
-	}),
 	'menu_title' : $.extend({}, baseField, {
 		caption : 'Menu title'
 	}),
@@ -204,9 +223,23 @@ var knownMenuFields = {
 		defaultValue: 'read',
 		addDropdown : true
 	}),
+	'template_id' : $.extend({}, baseField, {
+		caption : 'Target page',
+		type : 'select',
+		options : (function(){
+			//Generate name => id mappings for all item templates + the special "Custom" template.
+			var itemTemplateIds = {'< Custom >' : ''};
+			for (var template_id in wsEditorData.itemTemplates) {
+				if (wsEditorData.itemTemplates.hasOwnProperty(template_id)) {
+					itemTemplateIds[wsEditorData.itemTemplates[template_id].name] = template_id;
+				}
+			}
+			return itemTemplateIds;
+		})()
+	}),
 	'file' : $.extend({}, baseField, {
-		caption: 'URL',
-		addDropdown : 'ws_page_selector'
+		caption: 'URL'
+		//addDropdown : 'ws_page_selector'
 	}),
 	'page_title' : $.extend({}, baseField, {
 		caption: "Window title",
@@ -293,7 +326,7 @@ function buildEditboxField(entry, field_name, field_settings){
 		return null; //skip fields this entry doesn't have
 	}
 
-	var hasADefaultValue = (typeof entry.defaults[field_name] != 'undefined') && (field_name != 'template_id');
+	var hasADefaultValue = entry.defaults && (typeof entry.defaults[field_name] != 'undefined') && (field_name != 'template_id');
 
 	var defaultValue = hasADefaultValue ? entry.defaults[field_name] : field_settings.defaultValue;
 	var value = (entry[field_name] != null) ? entry[field_name] : defaultValue;
@@ -372,6 +405,51 @@ function buildEditboxField(entry, field_name, field_settings){
 	}
 
 	return editField;
+}
+
+/**
+ * Update all fields of this edit widget with the current defaults.
+ *
+ * @param containerNode
+ */
+function updateEditboxFields(containerNode) {
+	var menuItem = containerNode.data('menu_item');
+
+	if (menuItem.custom) {
+	    addMenuFlag(containerNode, 'custom');
+    } else {
+	    removeMenuFlag(containerNode, 'custom');
+    }
+
+	containerNode.find('.ws_edit_field').each(function(index, field) {
+		field = $(field);
+		var fieldName = field.data('field_name');
+		var input = field.find('.ws_field_value').first();
+		var hasADefaultValue = menuItem.defaults && (typeof menuItem.defaults[fieldName] != 'undefined') && (fieldName != 'template_id');
+
+		if (hasADefaultValue && field.hasClass('ws_input_default')) {
+			if (input.attr('type') == 'checkbox') {
+				if (menuItem.defaults[fieldName]) {
+					input.attr('checked', 'checked');
+				} else {
+					input.removeAttr('checked');
+				}
+			} else {
+				input.val(menuItem.defaults[fieldName]);
+			}
+		}
+
+		if (hasADefaultValue) {
+			field.removeClass('ws_has_no_default');
+		} else {
+			field.addClass('ws_has_no_default').removeClass('ws_input_default');
+		}
+
+		//If the changed field is the menu title, update the header
+		if (fieldName == 'menu_title') {
+			containerNode.find('.ws_item_title').html(input.val()+'&nbsp;');
+		}
+	});
 }
 
 /*
@@ -665,6 +743,7 @@ $(document).ready(function(){
         var input = $(this);
 		var field = input.parents('.ws_edit_field').first();
 	    var fieldName = field.data('field_name');
+	    var menuItem = field.parents('.ws_container').first().data('menu_item');
 
 	    var value = null;
         if ( input.attr('type') == 'checkbox' ){
@@ -673,7 +752,23 @@ $(document).ready(function(){
             value = input.val();
         }
 
-	    var defaults = field.parents('.ws_container').first().data('menu_item').defaults;
+	    //Changing the template changes the defaults and updates all fields.
+	    if ((fieldName == 'template_id') && (value != menuItem.template_id)) {
+		    menuItem.template_id = value;
+		    var template = getItemTemplateById(value);
+		    if (template) {
+			    menuItem.defaults = template.defaults;
+		    } else {
+			    menuItem.defaults = null;
+		    }
+		    menuItem.custom = (menuItem.template_id == '');
+
+		    var container = field.parents('.ws_container').first();
+		    updateEditboxFields(container);
+		    return;
+	    }
+
+	    var defaults = menuItem.defaults;
 	    var hasADefaultValue = defaults && (typeof defaults[fieldName] != 'undefined')  && (fieldName != 'template_id');
 
 	    if (hasADefaultValue) {
@@ -689,12 +784,7 @@ $(document).ready(function(){
             //If the changed field is the menu title, update the header
 			field.parents('.ws_container').first().find('.ws_item_title').html(input.val()+'&nbsp;');
 		} else if (fieldName == 'file' ){
-			//A menu must always have a non-empty URL. If the user deletes the current value,
-			//reset back to the default.
-			//TODO: Handle the case where no default exists
-			if ((value == '') && hasADefaultValue){
-				field.find('.ws_reset_button').click();
-			}
+			//TODO: A menu must always have a non-empty URL. If the user deletes the current value, fix it somehow.
 		}
     }
 	$('#ws_menu_editor .ws_field_value').live('click', fieldValueChange);
@@ -969,18 +1059,13 @@ $(document).ready(function(){
 
 		//The new menu starts out rather bare
 		var randomId = randomMenuId();
-		var menu = $.extend(true, {}, wsEditorData.blankMenuItem, {
+		var menu = $.extend({}, wsEditorData.blankMenuItem, {
 			custom: true, //Important : flag the new menu as custom, or it won't show up after saving.
+			template_id : '',
+			menu_title : 'Custom Menu ' + ws_paste_count,
+			file : randomId,
 			items: {},
-			defaults: {
-				menu_title : 'Custom Menu ' + ws_paste_count,
-				access_level : 'read',
-				file : randomId,
-				css_class : 'menu-top',
-				icon_url : 'images/generic.png',
-				hookname : randomId,
-				custom: true
-			}
+			defaults: getItemTemplateById('').defaults
 		});
 
 		//Insert the new menu
@@ -1104,16 +1189,13 @@ $(document).ready(function(){
 
 		ws_paste_count++;
 
-		var entry = $.extend(true, {}, wsEditorData.blankMenuItem, {
+		var entry = $.extend({}, wsEditorData.blankMenuItem, {
 			custom: true,
+			template_id : '',
+			menu_title : 'Custom Item ' + ws_paste_count,
+			file : randomMenuId(),
 			items: {},
-			defaults: {
-				custom: true,
-				menu_title : 'Custom Item ' + ws_paste_count,
-				access_level : 'read',
-				file : randomMenuId(),
-				open_in : 'same_window'
-			}
+			defaults: getItemTemplateById('').defaults
 		});
 
 		var menu = buildMenuItem(entry);
