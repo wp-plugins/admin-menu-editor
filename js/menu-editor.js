@@ -470,9 +470,12 @@ function updateItemEditor(containerNode) {
 		if (fieldName == 'menu_title') {
 			containerNode.find('.ws_item_title').html(input.val() + '&nbsp;');
 		} else if (fieldName == 'file') {
-			//The URL field is read-only for default menus.
+			// The URL/file field is read-only for default menus. Also, since the "file"
+			// field is usually set to a page slugh or plugin filename for plugin/hook pages,
+			// we display the dynamically generated "url" field here (i.e. the actual URL) instead.
 			if (menuItem.template_id !== '') {
-				input.attr('readonly', 'readonly')
+				input.attr('readonly', 'readonly');
+				setInputValue(input, itemTemplates.getDefaultValue(menuItem.template_id, 'url'));
 			} else {
 				input.removeAttr('readonly');
 			}

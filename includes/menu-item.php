@@ -46,8 +46,7 @@ abstract class ameMenuItem {
 
 		//URL generation is not used yet.
 		if ( !$item['separator'] ) {
-			//$item['url'] = self::get_url($item['file'], $parent);
-			$item['url'] = 'error-url-generation-disabled';
+			$item['url'] = self::get_url($item['file'], $parent);
 		}
 
 		$item['template_id'] = self::template_id($item, $parent);
