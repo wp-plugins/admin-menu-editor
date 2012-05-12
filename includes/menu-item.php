@@ -108,6 +108,19 @@ abstract class ameMenuItem {
 		return $blank_menu;
 	}
 
+	public static function custom_item_defaults() {
+		return array(
+			'menu_title' => 'Custom Menu',
+			'access_level' => 'read',
+			'page_title' => '',
+			'css_class' => 'menu-top',
+			'hookname' => '',
+			'icon_url' => 'images/generic.png',
+			'open_in' => 'same_window',
+			'is_plugin_page' => false,
+		);
+	}
+
 	/**
 	  * Get the value of a menu/submenu field.
 	  * Will return the corresponding value from the 'defaults' entry of $item if the
@@ -227,7 +240,7 @@ abstract class ameMenuItem {
 	/**
 	 * Recursively normalize a menu item and all of its sub-items.
 	 *
-	 * This will ensure that the item has all the required fields.
+	 * This will also ensure that the item has all the required fields.
 	 *
 	 * @static
 	 * @param array $item
@@ -243,12 +256,61 @@ abstract class ameMenuItem {
 		$item['missing'] = false;
 		$item['template_id'] = self::template_id($item);
 
+		//Items pointing to a default page can't have a custom file/URL.
+		if ( ($item['template_id'] !== '') && ($item['file'] !== null) ) {
+			if ( $item['file'] == $item['defaults']['file'] ) {
+				//Identical to default, so just set it to use that.
+				$item['file'] = null;
+			} else {
+				//Different file = convert to a custom item. Need to call fix_defaults()
+				//to fix other fields that are currently set to defaults custom items don't have.
+				$item['template_id'] = '';
+			}
+		}
+
+		$item['custom'] = $item['custom'] || ($item['template_id'] == '');
+		$item = self::fix_defaults($item);
+
 		if ( isset($item['items']) ) {
 			foreach($item['items'] as $index => $sub_item) {
 				$item['items'][$index] = self::normalize($sub_item);
 			}
 		}
 
+		return $item;
+	}
+
+	/**
+	 * Fix obsolete default values on custom items.
+	 *
+	 * In older versions of the plugin, each custom item had its own set of defaults.
+	 * It was also possible to create a pseudo-custom item from a default item by
+	 * freely overwriting its fields with custom values.
+	 *
+     * The current version uses the same defaults for all custom items. To avoid data
+     * loss, we'll check for any mismatches and make such defaults explicit.
+	 *
+	 * @static
+	 * @param array $item
+	 * @return array
+	 */
+	private static function fix_defaults($item) {
+		if ( $item['custom'] && isset($item['defaults']) ) {
+			$new_defaults = self::custom_item_defaults();
+			foreach($item as $field => $value) {
+				$is_mismatch = is_null($value)
+					&& array_key_exists($field, $item['defaults'])
+					&& (
+						!array_key_exists($field, $new_defaults) //No default.
+						|| ($item['defaults'][$field] != $new_defaults[$field]) //Different default.
+					);
+
+				if ( $is_mismatch ) {
+					$item[$field] = $item['defaults'][$field];
+				}
+			}
+			$item['defaults'] = $new_defaults;
+		}
 		return $item;
 	}
 

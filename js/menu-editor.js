@@ -10,27 +10,77 @@ var wsIdCounter = 0;
 
 (function ($){
 
-var customItemTemplate = {
-	'name' : '< Custom >',
-	'defaults' : {
-		menu_title : 'Custom Menu',
-		access_level : 'read',
-		page_title : '',
-		css_class : 'menu-top',
-		hookname : '',
-		icon_url : 'images/generic.png',
-		open_in : 'same_window'
+var itemTemplates = {
+	templates: wsEditorData.itemTemplates,
+
+	getTemplateById: function(templateId) {
+		if (wsEditorData.itemTemplates.hasOwnProperty(templateId)) {
+			return wsEditorData.itemTemplates[templateId];
+		} else if ((templateId == '') || (templateId == 'custom')) {
+			return wsEditorData.customItemTemplate;
+		}
+		return null;
+	},
+
+	getDefaults: function (templateId) {
+		var template = this.getTemplateById(templateId);
+		if (template) {
+			return template.defaults;
+		} else {
+			return null;
+		}
+	},
+
+	getDefaultValue: function (templateId, fieldName) {
+		if (fieldName == 'template_id') {
+			return null;
+		}
+
+		var defaults = this.getDefaults(templateId);
+		if (defaults && (typeof defaults[fieldName] != 'undefined')) {
+			return defaults[fieldName];
+		}
+		return null;
+	},
+
+	hasDefaultValue: function(templateId, fieldName) {
+		return (this.getDefaultValue(templateId, fieldName) !== null);
 	}
 };
 
-function getItemTemplateById(template_id) {
-	if (wsEditorData.itemTemplates.hasOwnProperty(template_id)) {
-		return wsEditorData.itemTemplates[template_id];
-	} else if (template_id == '') {
-		return customItemTemplate;
-	}
-	return null;
+/**
+ * Set an input field to a value. The only difference from jQuery.val() is that
+ * setting a checkbox to true/false will check/clear it.
+ *
+ * @param input
+ * @param value
+ */
+function setInputValue(input, value) {
+	if (input.attr('type') == 'checkbox'){
+        if (value){
+            input.attr('checked', 'checked');
+        } else {
+            input.removeAttr('checked');
+        }
+    } else {
+        input.val(value);
+    }
 }
+
+/**
+ * Get the value of an input field. The only difference from jQuery.val() is that
+ * checked/unchecked checkboxes will return true/false.
+ *
+ * @param input
+ * @return {*}
+ */
+function getInputValue(input) {
+	if (input.attr('type') == 'checkbox'){
+		return input.is(':checked');
+	}
+	return input.val();
+}
+
 
 /*
  * Utility function for generating pseudo-random alphanumeric menu IDs.
@@ -51,6 +101,8 @@ function randomMenuId(prefix, size){
 }
 
 function outputWpMenu(menu){
+	var menuCopy = $.extend(true, {}, menu);
+
 	//Remove the current menu data
 	$('#ws_menu_box').empty();
 	$('#ws_submenu_box').empty();
@@ -59,11 +111,11 @@ function outputWpMenu(menu){
 
 	//Display the new menu
 	var i = 0;
-	for (var filename in menu){
-		if (!menu.hasOwnProperty(filename)){
+	for (var filename in menuCopy){
+		if (!menuCopy.hasOwnProperty(filename)){
 			continue;
 		}
-		outputTopMenu(menu[filename]);
+		outputTopMenu(menuCopy[filename]);
 		i++;
 	}
 
@@ -172,9 +224,7 @@ function buildMenuItem(itemData, isTopLevel) {
 	//Apply flags based on the item's state
 	var flags = ['hidden', 'unused', 'custom'];
 	for (var i = 0; i < flags.length; i++) {
-		if (getFieldValue(itemData, flags[i], false)) {
-			addMenuFlag(item, flags[i]);
-		}
+		setMenuFlag(item, flags[i], getFieldValue(itemData, flags[i], false));
 	}
 
 	if ( isTopLevel && !itemData.separator ){
@@ -221,14 +271,15 @@ var knownMenuFields = {
 	'access_level' : $.extend({}, baseField, {
 		caption: 'Required capability',
 		defaultValue: 'read',
-		addDropdown : true
+		addDropdown : 'ws_cap_selector'
 	}),
 	'template_id' : $.extend({}, baseField, {
 		caption : 'Target page',
 		type : 'select',
 		options : (function(){
 			//Generate name => id mappings for all item templates + the special "Custom" template.
-			var itemTemplateIds = {'< Custom >' : ''};
+			var itemTemplateIds = {};
+			itemTemplateIds[wsEditorData.customItemTemplate.name] = '';
 			for (var template_id in wsEditorData.itemTemplates) {
 				if (wsEditorData.itemTemplates.hasOwnProperty(template_id)) {
 					itemTemplateIds[wsEditorData.itemTemplates[template_id].name] = template_id;
@@ -279,11 +330,11 @@ var knownMenuFields = {
 /*
  * Create editors for the visible fields of a menu entry and append them to the specified node.
  */
-function buildEditboxFields(containerNode, entry, isTopLevel){
+function buildEditboxFields(fieldContainer, entry, isTopLevel){
 	isTopLevel = (typeof isTopLevel == 'undefined') ? false : isTopLevel;
 
-	var basicFields = $('<div class="ws_edit_panel ws_basic"></div>').appendTo(containerNode);
-    var advancedFields = $('<div class="ws_edit_panel ws_advanced"></div>').appendTo(containerNode);
+	var basicFields = $('<div class="ws_edit_panel ws_basic"></div>').appendTo(fieldContainer);
+    var advancedFields = $('<div class="ws_edit_panel ws_advanced"></div>').appendTo(fieldContainer);
 
     if ( wsEditorData.hideAdvancedSettings ){
     	advancedFields.css('display', 'none');
@@ -310,7 +361,7 @@ function buildEditboxFields(containerNode, entry, isTopLevel){
 	}
 
 	//Add a link that shows/hides advanced fields
-	containerNode.append(
+	fieldContainer.append(
 		'<div class="ws_toggle_container"><a href="#" class="ws_toggle_advanced_fields"'+
 		(wsEditorData.hideAdvancedSettings ? '' : ' style="display:none;"')+'>'+
 		(wsEditorData.hideAdvancedSettings ? wsEditorData.captionShowAdvanced : wsEditorData.captionHideAdvanced)
@@ -326,11 +377,6 @@ function buildEditboxField(entry, field_name, field_settings){
 		return null; //skip fields this entry doesn't have
 	}
 
-	var hasADefaultValue = entry.defaults && (typeof entry.defaults[field_name] != 'undefined') && (field_name != 'template_id');
-
-	var defaultValue = hasADefaultValue ? entry.defaults[field_name] : field_settings.defaultValue;
-	var value = (entry[field_name] != null) ? entry[field_name] : defaultValue;
-
 	//Build a form field of the appropriate type
 	var inputBox = null;
 	switch(field_settings.type){
@@ -344,9 +390,6 @@ function buildEditboxField(entry, field_name, field_settings){
 				option = $('<option>')
 					.val(field_settings.options[optionTitle])
 					.text(optionTitle);
-				if ( field_settings.options[optionTitle] == value ){
-					option.attr('selected', 'selected');
-				}
 				option.appendTo(inputBox);
 			}
 			break;
@@ -359,22 +402,12 @@ function buildEditboxField(entry, field_name, field_settings){
 
 		case 'text':
 		default:
-			inputBox = $('<input type="text" class="ws_field_value">').val(value);
+			inputBox = $('<input type="text" class="ws_field_value">');
 	}
 
 
 	var className = "ws_edit_field ws_edit_field-"+field_name;
-
-	if (!hasADefaultValue) {
-		className += ' ws_has_no_default';
-	}
-
-	if (hasADefaultValue && (entry[field_name] == null)) {
-		className += ' ws_input_default';
-	}
-
-	var hasDropdown = (typeof(field_settings['addDropdown']) != 'undefined') && field_settings.addDropdown;
-	if ( hasDropdown ){
+	if (field_settings.addDropdown){
 		className += ' ws_has_dropdown';
 	}
 
@@ -382,12 +415,9 @@ function buildEditboxField(entry, field_name, field_settings){
 		.attr('class', className)
 		.append(inputBox);
 
-	if ( hasDropdown ){
+	if (field_settings.addDropdown) {
 		//Add a dropdown button
-		var dropdownId = 'ws_cap_selector';
-		if ( typeof(field_settings.addDropdown) == 'string' ){
-			dropdownId = field_settings.addDropdown;
-		}
+		var dropdownId = field_settings.addDropdown;
 		editField.append(
 			$('<input type="button" value="&#9660;">')
 				.addClass('button ws_dropdown_button')
@@ -408,46 +438,44 @@ function buildEditboxField(entry, field_name, field_settings){
 }
 
 /**
- * Update all fields of this edit widget with the current defaults.
+ * Update an edit widget with the current menu item settings.
  *
  * @param containerNode
  */
-function updateEditboxFields(containerNode) {
+function updateItemEditor(containerNode) {
 	var menuItem = containerNode.data('menu_item');
 
-	if (menuItem.custom) {
-	    addMenuFlag(containerNode, 'custom');
-    } else {
-	    removeMenuFlag(containerNode, 'custom');
-    }
+	//Apply flags based on the item's state.
+	var flags = ['hidden', 'unused', 'custom'];
+	for (var i = 0; i < flags.length; i++) {
+		setMenuFlag(containerNode, flags[i], getFieldValue(menuItem, flags[i], false));
+	}
 
+	//Update all input fields with the current values.
 	containerNode.find('.ws_edit_field').each(function(index, field) {
 		field = $(field);
 		var fieldName = field.data('field_name');
 		var input = field.find('.ws_field_value').first();
-		var hasADefaultValue = menuItem.defaults && (typeof menuItem.defaults[fieldName] != 'undefined') && (fieldName != 'template_id');
 
-		if (hasADefaultValue && field.hasClass('ws_input_default')) {
-			if (input.attr('type') == 'checkbox') {
-				if (menuItem.defaults[fieldName]) {
-					input.attr('checked', 'checked');
-				} else {
-					input.removeAttr('checked');
-				}
-			} else {
-				input.val(menuItem.defaults[fieldName]);
-			}
-		}
+		var hasADefaultValue = itemTemplates.hasDefaultValue(menuItem.template_id, fieldName);
+		var defaultValue = itemTemplates.getDefaultValue(menuItem.template_id, fieldName);
+		var isDefault = hasADefaultValue && (menuItem[fieldName] === null);
 
-		if (hasADefaultValue) {
-			field.removeClass('ws_has_no_default');
-		} else {
-			field.addClass('ws_has_no_default').removeClass('ws_input_default');
-		}
+		field.toggleClass('ws_has_no_default', !hasADefaultValue);
+		field.toggleClass('ws_input_default', isDefault);
 
-		//If the changed field is the menu title, update the header
+		setInputValue(input, isDefault ? defaultValue : menuItem[fieldName]);
+
+		//If the field is the menu title, update the header
 		if (fieldName == 'menu_title') {
-			containerNode.find('.ws_item_title').html(input.val()+'&nbsp;');
+			containerNode.find('.ws_item_title').html(input.val() + '&nbsp;');
+		} else if (fieldName == 'file') {
+			//The URL field is read-only for default menus.
+			if (menuItem.template_id !== '') {
+				input.attr('readonly', 'readonly')
+			} else {
+				input.removeAttr('readonly');
+			}
 		}
 	});
 }
@@ -591,11 +619,7 @@ function readAllFields(container){
 		if (field.hasClass('ws_input_default')){
 			state[field_name] = null;
 		} else {
-            if ( input_box.attr('type') == 'checkbox' ){
-                state[field_name] = input_box.is(':checked');
-            } else {
-                state[field_name] = input_box.val();
-            }
+			state[field_name] = getInputValue(input_box);
 		}
 	});
 
@@ -613,33 +637,22 @@ var item_flags = {
 	'hidden':'This item is hidden'
 };
 
-function addMenuFlag(item, flag){
+function setMenuFlag(item, flag, state) {
 	item = $(item);
 
 	var item_class = 'ws_' + flag;
 	var img_class = 'ws_' + flag + '_flag';
 
-	item.addClass(item_class);
-	//Add the flag image
-	var flag_container = item.find('.ws_flag_container');
-	if ( flag_container.find('.' + img_class).length == 0 ){
-		flag_container.append('<div class="ws_flag '+img_class+'" title="'+item_flags[flag]+'"></div>');
-	}
-}
-
-function removeMenuFlag(item, flag){
-	item = $(item);
-	var img_class = 'ws_' + flag + '_flag';
-
-	item.removeClass('ws_' + flag);
-	item.find('.' + img_class).remove();
-}
-
-function toggleMenuFlag(item, flag){
-	if (menuHasFlag(item, flag)){
-		removeMenuFlag(item, flag);
+	item.toggleClass(item_class, state);
+	if (state) {
+		//Add the flag image,
+		var flag_container = item.find('.ws_flag_container');
+		if ( flag_container.find('.' + img_class).length == 0 ){
+			flag_container.append('<div class="ws_flag '+img_class+'" title="'+item_flags[flag]+'"></div>');
+		}
 	} else {
-		addMenuFlag(item, flag);
+		//Remove the flag image.
+		item.find('.' + img_class).remove();
 	}
 }
 
@@ -693,6 +706,7 @@ $(document).ready(function(){
 		//when the user tries to access access them for the first time.
 		if ( !container.data('field_editors_created') ){
 			buildEditboxFields(box, container.data('menu_item'), container.hasClass('ws_menu'));
+			updateItemEditor(container);
 			container.data('field_editors_created', true);
 		}
 
@@ -717,19 +731,12 @@ $(document).ready(function(){
 
 		if ( (input.length > 0) && (field.length > 0) && fieldName ) {
 			//Extract the default value from the menu item.
-			var defaults = field.parents('.ws_container').first().data('menu_item').defaults;
+			var menuItem = field.parents('.ws_container').first().data('menu_item');
+			var defaultValue = itemTemplates.getDefaultValue(menuItem.template_id, fieldName);
 
 			//Set the value to the default, if one exists.
-			if (defaults && (typeof defaults[fieldName] != 'undefined')) {
-	            if (input.attr('type') == 'checkbox'){
-	                if (defaults[fieldName]){
-	                    input.attr('checked', 'checked');
-	                } else {
-	                    input.removeAttr('checked');
-	                }
-	            } else {
-	                input.val(defaults[fieldName]);
-	            }
+			if (defaultValue !== null) {
+	            setInputValue(input, defaultValue);
 				field.addClass('ws_input_default');
 			}
 
@@ -745,44 +752,58 @@ $(document).ready(function(){
 	    var fieldName = field.data('field_name');
 	    var menuItem = field.parents('.ws_container').first().data('menu_item');
 
-	    var value = null;
-        if ( input.attr('type') == 'checkbox' ){
-            value = input.is(':checked');
-        } else {
-            value = input.val();
+	    var oldValue = menuItem[fieldName];
+	    var value = getInputValue(input);
+	    var defaultValue = itemTemplates.getDefaultValue(menuItem.template_id, fieldName);
+        var hasADefaultValue = (defaultValue !== null);
+
+	    //Some fields/templates have no default values.
+	    field.toggleClass('ws_has_no_default', !hasADefaultValue);
+	    if (!hasADefaultValue) {
+            field.removeClass('ws_input_default');
         }
 
-	    //Changing the template changes the defaults and updates all fields.
-	    if ((fieldName == 'template_id') && (value != menuItem.template_id)) {
-		    menuItem.template_id = value;
-		    var template = getItemTemplateById(value);
-		    if (template) {
-			    menuItem.defaults = template.defaults;
-		    } else {
-			    menuItem.defaults = null;
+	    //Update the menu item with the value from the editor.
+	    if (field.hasClass('ws_input_default') && (value == defaultValue)) {
+		    menuItem[fieldName] = null; //null = use default.
+	    } else {
+		    menuItem[fieldName] = value;
+	    }
+	    field.toggleClass('ws_input_default', (menuItem[fieldName] === null));
+
+	    //Changing the template changes the defaults and refreshes all fields.
+	    if ((fieldName == 'template_id') && (value != oldValue)) {
+		    menuItem.defaults = itemTemplates.getDefaults(value);
+		    menuItem.custom = (value == '');
+
+		    // The file/URL of non-custom items is read-only and equal to the default
+		    // value. Rationale: simplifies menu generation, prevents some user mistakes.
+		    if (menuItem.template_id !== '') {
+			    menuItem.file = null;
 		    }
-		    menuItem.custom = (menuItem.template_id == '');
 
 		    var container = field.parents('.ws_container').first();
-		    updateEditboxFields(container);
-		    return;
-	    }
 
-	    var defaults = menuItem.defaults;
-	    var hasADefaultValue = defaults && (typeof defaults[fieldName] != 'undefined')  && (fieldName != 'template_id');
+		    // The new template might not have default values for some of the fields
+		    // currently set to null (= "default"). In those cases, we need to make
+		    // the current values explicit.
+		    container.find('.ws_edit_field').each(function(index, field){
+			    field = $(field);
+			    var fieldName = field.data('field_name');
+			    var isSetToDefault = (menuItem[fieldName] === null);
+			    var hasDefaultValue = itemTemplates.hasDefaultValue(menuItem.template_id, fieldName);
 
-	    if (hasADefaultValue) {
-		    field.removeClass('ws_has_no_default');
-		    if (defaults[fieldName] != value) {
-				field.removeClass('ws_input_default');
-			}
-	    } else {
-		    field.addClass('ws_has_no_default').removeClass('ws_input_default');
-	    }
+			    if (isSetToDefault && !hasDefaultValue) {
+				    menuItem[fieldName] = getInputValue(field.find('.ws_field_value'));
+			    }
+		    });
 
-		if ( fieldName == 'menu_title' ){
+		    // Display new defaults, etc.
+		    updateItemEditor(container);
+
+	    } else if (fieldName == 'menu_title'){
             //If the changed field is the menu title, update the header
-			field.parents('.ws_container').first().find('.ws_item_title').html(input.val()+'&nbsp;');
+			field.parents('.ws_container').first().find('.ws_item_title').html(input.val() + '&nbsp;');
 		} else if (fieldName == 'file' ){
 			//TODO: A menu must always have a non-empty URL. If the user deletes the current value, fix it somehow.
 		}
@@ -964,19 +985,16 @@ $(document).ready(function(){
 		if (!selection.length) return;
 
 		//Mark the menu as hidden/visible
-		//selection.toggleClass('ws_hidden');
-		toggleMenuFlag(selection, 'hidden');
+		var menuItem = selection.data('menu_item');
+		menuItem.hidden = !menuItem.hidden;
+		setMenuFlag(selection, 'hidden', menuItem.hidden);
 
 		//Also mark all of it's submenus as hidden/visible
-		if ( menuHasFlag(selection,'hidden') ){
-			$('#' + selection.data('submenu_id') + ' .ws_item').each(function(){
-				addMenuFlag(this, 'hidden');
-			});
-		} else {
-			$('#' + selection.data('submenu_id') + ' .ws_item').each(function(){
-				removeMenuFlag(this, 'hidden');
-			});
-		}
+		$('#' + selection.data('submenu_id') + ' .ws_item').each(function(){
+			var submenuItem = $(this).data('menu_item');
+			submenuItem.hidden = menuItem.hidden;
+			setMenuFlag(this, 'hidden', submenuItem.hidden);
+		});
 	});
 
 	//Delete menu
@@ -1065,7 +1083,7 @@ $(document).ready(function(){
 			menu_title : 'Custom Menu ' + ws_paste_count,
 			file : randomId,
 			items: {},
-			defaults: getItemTemplateById('').defaults
+			defaults: itemTemplates.getDefaults('')
 		});
 
 		//Insert the new menu
@@ -1108,7 +1126,9 @@ $(document).ready(function(){
 		if (!selection.length) return;
 
 		//Mark the item as hidden/visible
-		toggleMenuFlag(selection, 'hidden');
+		var menuItem = selection.data('menu_item');
+		menuItem.hidden = !menuItem.hidden;
+		setMenuFlag(selection, 'hidden', menuItem.hidden);
 	});
 
 	//Delete menu
@@ -1195,7 +1215,7 @@ $(document).ready(function(){
 			menu_title : 'Custom Item ' + ws_paste_count,
 			file : randomMenuId(),
 			items: {},
-			defaults: getItemTemplateById('').defaults
+			defaults: itemTemplates.getDefaults('')
 		});
 
 		var menu = buildMenuItem(entry);

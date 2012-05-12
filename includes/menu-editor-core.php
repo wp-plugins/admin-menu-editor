@@ -25,7 +25,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	protected $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
 	                                    //fix the titles of moved plugin pages.
 	private $custom_menu = null;        //The current custom menu with defaults merged in
-	private $item_templates = array();
+	private $item_templates = array();  //A lookup list of default menu items, used as templates for the custom menu.
 
 	//Our personal copy of the request vars, without any "magic quotes".
 	private $post = array();
@@ -140,11 +140,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->item_templates = $this->build_templates($this->default_wp_menu, $this->default_wp_submenu);
 
 			//Merge in data from the default menu
-			$custom_menu['tree'] = $this->menu_merge($custom_menu['tree'], $this->item_templates);
+			$custom_menu['tree'] = $this->menu_merge($custom_menu['tree']);
+
 			//Save for later - the editor page will need it
 			$this->custom_menu = $custom_menu;
+
 			//Apply the custom menu
-			list($menu, $submenu, $this->title_lookups) = $this->tree2wp($this->custom_menu['tree']);
+			$this->replace_wp_menu($this->custom_menu['tree']);
 
 			//Re-filter the menu (silly WP should do that itself, oh well)
 			$this->filter_menu();
@@ -190,6 +192,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'menuFormatVersion' => ameMenu::format_version,
 				'blankMenuItem' => ameMenuItem::blank_menu(),
 				'itemTemplates' => $this->item_templates,
+				'customItemTemplate' => array(
+					'name' => '< Custom >',
+					'defaults' => ameMenuItem::custom_item_defaults(),
+				),
 			)
 		);
 	}
@@ -276,6 +282,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
   /**
    * Loop over the Dashboard submenus and remove pages for which the current user does not have privs.
    *
+   * @global array $submenu Checks for inaccessible sub-menu items.
+   * @global array $_wp_submenu_nopriv Builds a list of items that the current user can not access.
+   *
    * @return void
    */
 	function filter_menu(){
@@ -349,25 +358,26 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
   /**
-   * Merge $menu and $submenu into the $tree. Adds/replaces defaults, inserts new items
-   * and marks missing items as such.
+   * Merge a custom menu with the current default WordPress menu. Adds/replaces defaults,
+   * inserts new items and removes missing items.
+   *
+   * @uses self::$item_templates
    *
    * @param array $tree A menu in plugin's internal form
-   * @param array $itemTemplates A lookup list of default menu items, used as templates for the custom menu.
    * @return array Updated menu tree
    */
-	function menu_merge($tree, $itemTemplates){
+	function menu_merge($tree){
 		//Iterate over all menus and submenus and look up default values
 		foreach ($tree as &$topmenu){
 
 			if ( !ameMenuItem::get($topmenu, 'custom') ) {
 				$template_id = ameMenuItem::template_id($topmenu);
 				//Is this menu present in the default WP menu?
-				if (isset($itemTemplates[$template_id])){
+				if (isset($this->item_templates[$template_id])){
 					//Yes, load defaults from that item
-					$topmenu['defaults'] = $itemTemplates[$template_id]['defaults'];
+					$topmenu['defaults'] = $this->item_templates[$template_id]['defaults'];
 					//Note that the original item was used
-					$itemTemplates[$template_id]['used'] = true;
+					$this->item_templates[$template_id]['used'] = true;
 				} else {
 					//Record the menu as missing, unless it's a menu separator
 					if ( empty($topmenu['separator']) ){
@@ -383,10 +393,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 						$template_id = ameMenuItem::template_id($item);
 
 						//Is this item present in the default WP menu?
-						if (isset($itemTemplates[$template_id])){
+						if (isset($this->item_templates[$template_id])){
 							//Yes, load defaults from that item
-							$item['defaults'] = $itemTemplates[$template_id]['defaults'];
-							$itemTemplates[$template_id]['used'] = true;
+							$item['defaults'] = $this->item_templates[$template_id]['defaults'];
+							$this->item_templates[$template_id]['used'] = true;
 						} else {
 							//Record as missing
 							$item['missing'] = true;
@@ -424,7 +434,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$tree = $filteredTree;
 
 		//Find and merge unused menus
-		foreach ($itemTemplates as $template_id => $template){
+		foreach ($this->item_templates as $template_id => $template){
 			//Skip used menus and separators
 			if ( !empty($template['used']) || !empty($template['defaults']['separator'])) {
 				continue;
@@ -509,20 +519,25 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
   /**
-   * Convert internal menu representation to the form used by WP.
+   * Replace the current WordPress admin menu with the specified custom menu.
    * 
-   * Note : While this function doesn't cause any side effects of its own, 
-   * it executes several filters that may modify global state. Specifically,
-   * IFrame-handling callbacks in 'extras.php' may insert items into the 
-   * global $menu and $submenu arrays.
+   * Note : This function executes several filters that may modify global state.
+   * Specifically, IFrame-handling callbacks in 'extras.php' will add add new hooks
+   * and other menu-related structures.
    *
-   * @param array $tree
-   * @return array $menu and $submenu
+   * @global array $menu Replaced with the custom top-level menu.
+   * @global array $submenu Replaced with the custom sub-menu.
+   * @uses self::$title_lookups
+   *
+   * @param array $tree The new menu, in the internal tree format.
+   * @return void
    */
-	function tree2wp($tree){
-		$menu = array();
-		$submenu = array();
-		$title_lookup = array();
+	function replace_wp_menu($tree){
+		global $menu, $submenu;
+
+		$new_menu = array();
+		$new_submenu = array();
+		$this->title_lookups = array();
 		
 		//Sort the menu by position
 		uasort($tree, 'ameMenuItem::compare_position');
@@ -551,7 +566,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if (!empty($topmenu['hidden'])) continue;
 			
 			//Build the menu structure that WP expects
-			$menu[] = array(
+			$new_menu[] = array(
 					$topmenu['menu_title'],
 					$topmenu['access_level'],
 					$topmenu['file'],
@@ -575,19 +590,19 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					}
 					
 					//Special case : plugin pages that have been moved to a different menu.
-					//If the file field hasn't already been modified, we'll need to adjust it
-					//to point to the old parent. This is required because WP identifies 
-					//plugin pages using *both* the plugin file and the parent file.
-					if ( ameMenuItem::get($item, 'is_plugin_page') && ($item['file'] === null) ){
-						$default_parent = '';
-						if ( isset($item['defaults']) && isset($item['defaults']['parent'])){
-							$default_parent = $item['defaults']['parent'];
-						}
-						if ( $topmenu['file'] != $default_parent ){
-							$item['file'] = $default_parent . '?page=' . $item['defaults']['file'];
+					//We'll need to adjust the file field to point to the old parent. This is
+					//required because WP identifies plugin pages using *both* the plugin file
+					//and the parent file.
+					if ( $item['template_id'] !== '' ) {
+						$template = $this->item_templates[$item['template_id']];
+						if ( $template['defaults']['is_plugin_page'] ) {
+							$default_parent = $template['defaults']['parent'];
+							if ( $topmenu['file'] != $default_parent ){
+								$item['file'] = $default_parent . '?page=' . $template['defaults']['file'];
+							}
 						}
 					}
-					
+
 					$item = ameMenuItem::apply_defaults($item);
 					$item = ameMenuItem::apply_filters($item, 'submenu', $topmenu['file']);
 					
@@ -596,7 +611,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 						continue;
 					}
 					
-					$submenu[$topmenu['file']][] = array(
+					$new_submenu[$topmenu['file']][] = array(
 						$item['menu_title'],
 						$item['access_level'],
 						$item['file'],
@@ -605,11 +620,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					 
 					//Make a note of the page's correct title so we can fix it later
 					//if necessary.
-					$title_lookup[$item['file']] = $item['menu_title']; 
+					$this->title_lookups[$item['file']] = $item['menu_title'];
 				}
 			}
 		}
-		return array($menu, $submenu, $title_lookup);
+
+		$menu = $new_menu;
+		$submenu = $new_submenu;
 	}
 	
   /**
@@ -621,7 +638,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( !$this->current_user_can_edit_menu() ){
 			wp_die("Access denied.");
 		}
-		
+
 		$action = isset($this->post['action']) ? $this->post['action'] : (isset($this->get['action']) ? $this->get['action'] : '');
 		do_action('admin_menu_editor_header', $action);
 		
