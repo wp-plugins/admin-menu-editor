@@ -24,20 +24,23 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 	protected $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
 	                                    //fix the titles of moved plugin pages.
-	private $custom_menu = null;        //The current custom menu with defaults merged in
+	private $merged_custom_menu = null; //The current custom menu with defaults merged in.
 	private $item_templates = array();  //A lookup list of default menu items, used as templates for the custom menu.
+
+	private $cached_custom_menu = null; //Cached, non-merged version of the custom menu. Used by load_custom_menu().
+	private $cached_virtual_caps = null;//List of virtual caps. Used by get_virtual_caps().
 
 	//Our personal copy of the request vars, without any "magic quotes".
 	private $post = array();
 	private $get = array();
-    
+
 	function init(){
 		//Determine if the plugin is active network-wide (i.e. either installed in 
 		//the /mu-plugins/ directory or activated "network wide" by the super admin.
 		if ( $this->is_super_plugin() ){
 			$this->sitewide_options = true;
 		}
-		
+
 		//Set some plugin-specific options
 		if ( empty($this->option_name) ){
 			$this->option_name = 'ws_menu_editor';
@@ -106,8 +109,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Menu reset (for emergencies). Executed by accessing http://example.com/wp-admin/?reset_admin_menu=1 
 		$reset_requested = isset($this->get['reset_admin_menu']) && $this->get['reset_admin_menu'];
 		if ( $reset_requested && $this->current_user_can_edit_menu() ){
-			$this->options['custom_menu'] = null;
-			$this->save_options();
+			$this->set_custom_menu(null);
 		}
 		
 		//The menu editor is only visible to users with the manage_options privilege.
@@ -133,20 +135,19 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$this->default_wp_submenu = $submenu;
 
 		//Is there a custom menu to use?
-		if ( !empty($this->options['custom_menu']) ){
-			$custom_menu = ameMenu::load_array($this->options['custom_menu']);
-
+		$custom_menu = $this->load_custom_menu();
+		if ( $custom_menu !== null ){
 			//Generate item templates from the default menu.
 			$this->item_templates = $this->build_templates($this->default_wp_menu, $this->default_wp_submenu);
 
 			//Merge in data from the default menu
 			$custom_menu['tree'] = $this->menu_merge($custom_menu['tree']);
 
-			//Save for later - the editor page will need it
-			$this->custom_menu = $custom_menu;
+			//Save the merged menu for later - the editor page will need it
+			$this->merged_custom_menu = $custom_menu;
 
 			//Apply the custom menu
-			$this->replace_wp_menu($this->custom_menu['tree']);
+			$this->replace_wp_menu($this->merged_custom_menu['tree']);
 
 			//Re-filter the menu (silly WP should do that itself, oh well)
 			$this->filter_menu();
@@ -173,10 +174,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'menu-editor',
 			$this->plugin_dir_url.'/js/menu-editor.js',
 			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'),
-			'20120426'
+			'20120515'
 		);
 
-		//The editor will need access to some of the plugin data.
+		//The editor will need access to some of the plugin data and WP data.
+		$wp_roles = $this->get_roles();
 		wp_localize_script(
 			'menu-editor',
 			'wsEditorData',
@@ -190,12 +192,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'wsMenuEditorPro' => false, //Will be overwritten if extras are loaded
 				'menuFormatName' => ameMenu::format_name,
 				'menuFormatVersion' => ameMenu::format_version,
+
 				'blankMenuItem' => ameMenuItem::blank_menu(),
 				'itemTemplates' => $this->item_templates,
 				'customItemTemplate' => array(
 					'name' => '< Custom >',
 					'defaults' => ameMenuItem::custom_item_defaults(),
 				),
+
+				'roles' => $wp_roles->roles,
 			)
 		);
 	}
@@ -206,7 +211,37 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	  * @return void
 	  */
 	function enqueue_styles(){
-		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '1.1');
+		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '20120515');
+	}
+
+	/**
+	 * Set and save a new custom menu.
+	 *
+	 * @param array $custom_menu
+	 */
+	function set_custom_menu($custom_menu) {
+		$this->options['custom_menu'] = $custom_menu;
+		$this->save_options();
+
+		$this->cached_custom_menu = null;
+		$this->cached_virtual_caps = null;
+	}
+
+	/**
+	 * Load the current custom menu, if any.
+	 *
+	 * @return array|null Either a menu in the internal format, or NULL if there is no custom menu available.
+	 */
+	function load_custom_menu() {
+		if ( empty($this->options['custom_menu']) ) {
+			return null;
+		}
+
+		if ( $this->cached_custom_menu === null ){
+			$this->cached_custom_menu = ameMenu::load_array($this->options['custom_menu']);
+		}
+
+		return $this->cached_custom_menu;
 	}
 
 	/**
@@ -216,7 +251,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return array
 	 */
 	function hook_menu_order($menu_order){
-		if (empty($this->custom_menu)){
+		if (empty($this->merged_custom_menu)){
 			return $menu_order;
 		}
 		$custom_menu_order = array();
@@ -564,11 +599,23 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			
 			//Skip hidden entries
 			if (!empty($topmenu['hidden'])) continue;
-			
+
+			//Check if the current user can access this menu.
+			$user_has_access = true;
+			$cap_to_use = '';
+			if ( !empty($topmenu['access_level']) ) {
+				$user_has_access = $user_has_access && current_user_can($topmenu['access_level']);
+				$cap_to_use = $topmenu['access_level'];
+			}
+			if ( !empty($topmenu['extra_capability']) ) {
+				$user_has_access = $user_has_access && current_user_can($topmenu['extra_capability']);
+				$cap_to_use = $topmenu['extra_capability'];
+			}
+
 			//Build the menu structure that WP expects
 			$new_menu[] = array(
 					$topmenu['menu_title'],
-					$topmenu['access_level'],
+					$user_has_access ? $cap_to_use : 'do_not_allow',
 					$topmenu['file'],
 					$topmenu['page_title'],
 					$topmenu['css_class'],
@@ -610,10 +657,22 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					if (!empty($item['hidden'])) {
 						continue;
 					}
+
+					//Check if the user can access this item.
+					$user_has_access = true;
+					$cap_to_use = '';
+					if ( !empty($item['access_level']) ) {
+						$user_has_access = $user_has_access && current_user_can($item['access_level']);
+						$cap_to_use = $item['access_level'];
+					}
+					if ( !empty($item['extra_capability']) ) {
+						$user_has_access = $user_has_access && current_user_can($item['extra_capability']);
+						$cap_to_use = $item['extra_capability'];
+					}
 					
 					$new_submenu[$topmenu['file']][] = array(
 						$item['menu_title'],
-						$item['access_level'],
+						$user_has_access ? $cap_to_use : 'do_not_allow',
 						$item['file'],
 						$item['page_title'],
 					);
@@ -670,8 +729,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			}
 
 			//Save the custom menu
-			$this->options['custom_menu'] = $menu;
-			$this->save_options();
+			$this->set_custom_menu($menu);
 			//Redirect back to the editor and display the success message
 			wp_redirect( add_query_arg('message', 1, $url) );
 			die();
@@ -691,8 +749,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$default_menu = ameMenu::load_array($default_tree);
 
 		//Is there a custom menu?
-		if (!empty($this->custom_menu)){
-			$custom_menu = $this->custom_menu;
+		if (!empty($this->merged_custom_menu)){
+			$custom_menu = $this->merged_custom_menu;
 		} else {
 			//Start out with the default menu if there is no user-created one
 			$custom_menu = $default_menu;
@@ -717,7 +775,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$editor_data['all_capabilities'] = $all_capabilities;
 
 		//Create a list of all roles, too.
-		$all_roles = $this->get_all_roles();
+		$all_roles = $this->get_role_names();
 		if ( is_multisite() ){ //Multi-site installs also get the virtual "Super Admin" role
 			$all_roles['super_admin'] = 'Super Admin';
 		}
@@ -783,24 +841,86 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 	
   /**
-   * Retrieve a list of all known roles
+   * Retrieve a list of all known roles and their names.
    *
    * @return array Associative array with role IDs as keys and role display names as values
    */
-	function get_all_roles(){
-		/** @var WP_Roles $wp_roles */
-		global $wp_roles;
+	function get_role_names(){
+		$wp_roles = $this->get_roles();
 		$roles = array();
-		
-		if ( !isset($wp_roles) || !isset($wp_roles->roles) ){
-			return $roles;
-		}
 		
 		foreach($wp_roles->roles as $role_id => $role){
 			$roles[$role_id] = $role['name'];
 		}
 		
 		return $roles;
+	}
+
+	/**
+	 * Get all defined WordPress roles.
+	 *
+	 * @global WP_Roles $wp_roles
+	 * @return WP_Roles
+	 */
+	function get_roles() {
+		global $wp_roles;
+		if ( !isset($wp_roles) ) {
+			$wp_roles = new WP_Roles();
+		}
+		return $wp_roles;
+	}
+
+	/**
+	 * Generate a list of "virtual" capabilities that should be granted to certain roles.
+	 *
+	 * This is based on role access settings for the current custom menu and enables
+	 * selected roles to access menu items that they ordinarily would not be able to.
+	 *
+	 * @uses self::get_virtual_caps_for() to actually generate the caps.
+	 * @uses self::$cached_virtual_caps to cache the generated list of caps.
+	 *
+	 * @return array A list of capability => [role1 => true, ... roleN => true] assignments.
+	 */
+	function get_virtual_caps() {
+		if ( $this->cached_virtual_caps !== null ) {
+			return $this->cached_virtual_caps;
+		}
+
+		$caps = array();
+		$custom_menu = $this->load_custom_menu();
+		if ( $custom_menu === null ){
+			return $caps;
+		}
+
+		foreach($custom_menu['tree'] as $item) {
+			$caps = array_merge_recursive($caps, $this->get_virtual_caps_for($item));
+		}
+
+		$this->cached_virtual_caps = $caps;
+		return $caps;
+	}
+
+	private function get_virtual_caps_for($item) {
+		$caps = array();
+
+		if ( $item['template_id'] !== '' ) {
+			$required_cap = ameMenuItem::get($item, 'access_level');
+			if ( !isset($caps[$required_cap]) ) {
+				$caps[$required_cap] = array();
+			}
+
+			foreach ($item['role_access'] as $role_id => $has_access) {
+				if ( $has_access ) {
+					$caps[$required_cap][$role_id] = true;
+				}
+			}
+		}
+
+		foreach($item['items'] as $sub_item) {
+			$caps = array_merge_recursive($caps, $this->get_virtual_caps_for($sub_item));
+		}
+
+		return $caps;
 	}
 
 	/**

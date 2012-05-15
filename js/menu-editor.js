@@ -3,7 +3,6 @@
 /*global wsEditorData, defaultMenu, customMenu */
 /** @namespace wsEditorData */
 
-//TODO: Review and refactor template stuff. What about old defaults? Import and such?
 //TODO: Add a "Profile" top-level menu somehow. It's specific to users without the user management caps.
 
 var wsIdCounter = 0;
@@ -269,9 +268,9 @@ var knownMenuFields = {
 		caption : 'Menu title'
 	}),
 	'access_level' : $.extend({}, baseField, {
-		caption: 'Required capability',
+		caption: 'Permissions',
 		defaultValue: 'read',
-		addDropdown : 'ws_cap_selector'
+		type: 'access_editor'
 	}),
 	'template_id' : $.extend({}, baseField, {
 		caption : 'Target page',
@@ -400,6 +399,13 @@ function buildEditboxField(entry, field_name, field_settings){
             );
             break;
 
+		case 'access_editor':
+			inputBox = $('<div>').append(
+				'<input type="text" class="ws_field_value" readonly="readonly">',
+				'<input type="button" class="button ws_launch_access_editor" value="Edit...">'
+			);
+			break;
+
 		case 'text':
 		default:
 			inputBox = $('<input type="text" class="ws_field_value">');
@@ -471,7 +477,7 @@ function updateItemEditor(containerNode) {
 			containerNode.find('.ws_item_title').html(input.val() + '&nbsp;');
 		} else if (fieldName == 'file') {
 			// The URL/file field is read-only for default menus. Also, since the "file"
-			// field is usually set to a page slugh or plugin filename for plugin/hook pages,
+			// field is usually set to a page slug or plugin filename for plugin/hook pages,
 			// we display the dynamically generated "url" field here (i.e. the actual URL) instead.
 			if (menuItem.template_id !== '') {
 				input.attr('readonly', 'readonly');
@@ -479,6 +485,21 @@ function updateItemEditor(containerNode) {
 			} else {
 				input.removeAttr('readonly');
 			}
+		} else if (fieldName == 'access_level') {
+			//Permissions display is a little complicated and could use improvement.
+			var requiredCap = getFieldValue(menuItem, 'access_level', '');
+			var extraCap = getFieldValue(menuItem, 'extra_capability', '');
+
+			var displayValue = (menuItem.template_id === '') ? '< Custom >' : requiredCap;
+			if (extraCap !== '') {
+				if (menuItem.template_id === '') {
+					displayValue = extraCap;
+				} else {
+					displayValue = displayValue + '+' + extraCap;
+				}
+			}
+
+			setInputValue(input, displayValue);
 		}
 	});
 }
@@ -760,6 +781,12 @@ $(document).ready(function(){
 	    var defaultValue = itemTemplates.getDefaultValue(menuItem.template_id, fieldName);
         var hasADefaultValue = (defaultValue !== null);
 
+	    //The permissions field can't be edited directly.
+	    if (fieldName == 'access_level') {
+		    value = null;
+	    }
+	    //TODO: It would be better to ignore/reverse changes to read-only fields.
+
 	    //Some fields/templates have no default values.
 	    field.toggleClass('ws_has_no_default', !hasADefaultValue);
 	    if (!hasADefaultValue) {
@@ -830,9 +857,116 @@ $(document).ready(function(){
 		return false;
 	});
 
+	/*************************************************************************
+	                  Access editor dialog
+	 *************************************************************************/
+
+	var accessEditorState = {
+		containerNode : null,
+		menuItem: null,
+		rowPrefix: 'access_settings_for-'
+	};
+
+	$('#ws_menu_access_editor').dialog({
+		autoOpen: false,
+		closeText: ' ',
+		modal: true,
+		minHeight: 100,
+		draggable: false
+	});
+
+	$('.ws_launch_access_editor').live('click', function() {
+		var containerNode = $(this).parents('.ws_container').first();
+		var menuItem = containerNode.data('menu_item');
+
+		//Write the values of this item to the editor fields.
+		var editor = $('#ws_menu_access_editor');
+
+		var requiredCap = getFieldValue(menuItem, 'access_level', '< Error: access_level is missing! >');
+		var requiredCapField = editor.find('#ws_required_capability').empty();
+		if (menuItem.template_id === '') {
+			//Custom items have no required caps, only what users set.
+			requiredCapField.empty().append('<em>None</em>');
+		} else {
+			requiredCapField.text(requiredCap);
+		}
+
+		editor.find('#ws_extra_capability').val(getFieldValue(menuItem, 'extra_capability', ''));
+
+		//Generate the role list.
+		var table = editor.find('.ws_role_table_body tbody').empty();
+		var alternate = '';
+		for(var roleId in wsEditorData.roles) {
+			if (!wsEditorData.roles.hasOwnProperty(roleId)) {
+				continue;
+			}
+
+			var role = wsEditorData.roles[roleId];
+
+			var checkboxId = 'role-access-' + roleId;
+			var checkbox = $('<input type="checkbox">').addClass('ws_role_access').attr('id', checkboxId);
+
+			//By default, any role that has the required cap has access to the menu.
+			//This can be over-ridden on a per-menu basis.
+			var roleHasAccess = false;
+			if (menuItem.role_access.hasOwnProperty(roleId)) {
+				roleHasAccess = menuItem.role_access[roleId];
+			} else {
+				roleHasAccess = role.capabilities.hasOwnProperty(requiredCap) && role.capabilities[requiredCap];
+			}
+
+			if (roleHasAccess) {
+				checkbox.attr('checked', 'checked');
+			}
+
+			alternate = (alternate == '') ? 'alternate' : '';
+			var rowId = accessEditorState.rowPrefix + roleId;
+
+			var row = $('<tr>').attr('id', rowId).attr('class', alternate).append(
+				$('<td>').addClass('ws_column_role post-title').append(
+					$('<label>').attr('for', checkboxId).append(
+						$('<strong>').text(role.name)
+					)
+				),
+				$('<td>').addClass('ws_column_access').append(checkbox)
+			);
+
+			table.append(row);
+		}
+
+		accessEditorState.containerNode = containerNode;
+		accessEditorState.menuItem = menuItem;
+
+		$('#ws_menu_access_editor').dialog('open');
+	});
+
+	$('#ws_save_access_settings').click(function() {
+		//Save the new settings.
+		accessEditorState.menuItem.extra_capability = $('#ws_extra_capability').val();
+
+		var roleAccess = {};
+		$('#ws_menu_access_editor .ws_role_table_body tbody tr').each(function() {
+			var row = $(this);
+			var roleId = row.attr('id').replace(accessEditorState.rowPrefix, '');
+			roleAccess[roleId] = row.find('input.ws_role_access').is(':checked');
+		});
+		accessEditorState.menuItem.role_access = roleAccess;
+
+		updateItemEditor(accessEditorState.containerNode);
+		$('#ws_menu_access_editor').dialog('close');
+	});
 
 	/***************************************************************************
-	 Dropdown list for combobox fields
+		              General dialog handlers
+	 ***************************************************************************/
+
+	$('.ws_close_dialog').live('click', function() {
+		$(this).parents('.ui-dialog-content').dialog('close');
+	});
+
+
+	/***************************************************************************
+	              Dropdown list for combobox fields
 	 ***************************************************************************/
 
 	var availableDropdowns = {

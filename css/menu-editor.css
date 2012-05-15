@@ -500,17 +500,18 @@ a.ws_button:hover {
 	font-size: 1.1em;
 }
 
-.ws_dialog_panel {
-	height: 84px;
+#export_dialog .ws_dialog_panel {
+	height: 50px;
 }
 
-#export_dialog .ws_dialog_panel {
-	height: 70px;
+#import_dialog .ws_dialog_panel {
+	height: 64px;
 }
 
 .ws_dialog_buttons {
 	height: 23px;
 	text-align: right;
+	margin-top: 20px;
 }
 
 .ws_dialog_buttons .button-primary {
@@ -541,6 +542,108 @@ a.ws_button:hover {
 	text-align: center;
 	font-size: large;
 	padding-top: 25px;
+}
+
+/************************************
+        Menu access editor
+*************************************/
+
+/* The launch button */
+#ws_menu_editor .ws_edit_field-access_level input.ws_field_value,
+#ws_menu_editor .ws_edit_field-extra_capability input.ws_field_value
+{
+	width: 190px;
+	margin-right: 5px;
+}
+
+.ws_launch_access_editor {
+	min-width: 40px;
+}
+
+#ws_menu_access_editor {
+	width: 400px;
+	display: none;
+}
+
+.ws_dialog_subpanel {
+	margin-bottom: 1em;
+}
+
+#ws_menu_access_editor .ws_column_access {
+	text-align: center;
+	width: 5em;
+}
+
+#ws_role_table_body_container {
+	max-height: 400px;
+	overflow: auto;
+}
+
+.ws_role_table_body {
+	margin-top: 2px;
+}
+
+.ws_has_separate_header .ws_role_table_header {
+	border-bottom: none;
+
+	moz-border-radius-bottomleft: 0;
+	-moz-border-radius-bottomright: 0;
+	-webkit-border-bottom-left-radius: 0;
+	-webkit-border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
+	border-bottom-right-radius: 0;
+}
+
+.ws_has_separate_header .ws_role_table_body {
+	border-top: none;
+	margin-top: 0;
+
+	moz-border-radius-topleft: 0;
+	-moz-border-radius-topright: 0;
+	-webkit-border-top-left-radius: 0;
+	-webkit-border-top-right-radius: 0;
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+}
+
+.ws_role_id {
+	display: none;
+}
+
+#ws_extra_capability {
+	width: 100%;
+}
+
+#ws_role_access_container {
+	position: relative;
+}
+
+#ws_role_access_overlay {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+
+	line-height: 100%;
+
+	background: white;
+	filter: alpha(opacity=60);
+	opacity: 0.6;
+	-moz-opacity:0.6;
+    -khtml-opacity: 0.6;
+}
+
+#ws_role_access_overlay_content {
+	position: absolute;
+	width: 50%;
+	left: 22%;
+	top: 30%;
+
+	background: white;
+	padding: 8px;
+
+	border: 2px solid silver;
+	border-radius: 5px;
+	color: #555;
 }
 
 /************************************

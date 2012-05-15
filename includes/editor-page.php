@@ -21,7 +21,7 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 
 ?>
 <div class="wrap">
-<h2>
+	<h2>
 	<?php echo apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'); ?>
 </h2>
 
@@ -34,6 +34,9 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 		}
 	}
 ?>
+
+<?php include dirname(__FILE__) . '/access-editor-dialog.php'; ?>
+
 <div id='ws_menu_editor'>
 	<div class='ws_main_container'>
 		<div class='ws_toolbar'>

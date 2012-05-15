@@ -20,7 +20,7 @@ abstract class ameMenuItem {
 		static $separator_count = 0;
 		$item = array(
 			'menu_title'   => $item[0],
-			'access_level' => $item[1],
+			'access_level' => $item[1], //= required capability
 			'file'         => $item[2],
 			'page_title'   => (isset($item[3]) ? $item[3] : ''),
 			'css_class'    => (isset($item[4]) ? $item[4] : 'menu-top'),
@@ -65,6 +65,7 @@ abstract class ameMenuItem {
             'page_title' => '',
 			'menu_title' => '',
 			'access_level' => 'read',
+			'extra_capability' => '',
 			'file' => '',
 	        'position' => 0,
 	        'parent' => '',
@@ -96,6 +97,7 @@ abstract class ameMenuItem {
 		$blank_menu = array_fill_keys(array_keys(self::basic_defaults()), null);
 		$blank_menu = array_merge($blank_menu, array(
 			'items' => array(), //List of sub-menu items.
+			'role_access' => array(), //Per-role access settings.
 
 			'custom' => false,  //True if item is made-from-scratch and has no template.
 			'missing' => false, //True if our template is no longer present in the default admin menu. Note: Stored values will be ignored. Set upon merging.
@@ -269,6 +271,18 @@ abstract class ameMenuItem {
 
 		$item['custom'] = $item['custom'] || ($item['template_id'] == '');
 		$item = self::fix_defaults($item);
+
+		//Older versions would allow the user to set the required capability directly.
+		//This was incorrect since for default menu items the default cap was *always*
+		//applied anyway, and the new cap was applied on top of that. We make that explicit
+		//by storing the custom cap in a separate field - extra_capability - and keeping
+		//access_level (required cap) at the default value.
+		if ( isset($item['defaults']) && $item['access_level'] !== null ) {
+			if ( empty($item['extra_capability']) ) {
+				$item['extra_capability'] = $item['access_level'];
+			}
+			$item['access_level'] = null;
+		}
 
 		if ( isset($item['items']) ) {
 			foreach($item['items'] as $index => $sub_item) {
