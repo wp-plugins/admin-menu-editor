@@ -592,6 +592,20 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if ( !empty($topmenu['separator']) && !$first_nonseparator_found ) continue;
 			
 			$first_nonseparator_found = true;
+
+			//Special case : plugin pages that have been moved from a sub-menu to the top level.
+			//We'll need to adjust the file field to point to the old parent. This is
+			//required because WP identifies plugin pages using *both* the plugin file
+			//and the parent file.
+			if ( $topmenu['template_id'] !== '' && !$topmenu['separator'] ) {
+				$template = $this->item_templates[$topmenu['template_id']];
+				if ( $template['defaults']['is_plugin_page'] ) {
+					$default_parent = $template['defaults']['parent'];
+					if ( !empty($default_parent) ){
+						$topmenu['file'] = $default_parent . '?page=' . $template['defaults']['file'];
+					}
+				}
+			}
 			
 			//Apply defaults & filters
 			$topmenu = ameMenuItem::apply_defaults($topmenu);
@@ -601,6 +615,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if (!empty($topmenu['hidden'])) continue;
 
 			//Check if the current user can access this menu.
+			//TODO: Refactor and simplify. It's identical for top- and sub-level menus.
 			$user_has_access = true;
 			$cap_to_use = '';
 			if ( !empty($topmenu['access_level']) ) {
