@@ -257,7 +257,10 @@ var baseField = {
 	defaultValue: '',
 	onlyForTopMenus: false,
 	addDropdown : false,
-	visible: true
+	visible: true,
+
+	write: null,
+	display: null
 };
 
 /*
@@ -265,13 +268,46 @@ var baseField = {
  */
 var knownMenuFields = {
 	'menu_title' : $.extend({}, baseField, {
-		caption : 'Menu title'
+		caption : 'Menu title',
+		display: function(menuItem, displayValue, input, containerNode) {
+			//Update the header as well.
+			containerNode.find('.ws_item_title').html(displayValue);
+			return displayValue;
+		},
+		write: function(menuItem, value, input, containerNode) {
+			menuItem.menu_title = value;
+			containerNode.find('.ws_item_title').html(input.val() + '&nbsp;');
+		}
 	}),
+
 	'access_level' : $.extend({}, baseField, {
 		caption: 'Permissions',
 		defaultValue: 'read',
-		type: 'access_editor'
+		type: 'access_editor',
+
+		display: function(menuItem) {
+			//Permissions display is a little complicated and could use improvement.
+			var requiredCap = getFieldValue(menuItem, 'access_level', '');
+			var extraCap = getFieldValue(menuItem, 'extra_capability', '');
+
+			var displayValue = (menuItem.template_id === '') ? '< Custom >' : requiredCap;
+			if (extraCap !== '') {
+				if (menuItem.template_id === '') {
+					displayValue = extraCap;
+				} else {
+					displayValue = displayValue + '+' + extraCap;
+				}
+			}
+
+			return displayValue;
+		},
+
+		write: function(menuItem) {
+			//The required capability can't be directly edited and always equals the default.
+			menuItem.access_level = null;
+		}
 	}),
+
 	'template_id' : $.extend({}, baseField, {
 		caption : 'Target page',
 		type : 'select',
@@ -285,17 +321,74 @@ var knownMenuFields = {
 				}
 			}
 			return itemTemplateIds;
-		})()
+		})(),
+
+		write: function(menuItem, value, input, containerNode) {
+			menuItem.template_id = value;
+			menuItem.defaults = itemTemplates.getDefaults(menuItem.template_id);
+		    menuItem.custom = (menuItem.template_id == '');
+
+		    // The file/URL of non-custom items is read-only and equal to the default
+		    // value. Rationale: simplifies menu generation, prevents some user mistakes.
+		    if (menuItem.template_id !== '') {
+			    menuItem.file = null;
+		    }
+
+		    // The new template might not have default values for some of the fields
+		    // currently set to null (= "default"). In those cases, we need to make
+		    // the current values explicit.
+		    containerNode.find('.ws_edit_field').each(function(index, field){
+			    field = $(field);
+			    var fieldName = field.data('field_name');
+			    var isSetToDefault = (menuItem[fieldName] === null);
+			    var hasDefaultValue = itemTemplates.hasDefaultValue(menuItem.template_id, fieldName);
+
+			    if (isSetToDefault && !hasDefaultValue) {
+				    menuItem[fieldName] = getInputValue(field.find('.ws_field_value'));
+			    }
+		    });
+
+		    // Display new defaults, etc.
+		    updateItemEditor(containerNode);
+		}
 	}),
+
 	'file' : $.extend({}, baseField, {
-		caption: 'URL'
-		//addDropdown : 'ws_page_selector'
+		caption: 'URL',
+		display: function(menuItem, displayValue, input) {
+			// The URL/file field is read-only for default menus. Also, since the "file"
+			// field is usually set to a page slug or plugin filename for plugin/hook pages,
+			// we display the dynamically generated "url" field here (i.e. the actual URL) instead.
+			if (menuItem.template_id !== '') {
+				input.attr('readonly', 'readonly');
+				displayValue = itemTemplates.getDefaultValue(menuItem.template_id, 'url');
+			} else {
+				input.removeAttr('readonly');
+			}
+			return displayValue;
+		},
+
+		write: function(menuItem, value, input, containerNode) {
+			// A menu must always have a non-empty URL. If the user deletes the current value,
+			// reset it to the old value.
+			if (value === '') {
+				value = menuItem.file;
+			}
+			// Default menus always point to the default file/URL.
+			if (menuItem.template_id !== '') {
+				value = null;
+			}
+			menuItem.file = value;
+			updateItemEditor(containerNode);
+		}
 	}),
+
 	'page_title' : $.extend({}, baseField, {
 		caption: "Window title",
         standardCaption : true,
 		advanced : true
 	}),
+
 	'open_in' : $.extend({}, baseField, {
 		caption: 'Open in',
 		advanced : true,
@@ -308,16 +401,19 @@ var knownMenuFields = {
 		defaultValue: 'same_window',
 		visible: false
 	}),
+
 	'css_class' : $.extend({}, baseField, {
 		caption: 'CSS classes',
 		advanced : true,
 		onlyForTopMenus: true
 	}),
+
 	'hookname' : $.extend({}, baseField, {
 		caption: 'Hook name',
 		advanced : true,
 		onlyForTopMenus: true
 	}),
+
 	'icon_url' : $.extend({}, baseField, {
 		caption: 'Icon URL',
 		advanced : true,
@@ -470,27 +566,19 @@ function updateItemEditor(containerNode) {
 		field.toggleClass('ws_has_no_default', !hasADefaultValue);
 		field.toggleClass('ws_input_default', isDefault);
 
-		setInputValue(input, isDefault ? defaultValue : menuItem[fieldName]);
+		var displayValue = isDefault ? defaultValue : menuItem[fieldName];
+		if (knownMenuFields[fieldName].display !== null) {
+			displayValue = knownMenuFields[fieldName].display(menuItem, displayValue, input, containerNode);
+		}
 
-		//If the field is the menu title, update the header
-		if (fieldName == 'menu_title') {
-			containerNode.find('.ws_item_title').html(input.val() + '&nbsp;');
-		} else if (fieldName == 'file') {
-			// The URL/file field is read-only for default menus. Also, since the "file"
-			// field is usually set to a page slug or plugin filename for plugin/hook pages,
-			// we display the dynamically generated "url" field here (i.e. the actual URL) instead.
-			if (menuItem.template_id !== '') {
-				input.attr('readonly', 'readonly');
-				setInputValue(input, itemTemplates.getDefaultValue(menuItem.template_id, 'url'));
-			} else {
-				input.removeAttr('readonly');
-			}
-		} else if (fieldName == 'access_level') {
+		setInputValue(input, displayValue);
+
+		if (fieldName == 'access_level') {
 			//Permissions display is a little complicated and could use improvement.
 			var requiredCap = getFieldValue(menuItem, 'access_level', '');
 			var extraCap = getFieldValue(menuItem, 'extra_capability', '');
 
-			var displayValue = (menuItem.template_id === '') ? '< Custom >' : requiredCap;
+			displayValue = (menuItem.template_id === '') ? '< Custom >' : requiredCap;
 			if (extraCap !== '') {
 				if (menuItem.template_id === '') {
 					displayValue = extraCap;
@@ -774,69 +862,38 @@ $(document).ready(function(){
         var input = $(this);
 		var field = input.parents('.ws_edit_field').first();
 	    var fieldName = field.data('field_name');
-	    var menuItem = field.parents('.ws_container').first().data('menu_item');
+
+	    var containerNode = field.parents('.ws_container').first();
+	    var menuItem = containerNode.data('menu_item');
 
 	    var oldValue = menuItem[fieldName];
 	    var value = getInputValue(input);
 	    var defaultValue = itemTemplates.getDefaultValue(menuItem.template_id, fieldName);
         var hasADefaultValue = (defaultValue !== null);
 
-	    //The permissions field can't be edited directly.
-	    if (fieldName == 'access_level') {
-		    value = null;
-	    }
-	    //TODO: It would be better to ignore/reverse changes to read-only fields.
-
 	    //Some fields/templates have no default values.
-	    field.toggleClass('ws_has_no_default', !hasADefaultValue);
-	    if (!hasADefaultValue) {
+        field.toggleClass('ws_has_no_default', !hasADefaultValue);
+        if (!hasADefaultValue) {
             field.removeClass('ws_input_default');
         }
 
-	    //Update the menu item with the value from the editor.
-	    if (field.hasClass('ws_input_default') && (value == defaultValue)) {
-		    menuItem[fieldName] = null; //null = use default.
+        if (field.hasClass('ws_input_default') && (value == defaultValue)) {
+            value = null; //null = use default.
+        }
+
+	    //Ignore changes where the new value is the same as the old one.
+	    if (value === oldValue) {
+		    return;
+	    }
+
+	    //Update the item.
+	    if (knownMenuFields[fieldName].write !== null) {
+		    knownMenuFields[fieldName].write(menuItem, value, input, containerNode);
 	    } else {
 		    menuItem[fieldName] = value;
 	    }
+
 	    field.toggleClass('ws_input_default', (menuItem[fieldName] === null));
-
-	    //Changing the template changes the defaults and refreshes all fields.
-	    if ((fieldName == 'template_id') && (value != oldValue)) {
-		    menuItem.defaults = itemTemplates.getDefaults(value);
-		    menuItem.custom = (value == '');
-
-		    // The file/URL of non-custom items is read-only and equal to the default
-		    // value. Rationale: simplifies menu generation, prevents some user mistakes.
-		    if (menuItem.template_id !== '') {
-			    menuItem.file = null;
-		    }
-
-		    var container = field.parents('.ws_container').first();
-
-		    // The new template might not have default values for some of the fields
-		    // currently set to null (= "default"). In those cases, we need to make
-		    // the current values explicit.
-		    container.find('.ws_edit_field').each(function(index, field){
-			    field = $(field);
-			    var fieldName = field.data('field_name');
-			    var isSetToDefault = (menuItem[fieldName] === null);
-			    var hasDefaultValue = itemTemplates.hasDefaultValue(menuItem.template_id, fieldName);
-
-			    if (isSetToDefault && !hasDefaultValue) {
-				    menuItem[fieldName] = getInputValue(field.find('.ws_field_value'));
-			    }
-		    });
-
-		    // Display new defaults, etc.
-		    updateItemEditor(container);
-
-	    } else if (fieldName == 'menu_title'){
-            //If the changed field is the menu title, update the header
-			field.parents('.ws_container').first().find('.ws_item_title').html(input.val() + '&nbsp;');
-		} else if (fieldName == 'file' ){
-			//TODO: A menu must always have a non-empty URL. If the user deletes the current value, fix it somehow.
-		}
     }
 	$('#ws_menu_editor .ws_field_value').live('click', fieldValueChange);
 	$('#ws_menu_editor .ws_field_value').live('change', fieldValueChange);
