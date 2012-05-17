@@ -13,8 +13,6 @@ require $thisDirectory . '/shadow_plugin_framework.php';
 require $thisDirectory . '/menu-item.php';
 require $thisDirectory . '/menu.php';
 
-if ( !class_exists('WPMenuEditor') ) :
-
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 	protected $default_wp_menu;           //Holds the default WP menu for later use in the editor
@@ -991,5 +989,3 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
 } //class
-
-endif;
