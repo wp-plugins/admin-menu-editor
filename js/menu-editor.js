@@ -779,6 +779,7 @@ var ws_paste_count = 0;
 $(document).ready(function(){
 	if (wsEditorData.wsMenuEditorPro) {
 		knownMenuFields['open_in'].visible = true;
+		$('.ws_hide_if_pro').hide();
 	}
 
 	//Make the top menu box sortable (we only need to do this once)
@@ -1619,6 +1620,9 @@ $(document).ready(function(){
 
 		}
 	});
+
+	//Set up tooltips
+	$('.ws_tooltip_trigger').qtip();
 
 
 	//Finally, show the menu

@@ -3,7 +3,12 @@
 	<div class="ws_dialog_panel">
 
 		<div id="ws_role_access_container" class="ws_dialog_subpanel">
-			<strong>Roles</strong> <br>
+			<strong>Roles</strong>
+			<a class="ws_tooltip_trigger" title="
+				Check a box to give a role the required capability and access to this menu.
+				Clear a box to prevent a role from accessing this menu.
+			">[?]</a>
+			<br>
 
 			<div id="ws_role_table_body_container">
 				<div id="ws_role_access_overlay" class="ws_hide_if_pro"></div>
@@ -22,14 +27,24 @@
 
 
 		<div id="ws_required_cap_container" class="ws_dialog_subpanel">
-			<strong>Required capability</strong> <br>
+			<strong>Required capability</strong>
+			<a class="ws_tooltip_trigger" title="
+				Only roles with the required capability will be able to access this menu item.
+			">[?]</a>
+			<br>
 			<span id="ws_required_capability">capability_here</span>
 		</div>
 
 		<div id="ws_extra_cap_container" class="ws_dialog_subpanel">
 			<label for="ws_extra_capability">
 				<strong>Extra capability</strong>
-			</label><br>
+			</label>
+			<a class="ws_tooltip_trigger" title="
+				Optional. An additional user capability check that will be applied on top of
+				the &quot;Roles&quot; and &quot;Required capability&quot; settings.
+				Leave empty to disable.
+			">[?]</a>
+			<br>
 			<input type="text" id="ws_extra_capability" value="">
 		</div>
 	</div>
