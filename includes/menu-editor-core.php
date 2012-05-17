@@ -583,63 +583,22 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Prepare the top menu
 		$first_nonseparator_found = false;
 		foreach ($tree as $topmenu){
-			
-			//Skip missing menus.
-			if ( !empty($topmenu['missing']) ) {
+
+			//Skip missing and hidden menus.
+			if ( !empty($topmenu['missing']) || !empty($topmenu['hidden']) ) {
 				continue;
 			}
 			
 			//Skip leading menu separators. Fixes a superfluous separator showing up
 			//in WP 3.0 (multisite mode) when there's a custom menu and the current user
 			//can't access its first item ("Super Admin").
-			if ( !empty($topmenu['separator']) && !$first_nonseparator_found ) continue;
-			
+			if ( !empty($topmenu['separator']) && !$first_nonseparator_found ) {
+				continue;
+			}
 			$first_nonseparator_found = true;
 
-			//Special case : plugin pages that have been moved from a sub-menu to the top level.
-			//We'll need to adjust the file field to point to the old parent. This is
-			//required because WP identifies plugin pages using *both* the plugin file
-			//and the parent file.
-			if ( $topmenu['template_id'] !== '' && !$topmenu['separator'] ) {
-				$template = $this->item_templates[$topmenu['template_id']];
-				if ( $template['defaults']['is_plugin_page'] ) {
-					$default_parent = $template['defaults']['parent'];
-					if ( !empty($default_parent) ){
-						$topmenu['file'] = $default_parent . '?page=' . $template['defaults']['file'];
-					}
-				}
-			}
-			
-			//Apply defaults & filters
-			$topmenu = ameMenuItem::apply_defaults($topmenu);
-			$topmenu = ameMenuItem::apply_filters($topmenu, 'menu');
-			
-			//Skip hidden entries
-			if (!empty($topmenu['hidden'])) continue;
-
-			//Check if the current user can access this menu.
-			//TODO: Refactor and simplify. It's identical for top- and sub-level menus.
-			$user_has_access = true;
-			$cap_to_use = '';
-			if ( !empty($topmenu['access_level']) ) {
-				$user_has_access = $user_has_access && current_user_can($topmenu['access_level']);
-				$cap_to_use = $topmenu['access_level'];
-			}
-			if ( !empty($topmenu['extra_capability']) ) {
-				$user_has_access = $user_has_access && current_user_can($topmenu['extra_capability']);
-				$cap_to_use = $topmenu['extra_capability'];
-			}
-
-			//Build the menu structure that WP expects
-			$new_menu[] = array(
-					$topmenu['menu_title'],
-					$user_has_access ? $cap_to_use : 'do_not_allow',
-					$topmenu['file'],
-					$topmenu['page_title'],
-					$topmenu['css_class'],
-					$topmenu['hookname'], //ID
-					$topmenu['icon_url']
-				);
+			$topmenu = $this->prepare_for_output($topmenu, 'menu');
+			$new_menu[] = $this->convert_to_wp_format($topmenu);
 				
 			//Prepare the submenu of this menu
 			if( !empty($topmenu['items']) ){
@@ -648,55 +607,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				uasort($items, 'ameMenuItem::compare_position');
 				
 				foreach ($items as $item) {
-					
-					//Skip missing items
-					if ( !empty($item['missing']) ) {
-						continue;
-					}
-					
-					//Special case : plugin pages that have been moved to a different menu.
-					//We'll need to adjust the file field to point to the old parent. This is
-					//required because WP identifies plugin pages using *both* the plugin file
-					//and the parent file.
-					if ( $item['template_id'] !== '' ) {
-						$template = $this->item_templates[$item['template_id']];
-						if ( $template['defaults']['is_plugin_page'] ) {
-							$default_parent = $template['defaults']['parent'];
-							if ( $topmenu['file'] != $default_parent ){
-								$item['file'] = $default_parent . '?page=' . $template['defaults']['file'];
-							}
-						}
-					}
-
-					$item = ameMenuItem::apply_defaults($item);
-					$item = ameMenuItem::apply_filters($item, 'submenu', $topmenu['file']);
-					
-					//Skip hidden items
-					if (!empty($item['hidden'])) {
+					//Skip missing and hidden items
+					if ( !empty($item['missing']) || !empty($item['hidden']) ) {
 						continue;
 					}
 
-					//Check if the user can access this item.
-					$user_has_access = true;
-					$cap_to_use = '';
-					if ( !empty($item['access_level']) ) {
-						$user_has_access = $user_has_access && current_user_can($item['access_level']);
-						$cap_to_use = $item['access_level'];
-					}
-					if ( !empty($item['extra_capability']) ) {
-						$user_has_access = $user_has_access && current_user_can($item['extra_capability']);
-						$cap_to_use = $item['extra_capability'];
-					}
-					
-					$new_submenu[$topmenu['file']][] = array(
-						$item['menu_title'],
-						$user_has_access ? $cap_to_use : 'do_not_allow',
-						$item['file'],
-						$item['page_title'],
-					);
+					$item = $this->prepare_for_output($item, 'submenu', $topmenu['file']);
+					$new_submenu[$topmenu['file']][] = $this->convert_to_wp_format($item);
 					 
-					//Make a note of the page's correct title so we can fix it later
-					//if necessary.
+					//Make a note of the page's correct title so we can fix it later if necessary.
 					$this->title_lookups[$item['file']] = $item['menu_title'];
 				}
 			}
@@ -704,6 +623,81 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		$menu = $new_menu;
 		$submenu = $new_submenu;
+	}
+
+	/**
+	 * Convert a menu item from the internal format used by this plugin to the format
+	 * used by WP. The menu should be prepared using the prepare... function beforehand.
+	 *
+	 * @see self::prepare_for_output()
+	 *
+	 * @param array $item
+	 * @return array
+	 */
+	private function convert_to_wp_format($item) {
+		//Build the menu structure that WP expects
+		$wp_item = array(
+			$item['menu_title'],
+			$item['access_level'],
+			$item['file'],
+			$item['page_title'],
+			$item['css_class'],
+			$item['hookname'], //ID
+			$item['icon_url']
+		);
+
+		return $wp_item;
+	}
+
+	/**
+	 * Prepare a menu item to be converted to the WordPress format and added to the current
+	 * WordPress admin menu. This function applies menu defaults and templates, calls filters
+	 * that allow other components to tweak the menu, decides on what capability/-ies to use,
+	 * and so on.
+	 *
+	 * Caution: The filters called by this function may cause side-effects. Specifically, the Pro-only feature
+	 * for displaying menu pages in a frame does this. See wsMenuEditorExtras::create_framed_menu().
+	 * Therefore, it is not safe to call this function more than once for the same item.
+	 *
+	 * @param array $item Menu item in the internal format.
+	 * @param string $item_type Either 'menu' or 'submenu'.
+	 * @param string $parent Optional. The parent of this sub-menu item. An empty string for top-level menus.
+	 * @return array Menu item in the internal format.
+	 */
+	private function prepare_for_output($item, $item_type = 'menu', $parent = '') {
+		// Special case : plugin pages that have been moved from a sub-menu to a different
+		// menu or the top level. We'll need to adjust the file field to point to the old parent.
+		// This is required because WP identifies plugin pages using *both* the plugin file
+		// and the parent file.
+		if ( $item['template_id'] !== '' && !$item['separator'] ) {
+			$template = $this->item_templates[$item['template_id']];
+			if ( $template['defaults']['is_plugin_page'] ) {
+				$default_parent = $template['defaults']['parent'];
+				if ( $parent != $default_parent ){
+					$item['file'] = $default_parent . '?page=' . $template['defaults']['file'];
+				}
+			}
+		}
+
+		//Apply defaults & filters
+		$item = ameMenuItem::apply_defaults($item);
+		$item = ameMenuItem::apply_filters($item, $item_type, $parent); //may cause side-effects
+
+		//Check if the current user can access this menu.
+		$user_has_access = true;
+		$cap_to_use = '';
+		if ( !empty($item['access_level']) ) {
+			$user_has_access = $user_has_access && current_user_can($item['access_level']);
+			$cap_to_use = $item['access_level'];
+		}
+		if ( !empty($item['extra_capability']) ) {
+			$user_has_access = $user_has_access && current_user_can($item['extra_capability']);
+			$cap_to_use = $item['extra_capability'];
+		}
+
+		$item['access_level'] = $user_has_access ? $cap_to_use : 'do_not_allow';
+
+		return $item;
 	}
 	
   /**
