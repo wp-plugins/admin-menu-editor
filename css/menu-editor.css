@@ -38,9 +38,7 @@
 .ws_main_button {
 	clear: both;
 	display: block;
-	margin: 4px;
-	margin-left: auto;
-	margin-right: auto;
+	margin: 4px auto;
 	width: 120px;
 	padding: 4px !important;
 }
@@ -62,10 +60,7 @@
 	width: 290px;
 	
 	padding : 3px;
-	margin: 2px;
-	margin-left: auto;
-	margin-right: auto;
-	
+	margin: 2px auto;
 	border: 1px solid #a9badb;
 	background-color: #bdd3ff;
 }
@@ -78,10 +73,7 @@
 .ws_item { }
 
 .ws_menu_separator {
-	background-image: url("../images/menu-arrows.png");
-	background-repeat: no-repeat;
-	background-position : 4px 8px;
-	background-color: #F9F9F9;
+	background: #F9F9F9 url("../images/menu-arrows.png") no-repeat 4px 8px;
 	border-color: #d9d9d9;
 }
 
@@ -102,7 +94,7 @@
 
 .ws_edit_link {
 	float: right;
-	margin-right: 0px;
+	margin-right: 0;
 	cursor: pointer;
 	display:block;
 	width: 40px;
@@ -123,14 +115,11 @@ a.ws_edit_link:hover {
 }
 
 .ws_edit_link_expanded {
-	background-color: #ffffd0;
+	background: #ffffd0 url('../images/bullet_arrow_down2.png') center 3px no-repeat;
 	border-bottom: none;
 	border-color: #ffffd0;
-	
-	background-image: url('../images/bullet_arrow_down2.png');
+
 	padding-bottom: 1px;
-	background-position: center 3px;
-	
 	border-bottom-right-radius: 0;
 	border-bottom-left-radius: 0;
 	
@@ -163,10 +152,10 @@ a.ws_edit_link:hover {
 	border-top-right-radius: 0;
 
 	-moz-border-radius: 2px;	
-	-moz-border-radius-topright: 0px;
+	-moz-border-radius-topright: 0;
 
 	-webkit-border-radius: 2px;
-	-webkit-border-top-right-radius: 0px;
+	-webkit-border-top-right-radius: 0;
 }
 
 .ws_edit_panel {
@@ -197,10 +186,8 @@ a.ws_edit_link:hover {
 	width: 16px;
 	height: 16px;
 	vertical-align: top;
-		
-	background-image: url("../images/pencil_delete_gray.png");
-	background-repeat: no-repeat;
-	background-position: center;
+
+	background: url("../images/pencil_delete_gray.png") no-repeat center;
 }
 
 .ws_reset_button:hover {
@@ -431,8 +418,8 @@ a.ws_button:hover {
 .ui-widget-overlay {
 	background-color: black;
 	position: absolute;
-	left: 0px;
-	top: 0px;
+	left: 0;
+	top: 0;
 	opacity: 0.70;
 	-moz-opacity: 0.70;
 	filter: alpha(opacity=70); 
@@ -470,11 +457,7 @@ a.ws_button:hover {
 }
 
 .ui-dialog-titlebar-close {
-	background-image: url(../images/x.png);
-	background-repeat: no-repeat;
-	background-position: center;
-	background-color: #86A7E3;
-	
+	background: #86A7E3 url(../images/x.png) no-repeat center;
 	width: 22px;
 	height: 22px;
 	display: block;
@@ -517,21 +500,18 @@ a.ws_button:hover {
 .ws_dialog_buttons .button-primary {
 	display: block;
 	float: left;
-	margin-top: 0px;
+	margin-top: 0;
 }
 
 .ws_dialog_buttons .button {
-	margin-top: 0px;
+	margin-top: 0;
 }
 
 #import_file_selector {
 	display: block;
 	width: 286px;
-	
-	margin-top: 6px;
-	margin-bottom: 12px;
-	margin-left: auto;
-	margin-right: auto;
+
+	margin: 6px auto 12px;
 }
 
 #ws_start_import {
@@ -694,8 +674,7 @@ a.ws_button:hover {
 
 /* "Upgrade to Pro" */
 #ws-pro-version-notice {
-	background-color: #00C31F;
-	background-image: none;
+	background: #00C31F none;
 }
 
 
