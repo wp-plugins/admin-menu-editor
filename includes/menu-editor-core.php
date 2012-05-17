@@ -599,6 +599,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 			$topmenu = $this->prepare_for_output($topmenu, 'menu');
 			$new_menu[] = $this->convert_to_wp_format($topmenu);
+
+			$this->title_lookups[$topmenu['file']] = !empty($topmenu['page_title']) ? $topmenu['page_title'] : $topmenu['menu_title'];
 				
 			//Prepare the submenu of this menu
 			if( !empty($topmenu['items']) ){
@@ -616,7 +618,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					$new_submenu[$topmenu['file']][] = $this->convert_to_wp_format($item);
 					 
 					//Make a note of the page's correct title so we can fix it later if necessary.
-					$this->title_lookups[$item['file']] = $item['menu_title'];
+					$this->title_lookups[$item['file']] = !empty($item['page_title']) ? $item['page_title'] : $item['menu_title'];
 				}
 			}
 		}
