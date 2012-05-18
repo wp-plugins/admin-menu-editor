@@ -3,8 +3,6 @@
 /*global wsEditorData, defaultMenu, customMenu */
 /** @namespace wsEditorData */
 
-//TODO: Add a "Profile" top-level menu somehow. It's specific to users without the user management caps.
-
 var wsIdCounter = 0;
 
 (function ($){
@@ -1190,8 +1188,8 @@ $(document).ready(function(){
 		menu_in_clipboard = readItemState(selection);
 
 		//Remove the original menu and submenu
-		selection.remove();
 		$('#'+selection.data('submenu_id')).remove();
+		selection.remove();
 	});
 
 	//Paste menu
