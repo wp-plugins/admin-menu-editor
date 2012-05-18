@@ -278,34 +278,6 @@ var knownMenuFields = {
 		}
 	}),
 
-	'access_level' : $.extend({}, baseField, {
-		caption: 'Permissions',
-		defaultValue: 'read',
-		type: 'access_editor',
-
-		display: function(menuItem) {
-			//Permissions display is a little complicated and could use improvement.
-			var requiredCap = getFieldValue(menuItem, 'access_level', '');
-			var extraCap = getFieldValue(menuItem, 'extra_capability', '');
-
-			var displayValue = (menuItem.template_id === '') ? '< Custom >' : requiredCap;
-			if (extraCap !== '') {
-				if (menuItem.template_id === '') {
-					displayValue = extraCap;
-				} else {
-					displayValue = displayValue + '+' + extraCap;
-				}
-			}
-
-			return displayValue;
-		},
-
-		write: function(menuItem) {
-			//The required capability can't be directly edited and always equals the default.
-			menuItem.access_level = null;
-		}
-	}),
-
 	'template_id' : $.extend({}, baseField, {
 		caption : 'Target page',
 		type : 'select',
@@ -378,6 +350,34 @@ var knownMenuFields = {
 			}
 			menuItem.file = value;
 			updateItemEditor(containerNode);
+		}
+	}),
+
+	'access_level' : $.extend({}, baseField, {
+		caption: 'Permissions',
+		defaultValue: 'read',
+		type: 'access_editor',
+
+		display: function(menuItem) {
+			//Permissions display is a little complicated and could use improvement.
+			var requiredCap = getFieldValue(menuItem, 'access_level', '');
+			var extraCap = getFieldValue(menuItem, 'extra_capability', '');
+
+			var displayValue = (menuItem.template_id === '') ? '< Custom >' : requiredCap;
+			if (extraCap !== '') {
+				if (menuItem.template_id === '') {
+					displayValue = extraCap;
+				} else {
+					displayValue = displayValue + '+' + extraCap;
+				}
+			}
+
+			return displayValue;
+		},
+
+		write: function(menuItem) {
+			//The required capability can't be directly edited and always equals the default.
+			menuItem.access_level = null;
 		}
 	}),
 
@@ -993,6 +993,16 @@ $(document).ready(function(){
 		accessEditorState.containerNode = containerNode;
 		accessEditorState.menuItem = menuItem;
 
+		//Show/hide the hint about sub menus overriding menu permissions.
+		var itemHasSubmenus = containerNode.data('submenu_id') &&
+			$('#' + containerNode.data('submenu_id')).find('.ws_item').length > 0;
+		var hintIsEnabled = !wsEditorData.showHints.hasOwnProperty('ws_hint_menu_permissions') || wsEditorData.showHints['ws_hint_menu_permissions'];
+		if (hintIsEnabled && itemHasSubmenus) {
+			$('#ws_hint_menu_permissions').show();
+		} else {
+			$('#ws_hint_menu_permissions').hide();
+		}
+
 		$('#ws_menu_access_editor').dialog('open');
 	});
 
@@ -1185,12 +1195,7 @@ $(document).ready(function(){
 	});
 
 	//Paste menu
-	$('#ws_paste_menu').click(function () {
-		//Check if anything has been copied/cut
-		if (!menu_in_clipboard) return;
-
-		var menu = $.extend(true, {}, menu_in_clipboard);
-
+	function pasteMenu(menu, afterMenu) {
 		//The user shouldn't need to worry about giving separators a unique filename.
 		if (menu.separator) {
 			menu.defaults.file = randomMenuId('separator_');
@@ -1208,16 +1213,24 @@ $(document).ready(function(){
 			menu.hookname = randomMenuId();
 		}
 
-		//Get the selected menu
-		var selection = $('#ws_menu_box .ws_active');
-
-		if (selection.length > 0) {
-			//If a menu is selected add the pasted item after it
-			outputTopMenu(menu, selection);
+		//Paste the menu after the specified one, or at the end of the list.
+		if (afterMenu) {
+			outputTopMenu(menu, afterMenu);
 		} else {
-			//Otherwise add the pasted item at the end
 			outputTopMenu(menu);
 		}
+	}
+
+	$('#ws_paste_menu').click(function () {
+		//Check if anything has been copied/cut
+		if (!menu_in_clipboard) return;
+
+		var menu = $.extend(true, {}, menu_in_clipboard);
+
+		//Get the selected menu
+		var selection = $('#ws_menu_box .ws_active');
+		//Paste the menu after the selection.
+		pasteMenu(menu, (selection.length > 0) ? selection : null);
 	});
 
 	//New menu
@@ -1316,13 +1329,7 @@ $(document).ready(function(){
 	});
 
 	//Paste item
-	$('#ws_paste_item').click(function () {
-		//Check if anything has been copied/cut
-		if (!menu_in_clipboard) return;
-
-		//Create a new editor widget for the copied item
-		var item = $.extend(true, {}, menu_in_clipboard);
-
+	function pasteItem(item) {
 		//We're pasting this item into a sub-menu, so it can't have a sub-menu of its own.
 		//Instead, any sub-menu items belonging to this item will be pasted after the item.
 		var newItems = [];
@@ -1348,6 +1355,15 @@ $(document).ready(function(){
 			}
 			newItems[i].show();
 		}
+	}
+
+	$('#ws_paste_item').click(function () {
+		//Check if anything has been copied/cut
+		if (!menu_in_clipboard) return;
+
+		//Paste it.
+		var item = $.extend(true, {}, menu_in_clipboard);
+		pasteItem(item);
 	});
 
 	//New item
@@ -1575,9 +1591,55 @@ $(document).ready(function(){
 		}
 	});
 
+	/*************************************************************************
+	                 Drag & drop items between menu levels
+	 *************************************************************************/
+
+	//Allow the user to drag sub-menu items to the top level.
+	$('#ws_top_menu_dropzone').droppable({
+		'hoverClass' : 'ws_dropzone_hover',
+
+		'accept' : (function(thing){
+			return thing.hasClass('ws_item');
+		}),
+
+		'drop' : (function(event, ui){
+			var droppedItemData = readItemState(ui.draggable);
+			pasteMenu(droppedItemData);
+			ui.draggable.remove();
+		})
+	});
+
+	$('#ws_sub_menu_dropzone').droppable({
+		'hoverClass' : 'ws_dropzone_hover',
+
+		'accept' : (function(thing){
+			return thing.hasClass('ws_menu');
+		}),
+
+		'drop' : (function(event, ui){
+			var droppedItemData = readItemState(ui.draggable);
+			pasteItem(droppedItemData);
+			ui.draggable.remove();
+		})
+	});
+
+
 	//Set up tooltips
 	$('.ws_tooltip_trigger').qtip();
 
+	$('.ws_hint_close').click(function() {
+		var hint = $(this).parents('.ws_hint').first();
+		hint.hide();
+		wsEditorData.showHints[hint.attr('id')] = false;
+		$.post(
+			wsEditorData.adminAjaxUrl,
+			{
+				'action' : 'ws_ame_hide_hint',
+				'hint' : hint.attr('id')
+			}
+		);
+	});
 
 	//Finally, show the menu
     outputWpMenu(customMenu.tree);

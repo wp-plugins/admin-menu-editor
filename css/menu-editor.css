@@ -26,6 +26,18 @@
 #ws_submenu_box {
 }
 
+.ws_dropzone {
+	margin: 0 5px 2px 5px;
+	border: none;
+	height: 20px;
+}
+
+.ws_dropzone_hover {
+	border: 1px dotted silver;
+	background: yellow;
+	height: 30px;
+}
+
 /*
  * The sidebar
  */
@@ -268,8 +280,8 @@ a.ws_edit_link:hover {
 }
 
 /* 
-The appearance and size of combobox fields need to be changed 
-to accomodate the dropdown button.
+The appearance and size of combo-box fields need to be changed
+to accommodate the drop-down button.
 */
 #ws_menu_editor .ws_has_dropdown input.ws_field_value,
 #ws_menu_access_editor input.ws_has_dropdown
@@ -647,11 +659,48 @@ a.ws_button:hover {
 
 
 /************************************
-        Tooltips
+        Tooltips and hints
 *************************************/
 
 .ws_tooltip_trigger {
 	cursor: pointer;
+}
+
+.ws_hint {
+	background: #FFFFE0;
+	border: 1px solid #E6DB55;
+
+	margin-bottom: 0.5em;
+	border-radius: 3px;
+	position: relative;
+	padding-right: 20px;
+}
+
+.ws_hint_close {
+	border: 1px solid #E6DB55;
+	border-right: none;
+	border-top: none;
+	color: #dcc500;
+	font-weight: bold;
+	cursor: pointer;
+
+	width: 18px;
+	text-align: center;
+	border-radius: 3px;
+
+	position: absolute;
+	right: 0px;
+	top: 0px;
+}
+
+.ws_hint_close:hover {
+	background-color: #ffef4c;
+	border-color: #e0b900;
+	color: black;
+}
+
+.ws_hint_content {
+	padding: 0.4em 0 0.4em 0.4em;
 }
 
 /************************************

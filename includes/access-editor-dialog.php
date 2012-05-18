@@ -1,6 +1,14 @@
 <div id="ws_menu_access_editor" title="Permissions">
 
 	<div class="ws_dialog_panel">
+		<div class="ws_hint" id="ws_hint_menu_permissions">
+			<div class="ws_hint_close" title="Close">x</div>
+			<div class="ws_hint_content">
+				<strong>Hint:</strong> Individual submenus can override these settings.
+				As a result, this menu will stay visible as long as at least one of its
+				submenus is accessible.
+			</div>
+		</div>
 
 		<div id="ws_role_access_container" class="ws_dialog_subpanel">
 			<strong>Roles</strong>

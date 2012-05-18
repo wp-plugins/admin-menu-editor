@@ -33,7 +33,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private $get = array();
 
 	function init(){
-		//Determine if the plugin is active network-wide (i.e. either installed in 
+		//Determine if the plugin is active network-wide (i.e. either installed in
 		//the /mu-plugins/ directory or activated "network wide" by the super admin.
 		if ( $this->is_super_plugin() ){
 			$this->sitewide_options = true;
@@ -57,6 +57,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		
 		//AJAXify screen options
 		add_action('wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options'));
+
+		//AJAXify hints
+		add_action('wp_ajax_ws_ame_hide_hint', array($this, 'ajax_hide_hint'));
 
 		//Activate the 'menu_order' filter. See self::hook_menu_order().
 		add_filter('custom_menu_order', '__return_true');
@@ -203,6 +206,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				),
 
 				'roles' => $wp_roles->roles,
+				'showHints' => $this->get_hint_visibility(),
 			)
 		);
 	}
@@ -743,25 +747,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		asort($all_roles);
 		$editor_data['all_roles'] = $all_roles;
 
-		//Create a list of known admin pages for yet another selector.
-		$known_pages = array();
-	    foreach($default_menu['tree'] as $toplevel){
-	        if ( $toplevel['separator'] ) continue;
-
-	        $top_title = strip_tags( preg_replace('@<span[^>]*>.*</span>@i', '', ameMenuItem::get($toplevel, 'menu_title')) );
-	        if ( empty($toplevel['items'])) {
-	            //This menu has no items, so it can only link to itself
-		        $known_pages[ameMenuItem::get($toplevel, 'file')] = array($top_title, $top_title);
-			} else {
-				//When a menu has some items, it's own URL is ignored by WP and the first item is used instead.
-			    foreach($toplevel['items'] as $subitem){
-			        $sub_title = strip_tags( preg_replace('@<span[^>]*>.*</span>@i', '', ameMenuItem::get($subitem, 'menu_title')) );
-				    $known_pages[ameMenuItem::get($subitem, 'file')] = array($top_title, $sub_title);
-			    }
-		    }
-	    }
-		$editor_data['known_pages'] = $known_pages;
-
 		require dirname(__FILE__) . '/editor-page.php';
 	}
 	
@@ -920,6 +905,32 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$this->options['hide_advanced_settings'] = !empty($this->post['hide_advanced_settings']);
 		$this->save_options();
 		die('1');
+	}
+
+	public function ajax_hide_hint() {
+		if ( !isset($this->post['hint']) || !$this->current_user_can_edit_menu() ){
+			die("You're not allowed to do that!");
+		}
+
+		$show_hints = $this->get_hint_visibility();
+		$show_hints[strval($this->post['hint'])] = false;
+		$this->set_hint_visibility($show_hints);
+
+		die("OK");
+	}
+
+	private function get_hint_visibility() {
+		$user = wp_get_current_user();
+		$show_hints = get_user_meta($user->ID, 'ame_show_hints', true);
+		if ( !is_array($show_hints) ) {
+			$show_hints = array();
+		}
+		return $show_hints;
+	}
+
+	private function set_hint_visibility($show_hints) {
+		$user = wp_get_current_user();
+		update_user_meta($user->ID, 'ame_show_hints', $show_hints);
 	}
 
 	/**
