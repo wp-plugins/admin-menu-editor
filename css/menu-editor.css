@@ -225,10 +225,9 @@ a.ws_edit_link:hover {
 }
 
 /* Dropdown button for combo-box fields */
-#ws_menu_editor .ws_dropdown_button {
-	display : block;
-	float: left;
-	
+#ws_menu_editor .ws_dropdown_button,
+#ws_menu_access_editor .ws_dropdown_button
+{
 	width: 20px;
 	height: 20px;
 	
@@ -257,12 +256,24 @@ a.ws_edit_link:hover {
 	-webkit-border-bottom-left-radius: 0;
 }
 
+#ws_menu_access_editor .ws_dropdown_button {
+	display: inline-block;
+	height: 22px;
+	margin-bottom: 2px;
+}
+
+#ws_menu_editor .ws_dropdown_button {
+	display: block;
+	float: left;
+}
+
 /* 
 The appearance and size of combobox fields need to be changed 
 to accomodate the dropdown button.
 */
-#ws_menu_editor .ws_has_dropdown input.ws_field_value {
-	width: 230px;
+#ws_menu_editor .ws_has_dropdown input.ws_field_value,
+#ws_menu_access_editor input.ws_has_dropdown
+{
 	margin-right: 0;
 	border-right: 0;
 	
@@ -274,6 +285,14 @@ to accomodate the dropdown button.
 
 	-webkit-border-top-right-radius: 0;
 	-webkit-border-bottom-right-radius: 0;
+}
+
+#ws_menu_access_editor input.ws_has_dropdown {
+	width: 90%;
+}
+
+#ws_menu_editor .ws_has_dropdown input.ws_field_value {
+	width: 230px;
 }
 
 /* Unlike others, this field is just a single checkbox, so it has a smaller height */

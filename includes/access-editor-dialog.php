@@ -45,7 +45,8 @@
 				Leave empty to disable.
 			">[?]</a>
 			<br>
-			<input type="text" id="ws_extra_capability" value="">
+			<input type="text" id="ws_extra_capability" class="ws_has_dropdown" value=""><input type="button" id="ws_trigger_capability_dropdown" value="&#9660;"
+			       class="button ws_dropdown_button" tabindex="-1">
 		</div>
 	</div>
 

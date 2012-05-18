@@ -132,19 +132,6 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
  	$capSelector[] = '</select>';
 
  	echo implode("\n", $capSelector);
-
- 	//Create a pop-up page selector
- 	$pageSelector = array('<select id="ws_page_selector" class="ws_dropdown" size="10">');
-	foreach($editor_data['known_pages'] as $file => $titles) {
-		$pageSelector[] = sprintf(
-		    '<option value="%s">%s -&gt; %s</option>',
-		    esc_attr($file),
-		    $titles[0],
-		    $titles[1]
-	    );
-	}
- 	$pageSelector[] = '</select>';
- 	echo implode("\n", $pageSelector);
 ?>
 
 <span id="ws-ame-screen-meta-contents" style="display:none;">

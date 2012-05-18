@@ -105,8 +105,6 @@ function outputWpMenu(menu){
 	//Remove the current menu data
 	$('#ws_menu_box').empty();
 	$('#ws_submenu_box').empty();
-	//Kill autocomplete boxes
-	$('.ac_results').remove();
 
 	//Display the new menu
 	var i = 0;
@@ -490,7 +488,7 @@ function buildEditboxField(entry, field_name, field_settings){
 			break;
 
         case 'checkbox':
-            inputBox = $('<label><input type="checkbox"'+(value?' checked="checked"':'')+ ' class="ws_field_value"> '+
+            inputBox = $('<label><input type="checkbox" class="ws_field_value"> '+
                 field_settings.caption+'</label>'
             );
             break;
@@ -1024,112 +1022,74 @@ $(document).ready(function(){
 
 
 	/***************************************************************************
-	              Dropdown list for combobox fields
+	              Drop-down list for combo-box fields
 	 ***************************************************************************/
 
-	var availableDropdowns = {
-		'ws_cap_selector' : {
-			list : $('#ws_cap_selector'),
-			currentOwner : null,
-			timeoutForgetOwner : 0
-		},
-		'ws_page_selector' : {
-			list : $('#ws_page_selector'),
-			currentOwner : null,
-			timeoutForgetOwner : 0
-		}
-	};
+	var capSelectorDropdown = $('#ws_cap_selector');
 
-	//Show/hide the capability dropdown list when the button is clicked
-	$('#ws_menu_editor input.ws_dropdown_button').live('click',function(){
-		var button = $(this);
-		var inputBox = button.parent().find('input.ws_field_value');
+	//Show/hide the capability drop-down list when the button is clicked
+	$('#ws_trigger_capability_dropdown').bind('click', function(){
+		var inputBox = $('#ws_extra_capability');
 
-		var dropdown = availableDropdowns[button.data('dropdownId')];
-
-		clearTimeout(dropdown.timeoutForgetOwner);
-		dropdown.timeoutForgetOwner = 0;
-
-		//If we already own the list, hide it and rescind ownership.
-		if ( dropdown.currentOwner == this ){
-			dropdown.list.hide();
-
-			dropdown.currentOwner = null;
-			inputBox.focus();
-
+		if (capSelectorDropdown.is(':visible')) {
+			capSelectorDropdown.hide();
 			return;
 		}
-		dropdown.currentOwner = this; //Got ye now!
-
-		//Move the dropdown near to the button
-		var inputPos = inputBox.offset();
-		dropdown.list.css({
-			position: 'absolute',
-			left: inputPos.left,
-			top: inputPos.top + inputBox.outerHeight()
-		});
 
 		//Pre-select the current capability (will clear selection if there's no match)
-		dropdown.list.val(inputBox.val());
+		capSelectorDropdown.val(inputBox.val()).show();
 
-		dropdown.list.show();
-		dropdown.list.focus();
+		//Move the drop-down near the input box.
+		var inputPos = inputBox.offset();
+		capSelectorDropdown
+			.css({
+				position: 'absolute',
+				zIndex: 1010 //Must be higher than the permissions dialog overlay.
+			})
+			.offset({
+				left: inputPos.left,
+				top : inputPos.top + inputBox.outerHeight()
+			}).
+			width(inputBox.outerWidth());
+
+		capSelectorDropdown.focus();
 	});
 
-	//Also show it when the user presses the down arrow in the input field
-	$('#ws_menu_editor .ws_has_dropdown input.ws_field_value').live('keyup', function(event){
+	//Also show it when the user presses the down arrow in the input field (doesn't work in Opera).
+	$('#ws_extra_capability').bind('keyup', function(event){
 		if ( event.which == 40 ){
-			$(this).parent().find('input.ws_dropdown_button').click();
+			$('#ws_trigger_capability_dropdown').click();
 		}
 	});
 
-	//Event handlers for the dropdowns themselves
+	//Event handlers for the drop-down lists themselves
 	var dropdownNodes = $('.ws_dropdown');
 
-	//Hide capability dropdown when it loses focus
+	// Hide capability drop-down when it loses focus.
+	// The timeout prevents a situation where the list is hidden and immediately displayed
+	// again because the user clicked the trigger button while it was visible.
 	dropdownNodes.blur(function(){
-		var dropdown = availableDropdowns[$(this).attr('id')];
-
-		dropdown.list.hide();
-		/*
-		* Hackiness : make sure the list doesn't disappear & immediately reappear
-		* when the event that caused it to lose focus was the user clicking on the
-		* dropdown button.
-		*/
-		dropdown.timeoutForgetOwner = setTimeout(
-			(function(){
-				dropdown.currentOwner = null;
-			}),
-			200
-		);
+		setTimeout(function() { capSelectorDropdown.hide(); }, 100);
 	});
 
 	dropdownNodes.keydown(function(event){
-		var dropdown = availableDropdowns[$(this).attr('id')];
-		var inputBox = null;
+		var inputBox = $('#ws_extra_capability');
 
-		//Also hide it when the user presses Esc
+		//Hide it when the user presses Esc
 		if ( event.which == 27 ){
-			inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
-
-			dropdown.list.hide();
-			if ( dropdown.currentOwner ){
-				$(dropdown.currentOwner).parent().find('input.ws_field_value').focus();
-			}
-			dropdown.currentOwner = null;
+			capSelectorDropdown.hide();
+			inputBox.focus();
 
 		//Select an item & hide the list when the user presses Enter or Tab
 		} else if ( (event.which == 13) || (event.which == 9) ){
-			dropdown.list.hide();
+			capSelectorDropdown.hide();
 
-			inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
-			if ( dropdown.list.val() ){
-				inputBox.val(dropdown.list.val());
+			if ( capSelectorDropdown.val() ){
+				inputBox.val(capSelectorDropdown.val());
 				inputBox.change();
 			}
 
 			inputBox.focus();
-			dropdown.currentOwner = null;
 
 			event.preventDefault();
 		}
@@ -1145,16 +1105,10 @@ $(document).ready(function(){
 
 	//Update the input & hide the list when an option is clicked
 	dropdownNodes.click(function(){
-		var dropdown = availableDropdowns[$(this).attr('id')];
-
-		if ( !dropdown.currentOwner || !dropdown.list.val() ){
-			return;
+		if ( capSelectorDropdown.val() ){
+			capSelectorDropdown.hide();
+			$('#ws_extra_capability').val(capSelectorDropdown.val()).change().focus();
 		}
-		dropdown.list.hide();
-
-		var inputBox = $(dropdown.currentOwner).parent().find('input.ws_field_value');
-		inputBox.val(dropdown.list.val()).change().focus();
-		dropdown.currentOwner = null;
 	});
 
 	//Highlight an option when the user mouses over it (doesn't work in IE)
