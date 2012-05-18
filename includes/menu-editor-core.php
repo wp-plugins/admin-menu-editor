@@ -68,6 +68,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//This is necessary because WordPress will stupidly apply "magic quotes"
 		//to the request vars even if this PHP misfeature is disabled.
 		add_action('plugins_loaded', array($this, 'capture_request_vars'));
+
+		add_action('admin_enqueue_scripts', array($this, 'enqueue_menu_fix_script'));
 	}
 
   /**
@@ -931,6 +933,20 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private function set_hint_visibility($show_hints) {
 		$user = wp_get_current_user();
 		update_user_meta($user->ID, 'ame_show_hints', $show_hints);
+	}
+
+	/**
+	 * Enqueue a script that fixes a bug where pages moved to a different menu
+	 * would not be highlighted properly when the user visits them.
+	 */
+	public function enqueue_menu_fix_script() {
+		wp_enqueue_script(
+			'ame-menu-fix',
+			$this->plugin_dir_url . '/js/menu-highlight-fix.js',
+			array('jquery'),
+			'20120518',
+			true
+		);
 	}
 
 	/**
