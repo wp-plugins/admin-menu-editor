@@ -1614,7 +1614,17 @@ $(document).ready(function(){
 		'hoverClass' : 'ws_dropzone_hover',
 
 		'accept' : (function(thing){
-			return thing.hasClass('ws_menu');
+			var visibleSubmenu = $('#ws_submenu_box .ws_submenu:visible');
+			return (
+				//Accept top-level menus
+				thing.hasClass('ws_menu') &&
+
+				//But not separators.
+				!thing.hasClass('ws_menu_separator') &&
+
+				//Prevent users from dropping a menu on its own sub-menu.
+				(visibleSubmenu.attr('id') != thing.data('submenu_id'))
+			);
 		}),
 
 		'drop' : (function(event, ui){
