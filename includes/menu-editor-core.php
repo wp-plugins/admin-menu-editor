@@ -181,7 +181,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'jquery-form', 'jquery-ui-droppable', 'jquery-qtip',
 				'jquery-sort', 'jquery-json'
 			),
-			'20120515'
+			'20120519'
 		);
 
 		//The editor will need access to some of the plugin data and WP data.
@@ -219,8 +219,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	  * @return void
 	  */
 	function enqueue_styles(){
-		wp_enqueue_style('jquery-qtip-syle', $this->plugin_dir_url . '/css/jquery.qtip.min.css', array(), '20120517');
-		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '20120515');
+		wp_enqueue_style('jquery-qtip-syle', $this->plugin_dir_url . '/css/jquery.qtip.min.css', array(), '20120519');
+		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '20120519');
 	}
 
 	/**
@@ -944,7 +944,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'ame-menu-fix',
 			$this->plugin_dir_url . '/js/menu-highlight-fix.js',
 			array('jquery'),
-			'20120518',
+			'20120519',
 			true
 		);
 	}
