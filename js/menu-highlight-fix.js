@@ -107,14 +107,9 @@ jQuery(function($) {
 		var isWrongItemHighlighted = !bestMatchLink.hasClass('current');
 		var isWrongMenuHighlighted = !parentMenu.hasClass('wp-has-current-submenu') && !parentMenu.hasClass('current');
 
-		if (isWrongItemHighlighted) {
-			$('#adminmenu .current').removeClass('current');
-			bestMatchLink.addClass('current').closest('li').addClass('current');
-		}
-
 		if (isWrongMenuHighlighted) {
-			var highlightedMenu = $('#adminmenu li.wp-has-current-submenu');
-			highlightedMenu.removeClass('wp-has-current-submenu').addClass('wp-not-current-submenu');
+			var highlightedMenu = $('#adminmenu li.wp-has-current-submenu, #adminmenu li.menu-top.current');
+			highlightedMenu.removeClass('wp-has-current-submenu current').addClass('wp-not-current-submenu');
 
 			//Account for users who use a plugin to keep multiple menus expanded.
 			var shouldCloseOtherMenus = $('#adminmenu li.wp-menu-open').length <= 1;
@@ -127,6 +122,11 @@ jQuery(function($) {
 			if (parentMenu.hasClass('wp-has-submenu')) {
 				parentMenuAndLink.addClass('wp-has-current-submenu wp-menu-open');
 			}
+		}
+
+		if (isWrongItemHighlighted) {
+			$('#adminmenu .current').removeClass('current');
+			bestMatchLink.addClass('current').closest('li').addClass('current');
 		}
 	}
 });
