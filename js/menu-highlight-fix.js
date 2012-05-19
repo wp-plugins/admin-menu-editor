@@ -32,6 +32,8 @@ jQuery(function($) {
 		}
 	};
 
+	// --- parseUri ends ---
+
 	//Find the menu item whose URL best matches the currently open page.
 	var currentUri = parseUri(location.href);
 	var bestMatch = {
@@ -40,7 +42,7 @@ jQuery(function($) {
 		matchingParams : -1,
 		differentParams : 10000
 	};
-	$('#adminmenu li a').each(function(index, link) {
+	$('#adminmenu li > a').each(function(index, link) {
 		var uri = parseUri(link.href);
 
 		//Check for a close match - everything but query and #anchor.
@@ -51,7 +53,7 @@ jQuery(function($) {
 		}
 
 		if (!isCloseMatch) {
-			return true;
+			return true; //Skip to the next link.
 		}
 
 		//Calculate the number of matching and different query parameters.
@@ -99,36 +101,32 @@ jQuery(function($) {
 	//Highlight and/or expand the best matching menu.
 	if (bestMatch.link !== null) {
 		var bestMatchLink = $(bestMatch.link);
-		var parentMenu = bestMatchLink.parents('li.menu-top').first();
+		var parentMenu = bestMatchLink.closest('li.menu-top');
 		//console.log('Best match is: ', bestMatchLink);
 
-		//TODO: Account for users that have set all menus to be always open.
+		var isWrongItemHighlighted = !bestMatchLink.hasClass('current');
+		var isWrongMenuHighlighted = !parentMenu.hasClass('wp-has-current-submenu') && !parentMenu.hasClass('current');
 
-		if (bestMatchLink.hasClass('menu-top')) {
-			if (!bestMatchLink.hasClass('current')) {
-				$('#adminmenu li.wp-has-current-submenu')
-					.removeClass('wp-has-current-submenu wp-menu-open')
-					.addClass('wp-not-current-submenu');
+		if (isWrongItemHighlighted) {
+			$('#adminmenu .current').removeClass('current');
+			bestMatchLink.addClass('current').closest('li').addClass('current');
+		}
 
-				bestMatchLink.addClass('current');
-				parentMenu.addClass('current');
-			}
-		} else {
-			if (!parentMenu.hasClass('wp-has-current-submenu')) {
-				$('#adminmenu li.wp-has-current-submenu')
-					.removeClass('wp-has-current-submenu wp-menu-open')
-					.addClass('wp-not-current-submenu');
+		if (isWrongMenuHighlighted) {
+			var highlightedMenu = $('#adminmenu li.wp-has-current-submenu');
+			highlightedMenu.removeClass('wp-has-current-submenu').addClass('wp-not-current-submenu');
 
-				var parentLink = parentMenu.find('> a.menu-top');
-				parentMenu
-					.removeClass('wp-not-current-submenu')
-					.addClass('wp-has-current-submenu wp-menu-open');
-				parentLink
-					.removeClass('wp-not-current-submenu')
-					.addClass('wp-has-current-submenu wp-menu-open');
+			//Account for users who use a plugin to keep multiple menus expanded.
+			var shouldCloseOtherMenus = $('#adminmenu li.wp-menu-open').length <= 1;
+			if (shouldCloseOtherMenus) {
+				highlightedMenu.removeClass('wp-menu-open');
 			}
 
-			bestMatchLink.addClass('current').parent('li').addClass('current');
+			var parentMenuAndLink = parentMenu.add('> a.menu-top', parentMenu);
+			parentMenuAndLink.removeClass('wp-not-current-submenu');
+			if (parentMenu.hasClass('wp-has-submenu')) {
+				parentMenuAndLink.addClass('wp-has-current-submenu wp-menu-open');
+			}
 		}
 	}
 });
