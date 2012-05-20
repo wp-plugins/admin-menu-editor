@@ -104,17 +104,19 @@ jQuery(function($) {
 		var parentMenu = bestMatchLink.closest('li.menu-top');
 		//console.log('Best match is: ', bestMatchLink);
 
+		var otherHighlightedMenus = $('li.wp-has-current-submenu, li.menu-top.current', '#adminmenu').not(parentMenu);
+
 		var isWrongItemHighlighted = !bestMatchLink.hasClass('current');
-		var isWrongMenuHighlighted = !parentMenu.hasClass('wp-has-current-submenu') && !parentMenu.hasClass('current');
+		var isWrongMenuHighlighted = !parentMenu.is('.wp-has-current-submenu, .current') ||
+		                              (otherHighlightedMenus.length > 0);
 
 		if (isWrongMenuHighlighted) {
-			var highlightedMenu = $('#adminmenu li.wp-has-current-submenu, #adminmenu li.menu-top.current');
-			highlightedMenu.removeClass('wp-has-current-submenu current').addClass('wp-not-current-submenu');
+			otherHighlightedMenus.removeClass('wp-has-current-submenu current').addClass('wp-not-current-submenu');
 
 			//Account for users who use a plugin to keep multiple menus expanded.
 			var shouldCloseOtherMenus = $('#adminmenu li.wp-menu-open').length <= 1;
 			if (shouldCloseOtherMenus) {
-				highlightedMenu.removeClass('wp-menu-open');
+				otherHighlightedMenus.removeClass('wp-menu-open');
 			}
 
 			var parentMenuAndLink = parentMenu.add('> a.menu-top', parentMenu);
