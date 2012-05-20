@@ -46,7 +46,7 @@ abstract class ameMenuItem {
 
 		//URL generation is not used yet.
 		if ( !$item['separator'] ) {
-			$item['url'] = self::get_url($item['file'], $parent);
+			$item['url'] = self::generate_url($item['file'], $parent);
 		}
 
 		$item['template_id'] = self::template_id($item, $parent);
@@ -345,9 +345,13 @@ abstract class ameMenuItem {
 	 * @param string $parent_slug
 	 * @return string An URL relative to the /wp-admin/ directory.
 	 */
-	private static function get_url($item_slug, $parent_slug = '') {
+	public static function generate_url($item_slug, $parent_slug = '') {
 		$menu_url = is_array($item_slug) ? self::get($item_slug, 'file') : $item_slug;
 		$parent_url = !empty($parent_slug) ? $parent_slug : 'admin.php';
+
+		if ( strpos($menu_url, '://') !== false ) {
+			return $menu_url;
+		}
 
 		if ( self::is_hook_or_plugin_page($menu_url, $parent_url) ) {
 			$base_file = self::is_hook_or_plugin_page($parent_url) ? 'admin.php' : $parent_url;

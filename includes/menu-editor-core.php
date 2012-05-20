@@ -20,8 +20,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private $filtered_wp_menu = null;     //The final, ready-for-display top-level menu and sub-menu.
 	private $filtered_wp_submenu = null;
 
-	protected $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
+	private $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
 	                                    //fix the titles of moved plugin pages.
+	private $reverse_item_lookup = array(); //Contains the final (merged & filtered) list admin menu items,
+                                            //indexed by URL.
+
 	private $merged_custom_menu = null; //The current custom menu with defaults merged in.
 	private $item_templates = array();  //A lookup list of default menu items, used as templates for the custom menu.
 
@@ -156,6 +159,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->filter_menu();
 			$this->filtered_wp_menu = $menu;
 			$this->filtered_wp_submenu = $submenu;
+
+			if ( !$this->user_can_access_current_page() ) {
+				wp_die('You do not have sufficient permissions to access this admin page.');
+			}
 		}
 	}
 
@@ -226,7 +233,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	/**
 	 * Set and save a new custom menu.
 	 *
-	 * @param array $custom_menu
+	 * @param array|null $custom_menu
 	 */
 	function set_custom_menu($custom_menu) {
 		$this->options['custom_menu'] = $custom_menu;
@@ -553,7 +560,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$topmenu = $this->prepare_for_output($topmenu, 'menu');
 			$new_menu[] = $this->convert_to_wp_format($topmenu);
 
-			$this->title_lookups[$topmenu['file']] = !empty($topmenu['page_title']) ? $topmenu['page_title'] : $topmenu['menu_title'];
+			if ( empty($topmenu['separator']) ) {
+				$this->title_lookups[$topmenu['file']] = !empty($topmenu['page_title']) ? $topmenu['page_title'] : $topmenu['menu_title'];
+				if ( !array_key_exists($topmenu['url'], $this->reverse_item_lookup) ) { //Prefer sub-menus.
+					$this->reverse_item_lookup[$topmenu['url']] = $topmenu;
+				}
+			}
 				
 			//Prepare the submenu of this menu
 			if( !empty($topmenu['items']) ){
@@ -569,9 +581,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 					$item = $this->prepare_for_output($item, 'submenu', $topmenu['file']);
 					$new_submenu[$topmenu['file']][] = $this->convert_to_wp_format($item);
-					 
+
 					//Make a note of the page's correct title so we can fix it later if necessary.
 					$this->title_lookups[$item['file']] = !empty($item['page_title']) ? $item['page_title'] : $item['menu_title'];
+					$this->reverse_item_lookup[$item['url']] = $item;
 				}
 			}
 		}
@@ -651,6 +664,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		$item['access_level'] = $user_has_access ? $cap_to_use : 'do_not_allow';
+
+		//Used later to determine the current page based on URL.
+		$item['url'] = ameMenuItem::generate_url($item['file'], $parent);
 
 		return $item;
 	}
@@ -947,6 +963,111 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'20120519',
 			true
 		);
+	}
+
+	/**
+	 * Check if the current user can access the current admin menu page.
+	 *
+	 * @return bool
+	 */
+	private function user_can_access_current_page() {
+		$current_item = $this->get_current_menu_item();
+		if ( $current_item === null ) {
+			return true; //Let WordPres handle it.
+		}
+		return current_user_can($current_item['access_level']);
+	}
+
+	/**
+	 * Determine which menu item matches the currently open admin page.
+	 *
+	 * @uses self::$reverse_item_lookup
+	 * @return array|null Menu item in the internal format, or NULL if no matching item can be found.
+	 */
+	private function get_current_menu_item() {
+		if ( !is_admin() || empty($this->merged_custom_menu)) {
+			return null;
+		}
+
+		//Find an item where *all* query params match the current ones, with as few extraneous params as possible,
+		//preferring sub-menu items. This is intentionally more strict than what we do in menu-highlight-fix.js,
+		//since this function is used to check menu access.
+
+		$best_item = null;
+		$best_extra_params = PHP_INT_MAX;
+
+		$base_site_url = get_site_url();
+		if ( preg_match('@(^\w+://[^/]+).+@', $base_site_url, $matches) ) { //Extract scheme + hostname.
+			$base_site_url = $matches[1];
+		}
+
+		$current_url = $base_site_url . remove_query_arg('___ame_dummy_param___');
+		$current_url = $this->parse_url($current_url);
+
+		foreach($this->reverse_item_lookup as $url => $item) {
+			$item_url = $url;
+			//Convert to absolute URL. Caution: directory traversal (../, etc) is not handled.
+			if (strpos($item_url, '://') === false) {
+				if ( substr($item_url, 0, 1) == '/' ) {
+					$item_url = $base_site_url . $item_url;
+				} else {
+					$item_url = admin_url($item_url);
+				}
+			}
+			$item_url = $this->parse_url($item_url);
+
+			//Must match scheme, host, port, user, pass and path.
+			$components = array('scheme', 'host', 'port', 'user', 'pass', 'path');
+			$is_close_match = true;
+			foreach($components as $component) {
+				$is_close_match = $is_close_match && ($current_url[$component] == $item_url[$component]);
+				if ( !$is_close_match ) {
+					break;
+				}
+			}
+
+			//The current URL must match all query parameters of the item URL.
+			$different_params = array_diff_assoc($item_url['params'], $current_url['params']);
+
+			//The current URL must have as few extra parameters as possible.
+			$extra_params = array_diff_assoc($current_url['params'], $item_url['params']);
+
+			if ( $is_close_match && (count($different_params) == 0) && (count($extra_params) < $best_extra_params) ) {
+				$best_item = $item;
+				$best_extra_params = count($extra_params);
+			}
+		}
+
+		return $best_item;
+	}
+
+	/**
+	 * Parse a URL and return its components.
+	 *
+	 * Returns an array that contains all of these components: 'scheme', 'host', 'port', 'user', 'pass',
+	 * 'path', 'query', 'fragment' and 'params'. All entries are strings, except 'params' which is
+	 * an associative array of query parameters and their values.
+	 *
+	 * @param string $url
+	 * @return array
+	 */
+	private function parse_url($url) {
+		$url_defaults = array_fill_keys(array('scheme', 'host', 'port', 'user', 'pass', 'path', 'query', 'fragment'), '');
+		$url_defaults['port'] = '80';
+
+		$parsed = @parse_url($url);
+		if ( !is_array($parsed) ) {
+			$parsed = array();
+		}
+		$parsed = array_merge($url_defaults, $parsed);
+
+		$params = array();
+		if (!empty($parsed['query'])) {
+			wp_parse_str($parsed['query'], $params);
+		};
+		$parsed['params'] = $params;
+
+		return $parsed;
 	}
 
 	/**
