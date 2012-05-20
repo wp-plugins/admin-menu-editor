@@ -10,6 +10,7 @@ if (class_exists('WPMenuEditor')){
 
 $thisDirectory = dirname(__FILE__);
 require $thisDirectory . '/shadow_plugin_framework.php';
+require $thisDirectory . '/role-utils.php';
 require $thisDirectory . '/menu-item.php';
 require $thisDirectory . '/menu.php';
 
@@ -192,7 +193,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		);
 
 		//The editor will need access to some of the plugin data and WP data.
-		$wp_roles = $this->get_roles();
+		$wp_roles = ameRoleUtils::get_roles();
 		wp_localize_script(
 			'menu-editor',
 			'wsEditorData',
@@ -744,7 +745,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$editor_data['custom_menu_js'] = ameMenu::to_json($custom_menu);
 
 		//Create a list of all known capabilities and roles. Used for the dropdown list on the access field.
-		$all_capabilities = $this->get_all_capabilities();
+		$all_capabilities = ameRoleUtils::get_all_capabilities();
 		//"level_X" capabilities are deprecated so we don't want people using them.
 		//This would look better with array_filter() and an anonymous function as a callback.
 		for($level = 0; $level <= 10; $level++){
@@ -758,7 +759,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$editor_data['all_capabilities'] = $all_capabilities;
 
 		//Create a list of all roles, too.
-		$all_roles = $this->get_role_names();
+		$all_roles = ameRoleUtils::get_role_names();
 		if ( is_multisite() ){ //Multi-site installs also get the virtual "Super Admin" role
 			$all_roles['super_admin'] = 'Super Admin';
 		}
@@ -768,72 +769,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		require dirname(__FILE__) . '/editor-page.php';
 	}
 	
-  /**
-   * Retrieve a list of all known capabilities of all roles
-   *
-   * @return array Associative array with capability names as keys
-   */
-	function get_all_capabilities(){
-		/** @var WP_Roles $wp_roles */
-		global $wp_roles;
-		
-		$capabilities = array();
-		
-		if ( !isset($wp_roles) || !isset($wp_roles->roles) ){
-			return $capabilities;
-		}
-		
-		//Iterate over all known roles and collect their capabilities
-		foreach($wp_roles->roles as $role){
-			if ( !empty($role['capabilities']) && is_array($role['capabilities']) ){ //Being defensive here
-				$capabilities = array_merge($capabilities, $role['capabilities']);
-			}
-		}
-		
-		//Add multisite-specific capabilities (not listed in any roles in WP 3.0)
-		$multisite_caps = array(
-			'manage_sites' => 1,  
-			'manage_network' => 1, 
-			'manage_network_users' => 1, 
-			'manage_network_themes' => 1, 
-			'manage_network_options' => 1, 
-			'manage_network_plugins' => 1, 
-		);
-		$capabilities = array_merge($capabilities, $multisite_caps);
-		
-		return $capabilities;
-	}
-	
-  /**
-   * Retrieve a list of all known roles and their names.
-   *
-   * @return array Associative array with role IDs as keys and role display names as values
-   */
-	function get_role_names(){
-		$wp_roles = $this->get_roles();
-		$roles = array();
-		
-		foreach($wp_roles->roles as $role_id => $role){
-			$roles[$role_id] = $role['name'];
-		}
-		
-		return $roles;
-	}
-
-	/**
-	 * Get all defined WordPress roles.
-	 *
-	 * @global WP_Roles $wp_roles
-	 * @return WP_Roles
-	 */
-	function get_roles() {
-		global $wp_roles;
-		if ( !isset($wp_roles) ) {
-			$wp_roles = new WP_Roles();
-		}
-		return $wp_roles;
-	}
-
 	/**
 	 * Generate a list of "virtual" capabilities that should be granted to certain roles.
 	 *
