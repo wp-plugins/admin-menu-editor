@@ -156,7 +156,7 @@ class MenuEd_ShadowPluginFramework {
    * ShadowPluginFramework::save_options()
    * Saves the $options array to the database.
    *
-   * @return void
+   * @return bool
    */
 	function save_options(){
 		if ($this->option_name) {
@@ -166,11 +166,12 @@ class MenuEd_ShadowPluginFramework {
 			}
 			
 			if ( $this->sitewide_options ) {
-				update_site_option($this->option_name, $stored_options);
+				return update_site_option($this->option_name, $stored_options);
 			} else {
-				update_option($this->option_name, $stored_options);
+				return update_option($this->option_name, $stored_options);
 			}
 		}
+		return false;
 	}
 	
 	

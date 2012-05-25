@@ -11,7 +11,7 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 	(function($){
 		$('#screen-meta-links').append(
 			'<div id="ws-pro-version-notice">' +
-				'<a href="http://w-shadow.com/AdminMenuEditor/" id="ws-pro-version-notice-link" class="show-settings" target="_blank" title="View Pro version details">Upgrade to Pro</a>' +
+				'<a href="http://w-shadow.com/admin-menu-editor-pro/?utm_source=Admin%2BMenu%2BEditor%2Bfree&utm_medium=text_link&utm_content=top_upgrade_link&utm_campaign=Plugins" id="ws-pro-version-notice-link" class="show-settings" target="_blank" title="View Pro version details">Upgrade to Pro</a>' +
 			'</div>'
 		);
 	})(jQuery);
