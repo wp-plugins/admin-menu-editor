@@ -140,13 +140,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Store the "original" menus for later use in the editor
 		$this->default_wp_menu = $menu;
 		$this->default_wp_submenu = $submenu;
+		
+		//Generate item templates from the default menu.
+		$this->item_templates = $this->build_templates($this->default_wp_menu, $this->default_wp_submenu);
 
 		//Is there a custom menu to use?
 		$custom_menu = $this->load_custom_menu();
 		if ( $custom_menu !== null ){
-			//Generate item templates from the default menu.
-			$this->item_templates = $this->build_templates($this->default_wp_menu, $this->default_wp_submenu);
-
 			//Merge in data from the default menu
 			$custom_menu['tree'] = $this->menu_merge($custom_menu['tree']);
 
