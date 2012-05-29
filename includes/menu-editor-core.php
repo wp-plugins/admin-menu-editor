@@ -636,7 +636,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 */
 	private function prepare_for_output($item, $item_type = 'menu', $parent = '') {
 		// Special case : plugin pages that have been moved from a sub-menu to a different
-		// menu or the top level. We'll need to adjust the file field to point to the old parent.
+		// menu or the top level. We'll need to adjust the file field to point to the correct URL.
 		// This is required because WP identifies plugin pages using *both* the plugin file
 		// and the parent file.
 		if ( $item['template_id'] !== '' && !$item['separator'] ) {
@@ -644,7 +644,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if ( $template['defaults']['is_plugin_page'] ) {
 				$default_parent = $template['defaults']['parent'];
 				if ( $parent != $default_parent ){
-					$item['file'] = $default_parent . '?page=' . $template['defaults']['file'];
+					$item['file'] = $template['defaults']['url'];
 				}
 			}
 		}

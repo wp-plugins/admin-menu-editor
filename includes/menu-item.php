@@ -44,7 +44,6 @@ abstract class ameMenuItem {
 		//Flag plugin pages
 		$item['is_plugin_page'] = (get_plugin_page_hook($item['file'], $parent) != null);
 
-		//URL generation is not used yet.
 		if ( !$item['separator'] ) {
 			$item['url'] = self::generate_url($item['file'], $parent);
 		}
