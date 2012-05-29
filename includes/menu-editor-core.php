@@ -319,6 +319,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		global $pagenow;
 		global $plugin_page;
 
+		//TODO: Consider using get_current_menu_item() here.
 		$real_title = $title;
 		if ( empty($title) && !empty($plugin_page) && !empty($pagenow) ){
 			$file = sprintf('%s?page=%s', $pagenow, $plugin_page);
@@ -502,7 +503,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if ( !empty($template['defaults']['parent']) ) {
 				if (isset($tree[$template['defaults']['parent']])) {
 					//Okay, insert the item.
-					$tree[$template['defaults']['parent']]['items'][$template['defaults']['file']] = $entry;
+					$tree[$template['defaults']['parent']]['items'][] = $entry;
 				} else {
 					//Ooops? This should never happen. Some kind of inconsistency?
 				}
@@ -703,14 +704,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				die();
 			}
 
-			//Ensure the user doesn't change the required capability to something they themselves don't have.
-			if ( isset($menu['tree']['options-general.php']['items']['menu_editor']) ){
-				$item = $menu['tree']['options-general.php']['items']['menu_editor'];
-				if ( !empty($item['access_level']) && !current_user_can($item['access_level']) ){
-					$item['access_level'] = null;
-					$menu['tree']['options-general.php']['items']['menu_editor'] = $item;
-				}
-			}
+			//TODO: Ensure the user doesn't make the menu editor completely inaccessible.
 
 			//Save the custom menu
 			$this->set_custom_menu($menu);

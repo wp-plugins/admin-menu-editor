@@ -161,16 +161,13 @@ function buildSubmenu(items){
 	//Only show menus that have items.
 	//Skip arrays (with a length) because filled menus are encoded as custom objects.
 	var entry = null;
-	if (items && (typeof items != 'Array')){
-		for (var item_file in items){
-			if (!items.hasOwnProperty(item_file)){
-				continue;
-			}
-			entry = buildMenuItem(items[item_file], false);
+	if (items) {
+		$.each(items, function(index, item) {
+			entry = buildMenuItem(item, false);
 			if ( entry ){
 				submenu.append(entry);
 			}
-		}
+		});
 	}
 
 	//Make the submenu sortable
@@ -681,13 +678,13 @@ function readItemState(itemDiv, position){
 	item.custom = menuHasFlag(itemDiv, 'custom');
 
 	//Gather the menu's sub-items, if any
-	item.items = {};
+	item.items = [];
 	var subMenuId = itemDiv.data('submenu_id');
 	if (subMenuId) {
 		var itemPosition = 0;
 		$('#' + subMenuId).find('.ws_item').each(function () {
 			var sub_item = readItemState(this, itemPosition++);
-			item.items[getFieldValue(sub_item, 'file', '')] = sub_item;
+			item.items.push(sub_item);
 		});
 	}
 
@@ -1242,7 +1239,7 @@ $(document).ready(function(){
 			template_id : '',
 			menu_title : 'Custom Menu ' + ws_paste_count,
 			file : randomId,
-			items: {},
+			items: [],
 			defaults: itemTemplates.getDefaults('')
 		});
 
@@ -1262,7 +1259,7 @@ $(document).ready(function(){
 		var menu = $.extend(true, {}, wsEditorData.blankMenuItem, {
 			separator: true, //Flag as a separator
 			custom: false,   //Separators don't need to flagged as custom to be retained.
-			items: {},
+			items: [],
 			defaults: {
 				separator: true,
 				css_class : 'wp-menu-separator',
@@ -1336,7 +1333,7 @@ $(document).ready(function(){
 				newItems.push(buildMenuItem(item.items[file], false));
 			}
 		}
-		item.items = {};
+		item.items = [];
 
 		newItems.unshift(buildMenuItem(item, false));
 
@@ -1377,7 +1374,7 @@ $(document).ready(function(){
 			template_id : '',
 			menu_title : 'Custom Item ' + ws_paste_count,
 			file : randomMenuId(),
-			items: {},
+			items: [],
 			defaults: itemTemplates.getDefaults('')
 		});
 
