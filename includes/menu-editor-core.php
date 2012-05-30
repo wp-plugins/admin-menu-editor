@@ -19,7 +19,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	protected $default_wp_menu;           //Holds the default WP menu for later use in the editor
 	protected $default_wp_submenu;        //Holds the default WP menu for later use
 	private $filtered_wp_menu = null;     //The final, ready-for-display top-level menu and sub-menu.
-	private $filtered_wp_submenu = null;
 
 	private $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
 	                                    //fix the titles of moved plugin pages.
@@ -159,7 +158,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Re-filter the menu (silly WP should do that itself, oh well)
 			$this->filter_menu();
 			$this->filtered_wp_menu = $menu;
-			$this->filtered_wp_submenu = $submenu;
 
 			if ( !$this->user_can_access_current_page() ) {
 				wp_die('You do not have sufficient permissions to access this admin page.');
