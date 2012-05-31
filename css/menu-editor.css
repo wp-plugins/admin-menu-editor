@@ -17,7 +17,7 @@
 	width: 100%;
 	margin: 0;
 	padding-top: 2px;
-	padding-bottom: 4px;
+	padding-bottom: 0;
 }
 
 #ws_menu_box {
@@ -29,7 +29,7 @@
 .ws_dropzone {
 	margin: 0 5px 2px 5px;
 	border: none;
-	height: 20px;
+	height: 25px;
 }
 
 .ws_dropzone_hover {
@@ -664,6 +664,11 @@ a.ws_button:hover {
 
 .ws_tooltip_trigger {
 	cursor: pointer;
+}
+
+.ws_tooltip_content_list {
+	list-style: disc;
+	margin-left: 1em;
 }
 
 .ws_hint {

@@ -37,7 +37,17 @@
 		<div id="ws_required_cap_container" class="ws_dialog_subpanel">
 			<strong>Required capability</strong>
 			<a class="ws_tooltip_trigger" title="
-				Only roles with the required capability will be able to access this menu item.
+				This capability check is hard-coded in WordPress or the plugin that created the menu.
+
+				&lt;ul class=&quot;ws_tooltip_content_list&quot;&gt;
+					&lt;li&gt;
+						Only roles with the this capability will be able to access this menu.
+					&lt;li&gt;
+						Admin Menu Editor will automatically grant the required capability to
+						all roles you check in the &quot;Roles&quot; list.
+					&lt;li&gt;
+						Custom menus have no hard-coded capability requirements.
+				&lt;/ul&gt;
 			">[?]</a>
 			<br>
 			<span id="ws_required_capability">capability_here</span>
