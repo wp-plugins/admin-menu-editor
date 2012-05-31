@@ -16,16 +16,28 @@ require $thisDirectory . '/menu.php';
 
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
-	protected $default_wp_menu;           //Holds the default WP menu for later use in the editor
-	protected $default_wp_submenu;        //Holds the default WP menu for later use
-	private $filtered_wp_menu = null;     //The final, ready-for-display top-level menu and sub-menu.
+	/** @var array The default WordPress menu, before display-specific filtering. */
+	protected $default_wp_menu;
+	/** @var array The default WordPress submenu. */
+	protected $default_wp_submenu;
 
-	private $title_lookups = array(); //A list of page titles indexed by $item['file']. Used to
+	/**
+	 * We also keep track of the final, ready-for-display version of the default WP menu
+	 * and submenu. These values are captured *just* before the admin menu HTML is output
+	 * by _wp_menu_output() in /wp-admin/menu-header.php, and are restored afterwards.
+	 */
+	private $old_wp_menu;
+	private $old_wp_submenu;
+
+	private $title_lookups = array();   //A list of page titles indexed by $item['file']. Used to
 	                                    //fix the titles of moved plugin pages.
-	private $reverse_item_lookup = array(); //Contains the final (merged & filtered) list admin menu items,
+	private $reverse_item_lookup = array(); //Contains the final (merged & filtered) list of admin menu items,
                                             //indexed by URL.
 
 	private $merged_custom_menu = null; //The current custom menu with defaults merged in.
+	private $custom_wp_menu = null;     //The custom menu in WP-compatible format.
+	private $custom_wp_submenu = null;
+
 	private $item_templates = array();  //A lookup list of default menu items, used as templates for the custom menu.
 
 	private $cached_custom_menu = null; //Cached, non-merged version of the custom menu. Used by load_custom_menu().
@@ -63,9 +75,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//AJAXify hints
 		add_action('wp_ajax_ws_ame_hide_hint', array($this, 'ajax_hide_hint'));
-
-		//Activate the 'menu_order' filter. See self::hook_menu_order().
-		add_filter('custom_menu_order', '__return_true');
 
 		//Make sure we have access to the original, un-mangled request data.
 		//This is necessary because WordPress will stupidly apply "magic quotes"
@@ -152,18 +161,132 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Save the merged menu for later - the editor page will need it
 			$this->merged_custom_menu = $custom_menu;
 
-			//Apply the custom menu
-			$this->replace_wp_menu($this->merged_custom_menu['tree']);
-
-			//Re-filter the menu (silly WP should do that itself, oh well)
-			$this->filter_menu();
-			$this->filtered_wp_menu = $menu;
+			//Convert our custom menu to the $menu + $submenu structure used by WP.
+			$this->build_custom_wp_menu($this->merged_custom_menu['tree']);
 
 			if ( !$this->user_can_access_current_page() ) {
 				wp_die('You do not have sufficient permissions to access this admin page.');
 			}
+
+			//Replace the admin menu just before it is displayed and restore it afterwards.
+			//The fact that replace_wp_menu() is attached to the 'parent_file' hook is incidental;
+			//there just wasn't any other, more suitable hook available.
+			add_filter('parent_file', array($this, 'replace_wp_menu'));
+			add_action('adminmenu', array($this, 'restore_wp_menu'));
 		}
 	}
+
+	/**
+	 * Replace the current WP menu with our custom one.
+	 *
+	 * @param string $parent_file
+	 * @return string
+	 */
+	public function replace_wp_menu($parent_file = '') {
+		global $menu, $submenu;
+
+		$this->old_wp_menu = $menu;
+		$this->old_wp_submenu = $submenu;
+
+		$menu = $this->custom_wp_menu;
+		$submenu = $this->custom_wp_submenu;
+		list($menu, $submenu) = $this->filter_menu($menu, $submenu);
+
+		return $parent_file;
+	}
+
+	/**
+	 * Restore the default WordPress menu that was replaced using replace_wp_menu().
+	 */
+	public function restore_wp_menu() {
+		global $menu, $submenu;
+		$menu = $this->old_wp_menu;
+		$submenu = $this->old_wp_submenu;
+	}
+
+	/**
+	 * Filter a menu to prepare it for display.
+	 *
+	 * Removes inaccessible items and superfluous separators. Adds special CSS classes.
+	 * Mostly adapted from /wp-admin/includes/menu.php.
+	 *
+	 * @param array $menu
+	 * @param array $submenu
+	 * @return array An array with two items - the filtered menu and submenu.
+	 */
+	private function filter_menu($menu, $submenu) {
+		global $_wp_menu_nopriv; //Caution: Modifying this array could lead to unexpected consequences.
+
+		//Remove sub-menus which the user shouldn't be able to access.
+		foreach ($submenu as $parent => $items) {
+			foreach ($items as $index => $data) {
+				if ( ! current_user_can($data[1]) ) {
+					unset($submenu[$parent][$index]);
+					$_wp_submenu_nopriv[$parent][$data[2]] = true;
+				}
+			}
+
+			if ( empty($submenu[$parent]) ) {
+				unset($submenu[$parent]);
+			}
+		}
+
+		//Remove menus that have no accessible sub-menus and require privileges that the user does not have.
+		//Run re-parent loop again.
+		foreach ( $menu as $id => $data ) {
+			if ( ! current_user_can($data[1]) ) {
+				$_wp_menu_nopriv[$data[2]] = true;
+			}
+
+			//If there is only one submenu and it is has same destination as the parent,
+			//remove the submenu.
+			if ( ! empty( $submenu[$data[2]] ) && 1 == count ( $submenu[$data[2]] ) ) {
+				$subs = $submenu[$data[2]];
+				$first_sub = array_shift($subs);
+				if ( $data[2] == $first_sub[2] ) {
+					unset( $submenu[$data[2]] );
+				}
+			}
+
+			//If submenu is empty...
+			if ( empty($submenu[$data[2]]) ) {
+				// And user doesn't have privs, remove menu.
+				if ( isset( $_wp_menu_nopriv[$data[2]] ) ) {
+					unset($menu[$id]);
+				}
+			}
+		}
+		unset($id, $data, $subs, $first_sub);
+
+		//Remove any duplicated separators
+		$separator_found = false;
+		foreach ( $menu as $id => $data ) {
+			if ( 0 == strcmp('wp-menu-separator', $data[4] ) ) {
+				if (false == $separator_found) {
+					$separator_found = true;
+				} else {
+					unset($menu[$id]);
+					$separator_found = false;
+				}
+			} else {
+				$separator_found = false;
+			}
+		}
+		unset($id, $data);
+
+		//Remove the last menu item if it is a separator.
+		$last_menu_key = array_keys( $menu );
+		$last_menu_key = array_pop( $last_menu_key );
+		if ( !empty( $menu ) && 'wp-menu-separator' == $menu[ $last_menu_key ][ 4 ] )
+			unset( $menu[ $last_menu_key ] );
+		unset( $last_menu_key );
+
+		//Add display-specific classes like "menu-top-first" and others.
+		$menu = add_menu_classes($menu);
+
+		return array($menu, $submenu);
+	}
+
 
 	/**
 	  * Add the JS required by the editor to the page header
@@ -260,26 +383,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
 	/**
-	 * Override the order of the top-level menu entries.
-	 *
-	 * @param array $menu_order
-	 * @return array
-	 */
-	function hook_menu_order($menu_order){
-		if (empty($this->merged_custom_menu)){
-			return $menu_order;
-		}
-		$custom_menu_order = array();
-		foreach($this->filtered_wp_menu as $topmenu){
-			$filename = $topmenu[2];
-			if ( in_array($filename, $menu_order) ){
-				$custom_menu_order[] = $filename;
-			}
-		}
-		return $custom_menu_order;
-	}
-	
-	/**
 	 * Determine if the current user may use the menu editor.
 	 * 
 	 * @return bool
@@ -329,31 +432,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		return $real_title;
 	}	
 	
-
-  /**
-   * Loop over the Dashboard submenus and remove pages for which the current user does not have privs.
-   *
-   * @global array $submenu Checks for inaccessible sub-menu items.
-   * @global array $_wp_submenu_nopriv Builds a list of items that the current user can not access.
-   *
-   * @return void
-   */
-	function filter_menu(){
-		global $submenu, $_wp_submenu_nopriv;
-		
-		foreach ($submenu as $parent => $items) {
-			foreach ($items as $index => $data) {
-				if ( ! current_user_can($data[1]) ) {
-					unset($submenu[$parent][$index]);
-					$_wp_submenu_nopriv[$parent][$data[2]] = true;
-				}
-			}
-
-			if ( empty($submenu[$parent]) ) {
-				unset($submenu[$parent]);
-			}
-		}
-	}
 
   /**
    * Populate a lookup array with default values from $menu and $submenu. Used later to merge
@@ -517,22 +595,22 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
   /**
-   * Replace the current WordPress admin menu with the specified custom menu.
+   * Generate WP-compatible $menu and $submenu arrays from a custom menu tree.
    * 
-   * Note : This function executes several filters that may modify global state.
+   * Side-effects: This function executes several filters that may modify global state.
    * Specifically, IFrame-handling callbacks in 'extras.php' will add add new hooks
    * and other menu-related structures.
    *
-   * @global array $menu Replaced with the custom top-level menu.
-   * @global array $submenu Replaced with the custom sub-menu.
-   * @uses self::$title_lookups
+   * @uses WPMenuEditor::$custom_wp_menu Stores the generated top-level menu here.
+   * @uses WPMenuEditor::$custom_wp_submenu Stores the generated sub-menu here.
+   *
+   * @uses WPMenuEditor::$title_lookups Generates a lookup list of page titles.
+   * @uses WPMenuEditor::reverse_item_lookup Generates a lookup list of url => menu item relationships.
    *
    * @param array $tree The new menu, in the internal tree format.
    * @return void
    */
-	function replace_wp_menu($tree){
-		global $menu, $submenu;
-
+	function build_custom_wp_menu($tree){
 		$new_menu = array();
 		$new_submenu = array();
 		$this->title_lookups = array();
@@ -589,8 +667,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			}
 		}
 
-		$menu = $new_menu;
-		$submenu = $new_submenu;
+		$this->custom_wp_menu = $new_menu;
+		$this->custom_wp_submenu = $new_submenu;
 	}
 
 	/**
