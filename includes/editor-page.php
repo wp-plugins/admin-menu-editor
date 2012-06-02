@@ -60,8 +60,7 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 		<div id='ws_menu_box' class="ws_box">
 		</div>
 
-		<div id="ws_top_menu_dropzone" class="ws_dropzone">
-		</div>
+		<?php do_action('admin_menu_editor_container', 'menu'); ?>
 	</div>
 
 	<div class='ws_main_container'>
@@ -91,8 +90,7 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 		<div id='ws_submenu_box' class="ws_box">
 		</div>
 
-		<div id="ws_sub_menu_dropzone" class="ws_dropzone">
-		</div>
+		<?php do_action('admin_menu_editor_container', 'submenu'); ?>
 	</div>
 </div>
 

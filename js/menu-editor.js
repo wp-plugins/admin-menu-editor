@@ -1590,44 +1590,47 @@ $(document).ready(function(){
 	                 Drag & drop items between menu levels
 	 *************************************************************************/
 
-	//Allow the user to drag sub-menu items to the top level.
-	$('#ws_top_menu_dropzone').droppable({
-		'hoverClass' : 'ws_dropzone_hover',
+	if (wsEditorData.wsMenuEditorPro) {
+		//Allow the user to drag sub-menu items to the top level.
+		$('#ws_top_menu_dropzone').droppable({
+			'hoverClass' : 'ws_dropzone_hover',
 
-		'accept' : (function(thing){
-			return thing.hasClass('ws_item');
-		}),
+			'accept' : (function(thing){
+				return thing.hasClass('ws_item');
+			}),
 
-		'drop' : (function(event, ui){
-			var droppedItemData = readItemState(ui.draggable);
-			pasteMenu(droppedItemData);
-			ui.draggable.remove();
-		})
-	});
+			'drop' : (function(event, ui){
+				var droppedItemData = readItemState(ui.draggable);
+				pasteMenu(droppedItemData);
+				ui.draggable.remove();
+			})
+		});
 
-	$('#ws_sub_menu_dropzone').droppable({
-		'hoverClass' : 'ws_dropzone_hover',
+		//...and to drag top level menus to a sub-menu.
+		$('#ws_sub_menu_dropzone').droppable({
+			'hoverClass' : 'ws_dropzone_hover',
 
-		'accept' : (function(thing){
-			var visibleSubmenu = $('#ws_submenu_box .ws_submenu:visible');
-			return (
-				//Accept top-level menus
-				thing.hasClass('ws_menu') &&
+			'accept' : (function(thing){
+				var visibleSubmenu = $('#ws_submenu_box .ws_submenu:visible');
+				return (
+					//Accept top-level menus
+					thing.hasClass('ws_menu') &&
 
-				//But not separators.
-				!thing.hasClass('ws_menu_separator') &&
+					//But not separators.
+					!thing.hasClass('ws_menu_separator') &&
 
-				//Prevent users from dropping a menu on its own sub-menu.
-				(visibleSubmenu.attr('id') != thing.data('submenu_id'))
-			);
-		}),
+					//Prevent users from dropping a menu on its own sub-menu.
+					(visibleSubmenu.attr('id') != thing.data('submenu_id'))
+				);
+			}),
 
-		'drop' : (function(event, ui){
-			var droppedItemData = readItemState(ui.draggable);
-			pasteItem(droppedItemData);
-			ui.draggable.remove();
-		})
-	});
+			'drop' : (function(event, ui){
+				var droppedItemData = readItemState(ui.draggable);
+				pasteItem(droppedItemData);
+				ui.draggable.remove();
+			})
+		});
+	}
 
 
 	//Set up tooltips
