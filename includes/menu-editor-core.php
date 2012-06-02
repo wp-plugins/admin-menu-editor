@@ -205,10 +205,16 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
 	/**
-	 * Filter a menu to prepare it for display.
+	 * Filter a menu so that it can be handed to _wp_menu_output(). This method basically
+	 * emulates the filtering that WordPress does in /wp-admin/includes/menu.php, with a few
+	 * additions of our own.
 	 *
-	 * Removes inaccessible items and superfluous separators. Adds special CSS classes.
-	 * Mostly adapted from /wp-admin/includes/menu.php.
+	 * - Removes inaccessible items and superfluous separators.
+	 *
+	 * - Sets accessible items to a capability that the user is guaranteed to have to prevent
+	 *   _wp_menu_output() from choking on plugin-specific capabilities like "cap1,cap2+not:cap3".
+	 *
+	 * - Adds position-dependent CSS classes.
 	 *
 	 * @param array $menu
 	 * @param array $submenu
@@ -217,12 +223,17 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private function filter_menu($menu, $submenu) {
 		global $_wp_menu_nopriv; //Caution: Modifying this array could lead to unexpected consequences.
 
-		//Remove sub-menus which the user shouldn't be able to access.
+		//Remove sub-menus which the user shouldn't be able to access,
+		//and ensure the rest are visible.
 		foreach ($submenu as $parent => $items) {
 			foreach ($items as $index => $data) {
-				if ( ! current_user_can($data[1]) ) {
+				if ( ! $this->current_user_can($data[1]) ) {
 					unset($submenu[$parent][$index]);
 					$_wp_submenu_nopriv[$parent][$data[2]] = true;
+				} else {
+					//The menu might be set to some kind of special capability that is only valid
+					//within this plugin and not WP in general. Ensure WP doesn't choke on it.
+					$submenu[$parent][$index][1] = 'exist'; //All users have the 'exist' cap.
 				}
 			}
 
@@ -232,10 +243,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		//Remove menus that have no accessible sub-menus and require privileges that the user does not have.
-		//Run re-parent loop again.
+		//Ensure the rest are visible. Run re-parent loop again.
 		foreach ( $menu as $id => $data ) {
-			if ( ! current_user_can($data[1]) ) {
+			if ( ! $this->current_user_can($data[1]) ) {
 				$_wp_menu_nopriv[$data[2]] = true;
+			} else {
+				$menu[$id][1] = 'exist';
 			}
 
 			//If there is only one submenu and it is has same destination as the parent,
@@ -277,8 +290,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Remove the last menu item if it is a separator.
 		$last_menu_key = array_keys( $menu );
 		$last_menu_key = array_pop( $last_menu_key );
-		if ( !empty( $menu ) && 'wp-menu-separator' == $menu[ $last_menu_key ][ 4 ] )
-			unset( $menu[ $last_menu_key ] );
+		if (!empty($menu) && 'wp-menu-separator' == $menu[$last_menu_key][4]) {
+			unset($menu[$last_menu_key]);
+		}
 		unset( $last_menu_key );
 
 		//Add display-specific classes like "menu-top-first" and others.
@@ -733,11 +747,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$user_has_access = true;
 		$cap_to_use = '';
 		if ( !empty($item['access_level']) ) {
-			$user_has_access = $user_has_access && current_user_can($item['access_level']);
+			$user_has_access = $user_has_access && $this->current_user_can($item['access_level']);
 			$cap_to_use = $item['access_level'];
 		}
 		if ( !empty($item['extra_capability']) ) {
-			$user_has_access = $user_has_access && current_user_can($item['extra_capability']);
+			$user_has_access = $user_has_access && $this->current_user_can($item['extra_capability']);
 			$cap_to_use = $item['extra_capability'];
 		}
 
@@ -980,7 +994,18 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( $current_item === null ) {
 			return true; //Let WordPres handle it.
 		}
-		return current_user_can($current_item['access_level']);
+		return $this->current_user_can($current_item['access_level']);
+	}
+
+	/**
+	 * Check if the current user has the specified capability.
+	 * If the Pro version installed, you can use special syntax to perform complex capability checks.
+	 *
+	 * @param string $capability
+	 * @return bool
+	 */
+	private function current_user_can($capability) {
+		return apply_filters('admin_menu_editor-current_user_can', current_user_can($capability), $capability);
 	}
 
 	/**
