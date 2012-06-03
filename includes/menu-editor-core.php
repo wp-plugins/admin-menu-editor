@@ -363,7 +363,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	  */
 	function enqueue_styles(){
 		wp_enqueue_style('jquery-qtip-syle', $this->plugin_dir_url . '/css/jquery.qtip.min.css', array(), '20120519');
-		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '20120519');
+		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '20120603');
 	}
 
 	/**
@@ -849,6 +849,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		asort($all_roles);
 		$editor_data['all_roles'] = $all_roles;
+
+		//Include hint visibility settings
+		$editor_data['show_hints'] = $this->get_hint_visibility();
 
 		require dirname(__FILE__) . '/editor-page.php';
 	}

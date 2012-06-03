@@ -1,4 +1,8 @@
-/* Admin Menu Editor CSS file */  
+/* Admin Menu Editor CSS file */
+
+#ws_menu_editor {
+	min-width: 780px;
+}
 
 .ws_main_container {
 	margin:  2px;
@@ -18,6 +22,11 @@
 	margin: 0;
 	padding-top: 2px;
 	padding-bottom: 2px;
+}
+
+.ws_basic_container {
+	float: left;
+	display:block;
 }
 
 #ws_menu_box {
@@ -43,14 +52,14 @@
  */
 
 #ws_editor_sidebar {
-	width: 138px;
+	width: auto;
 	padding: 2px;
 }
 
 .ws_main_button {
 	clear: both;
 	display: block;
-	margin: 4px auto;
+	margin: 4px;
 	width: 120px;
 	padding: 4px !important;
 }
@@ -706,6 +715,22 @@ a.ws_button:hover {
 
 .ws_hint_content {
 	padding: 0.4em 0 0.4em 0.4em;
+}
+
+.ws_hint_content ul {
+	list-style: disc;
+	list-style-position: inside;
+	margin-left: 0.5em;
+}
+
+#ws_sidebar_pro_ad {
+	margin-top: 5px;
+	margin-left: 3px;
+
+	position: fixed;
+	right: 20px;
+	bottom: 20px;
+	z-index: 100;
 }
 
 /************************************

@@ -1636,6 +1636,7 @@ $(document).ready(function(){
 	//Set up tooltips
 	$('.ws_tooltip_trigger').qtip();
 
+	//Flag closed hints as hidden by sending the appropriate AJAX request to the backend.
 	$('.ws_hint_close').click(function() {
 		var hint = $(this).parents('.ws_hint').first();
 		hint.hide();

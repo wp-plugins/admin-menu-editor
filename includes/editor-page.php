@@ -92,24 +92,56 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 
 		<?php do_action('admin_menu_editor_container', 'submenu'); ?>
 	</div>
-</div>
 
-<div class="ws_main_container" id="ws_editor_sidebar">
-<form method="post" action="<?php echo admin_url('options-general.php?page=menu_editor&noheader=1'); ?>" id='ws_main_form' name='ws_main_form'>
-	<?php wp_nonce_field('menu-editor-form'); ?>
-	<input type="hidden" name="data" id="ws_data" value="">
-	<input type="button" id='ws_save_menu' class="button-primary ws_main_button" value="Save Changes" />
-</form>
+	<div class="ws_basic_container">
 
-	<input type="button" id='ws_reset_menu' value="Undo changes" class="button ws_main_button" />
-	<input type="button" id='ws_load_menu' value="Load default menu" class="button ws_main_button" />
+		<div class="ws_main_container" id="ws_editor_sidebar">
+		<form method="post" action="<?php echo admin_url('options-general.php?page=menu_editor&noheader=1'); ?>" id='ws_main_form' name='ws_main_form'>
+			<?php wp_nonce_field('menu-editor-form'); ?>
+			<input type="hidden" name="data" id="ws_data" value="">
+			<input type="button" id='ws_save_menu' class="button-primary ws_main_button" value="Save Changes" />
+		</form>
 
-	<?php
-		do_action('admin_menu_editor_sidebar');
-	?>
-</div>
+			<input type="button" id='ws_reset_menu' value="Undo changes" class="button ws_main_button" />
+			<input type="button" id='ws_load_menu' value="Load default menu" class="button ws_main_button" />
 
-</div>
+			<?php
+				do_action('admin_menu_editor_sidebar');
+			?>
+		</div>
+
+		<?php
+		$hint_id = 'ws_sidebar_pro_ad';
+		$show_pro_benefits = !apply_filters('admin_menu_editor_is_pro', false) && empty($editor_data['show_hints'][$hint_id]);
+		if ( $show_pro_benefits ):
+		?>
+			<div class="clear"></div>
+
+			<div class="ws_hint" id="<?php echo esc_attr($hint_id); ?>">
+				<div class="ws_hint_close" title="Close">x</div>
+				<div class="ws_hint_content">
+					<strong>Upgrade to Pro:</strong>
+					<ul>
+						<li>Menu export & import.</li>
+						<li>Easier role access management.</li>
+						<li>Drag items between menu levels.</li>
+					</ul>
+					<a href="http://w-shadow.com/admin-menu-editor-pro/upgrade-to-pro/?utm_source=Admin%2BMenu%2BEditor%2Bfree&utm_medium=text_link&utm_content=sidebar_link&utm_campaign=Plugins" target="_blank">Learn more</a>
+				</div>
+			</div>
+		<?php
+		endif;
+		?>
+
+	</div> <!-- / .ws_basic_container -->
+
+	<div class="clear"></div>
+
+</div> <!-- / .ws_menu_editor -->
+
+</div> <!-- / .wrap -->
+
+
 
 <?php
 	//Create a pop-up capability selector
