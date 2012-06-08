@@ -34,8 +34,19 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private $reverse_item_lookup = array(); //Contains the final (merged & filtered) list of admin menu items,
                                             //indexed by URL.
 
-	private $merged_custom_menu = null; //The current custom menu with defaults merged in.
-	private $custom_wp_menu = null;     //The custom menu in WP-compatible format.
+	/**
+	 * @var array The current custom menu with defaults merged in.
+	 */
+	private $merged_custom_menu = null;
+
+	/**
+	 * @var array The custom menu in WP-compatible format (top-level).
+	 */
+	private $custom_wp_menu = null;
+
+	/**
+	 * @var array The custom menu in WP-compatible format (sub-menu).
+	 */
 	private $custom_wp_submenu = null;
 
 	private $item_templates = array();  //A lookup list of default menu items, used as templates for the custom menu.
@@ -60,8 +71,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		$this->defaults = array(
 			'hide_advanced_settings' => true,
-			'menu_format_version' => 0,
+			'menu_format_version' => 0, //BUG: This key appears to be unused.
 			'custom_menu' => null,
+			'first_install_time' => null,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -95,6 +107,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( !$this->load_options() ){
 			$this->import_settings();
 		}
+
+		//Track first install time. Could be useful for, for example, selectively displaying
+		//a "What's New" message only to users who upgraded from an older version.
+		if ( empty($this->options['first_install_time']) ) {
+			$this->options['first_install_time'] = time();
+		}
+
 		parent::activate();
 	}
 	
@@ -179,8 +198,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	/**
 	 * Replace the current WP menu with our custom one.
 	 *
-	 * @param string $parent_file
-	 * @return string
+	 * @param string $parent_file Ignored. Required because this method is a hook for the 'parent_file' filter.
+	 * @return string Returns the $parent_file argument.
 	 */
 	public function replace_wp_menu($parent_file = '') {
 		global $menu, $submenu;
@@ -197,6 +216,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 	/**
 	 * Restore the default WordPress menu that was replaced using replace_wp_menu().
+	 *
+	 * @return void
 	 */
 	public function restore_wp_menu() {
 		global $menu, $submenu;
@@ -233,6 +254,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				} else {
 					//The menu might be set to some kind of special capability that is only valid
 					//within this plugin and not WP in general. Ensure WP doesn't choke on it.
+					//(This is safe - we'll double-check the caps when the user tries to access a page.)
 					$submenu[$parent][$index][1] = 'exist'; //All users have the 'exist' cap.
 				}
 			}
@@ -315,7 +337,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//qTip2 - jQuery tooltip plugin
 		wp_register_script('jquery-qtip', $this->plugin_dir_url . '/js/jquery.qtip.min.js',	array('jquery'), '20120513', true);
 
-		//Editor's scipts
+		//Editor's scripts
 		wp_enqueue_script(
 			'menu-editor',
 			$this->plugin_dir_url.'/js/menu-editor.js',
@@ -448,8 +470,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	
 
   /**
-   * Populate a lookup array with default values from $menu and $submenu. Used later to merge
-   * a custom menu with the native WordPress menu structure somewhat gracefully.
+   * Populate a lookup array with default values (templates) from $menu and $submenu.
+   * Used later to merge a custom menu with the native WordPress menu structure.
    *
    * @param array $menu
    * @param array $submenu
@@ -476,6 +498,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		foreach($submenu as $parent => $items){
+			//Skip sub-menus attached to non-existent parents. This should theoretically never happen,
+			//but a buggy plugin can cause such a situation.
+			if ( !isset($name_lookup[$parent]) ) {
+				continue;
+			}
+
 			foreach($items as $pos => $item){
 				$item = ameMenuItem::fromWpItem($item, $pos, $parent);
 				$templates[ameMenuItem::template_id($item)] = array(
@@ -554,8 +582,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		unset($item);
 
 		//Now we have some items marked as missing, and some items in lookup arrays
-		//that are not marked as used. Lets remove the missing items from the tree and
-		//merge in the unused items.
+		//that are not marked as used. Lets remove the missing items from the tree.
 		$filteredTree = array();
 		foreach($tree as $file => $topmenu) {
 			if ( $topmenu['missing'] ) {
@@ -576,7 +603,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		$tree = $filteredTree;
 
-		//Find and merge unused menus
+		//Lets merge in the unused items.
 		foreach ($this->item_templates as $template_id => $template){
 			//Skip used menus and separators
 			if ( !empty($template['used']) || !empty($template['defaults']['separator'])) {
@@ -595,7 +622,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					//Okay, insert the item.
 					$tree[$template['defaults']['parent']]['items'][] = $entry;
 				} else {
-					//Ooops? This should never happen. Some kind of inconsistency?
+					//This can happen if the original parent menu has been moved to a submenu.
+					//Todo: Handle this unusual situation.
 				}
 			} else {
 				$tree[$template['defaults']['file']] = $entry;
@@ -794,8 +822,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				die();
 			}
 
-			//TODO: Ensure the user doesn't make the menu editor completely inaccessible.
-
 			//Save the custom menu
 			$this->set_custom_menu($menu);
 			//Redirect back to the editor and display the success message
@@ -828,7 +854,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$editor_data['default_menu_js'] = ameMenu::to_json($default_menu);
 		$editor_data['custom_menu_js'] = ameMenu::to_json($custom_menu);
 
-		//Create a list of all known capabilities and roles. Used for the dropdown list on the access field.
+		//Create a list of all known capabilities and roles. Used for the drop-down list on the access field.
 		$all_capabilities = ameRoleUtils::get_all_capabilities();
 		//"level_X" capabilities are deprecated so we don't want people using them.
 		//This would look better with array_filter() and an anonymous function as a callback.
@@ -844,7 +870,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Create a list of all roles, too.
 		$all_roles = ameRoleUtils::get_role_names();
-		if ( is_multisite() ){ //Multi-site installs also get the virtual "Super Admin" role
+		//Multi-site installs also get the virtual "Super Admin" role
+		if ( is_multisite() && !isset($all_roles['super_admin']) ){
 			$all_roles['super_admin'] = 'Super Admin';
 		}
 		asort($all_roles);
@@ -1106,6 +1133,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	/**
 	 * Capture $_GET and $_POST in $this->get and $this->post.
 	 * Slashes added by "magic quotes" will be stripped.
+	 *
+	 * @return void
 	 */
 	function capture_request_vars(){
 		$this->post = $_POST;

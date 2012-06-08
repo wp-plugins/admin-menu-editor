@@ -223,12 +223,7 @@ abstract class ameMenuItem {
    * @param mixed $extra Optional extra data to pass to hooks.
    * @return array Filtered menu item.
    */
-	public static function apply_filters($item, $item_type = '', $extra = null){
-		if ( empty($item_type) ){
-			//Only top-level menus have an icon
-			$item_type = isset($item['icon_url'])?'menu':'submenu';
-		}
-
+	public static function apply_filters($item, $item_type, $extra = null){
 		$item = apply_filters("custom_admin_{$item_type}", $item, $extra);
 		foreach($item as $field => $value){
 			$item[$field] = apply_filters("custom_admin_{$item_type}-$field", $value, $extra);
