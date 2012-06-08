@@ -13,8 +13,8 @@
 		<div id="ws_role_access_container" class="ws_dialog_subpanel">
 			<strong>Roles</strong>
 			<a class="ws_tooltip_trigger" title="
-				Check a box to give a role the required capability and access to this menu.
-				Clear a box to prevent a role from accessing this menu.
+				Check a box to give that role the required capability and access to this menu.
+				Clear the box to prevent access.
 			">[?]</a>
 			<br>
 
