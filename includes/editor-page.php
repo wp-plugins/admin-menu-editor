@@ -35,6 +35,37 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 	}
 ?>
 
+<?php
+$hint_id = 'ws_whats_new_120';
+$show_whats_new = apply_filters('admin_menu_editor_is_pro', false) && !empty($editor_data['show_hints'][$hint_id]);
+if ( $show_whats_new ):
+    ?>
+    <div class="ws_hint" id="<?php echo esc_attr($hint_id); ?>">
+        <div class="ws_hint_close" title="Close">x</div>
+        <div class="ws_hint_content">
+            <strong>What's New In 1.20</strong>
+            <ul>
+                <li>New menu permissions interface.
+                    <a href="http://w-shadow.com/admin-menu-editor-pro/permissions/">Learn more.</a></li>
+
+                <li>You can now use "not:user:username", "capability1,capability2", "capability1+capability2" and other
+                    advanced syntax in the capability field. See the link above for details.</li>
+
+                <li>You can drag sub-menu items to the top level and the other way around. To do it,
+                    drag the item to the very end of the (sub-)menu and drop it on the yellow rectangle that will appear.</li>
+
+                <li>Added a "Target page" drop-down to simplify setting menu URLs. You can still enter an arbitrary URL
+                    by selecting "Custom".</li>
+
+                <li>Miscellaneous bug fixes.</li>
+
+            </ul>
+        </div>
+    </div>
+    <?php
+endif;
+?>
+
 <?php include dirname(__FILE__) . '/access-editor-dialog.php'; ?>
 
 <div id='ws_menu_editor'>
@@ -112,7 +143,7 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 
 		<?php
 		$hint_id = 'ws_sidebar_pro_ad';
-		$show_pro_benefits = !apply_filters('admin_menu_editor_is_pro', false) && empty($editor_data['show_hints'][$hint_id]);
+		$show_pro_benefits = !apply_filters('admin_menu_editor_is_pro', false) && (!isset($editor_data['show_hints'][$hint_id]) || $editor_data['show_hints'][$hint_id]);
 		if ( $show_pro_benefits ):
 		?>
 			<div class="clear"></div>

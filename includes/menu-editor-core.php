@@ -110,9 +110,16 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Track first install time. Could be useful for, for example, selectively displaying
 		//a "What's New" message only to users who upgraded from an older version.
-		if ( empty($this->options['first_install_time']) ) {
+        $show_hints = $this->get_hint_visibility();
+        $hint_id = 'ws_whats_new_120';
+        if ( !isset($show_hints[$hint_id]) ) {
+            $show_hints[$hint_id] = empty($this->options['first_install_time']);
+            $this->set_hint_visibility($show_hints);
+        }
+
+        if ( empty($this->options['first_install_time']) ) {
 			$this->options['first_install_time'] = time();
-		}
+        }
 
 		parent::activate();
 	}
@@ -992,7 +999,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( !is_array($show_hints) ) {
 			$show_hints = array();
 		}
-		return $show_hints;
+
+        $defaults = array(
+            'ws_sidebar_pro_ad' => true,
+            'ws_whats_new_120' => true,
+            'ws_hint_menu_permissions' => true,
+        );
+
+		return array_merge($defaults, $show_hints);
 	}
 
 	private function set_hint_visibility($show_hints) {
