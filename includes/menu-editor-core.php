@@ -346,7 +346,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'jquery-form', 'jquery-ui-droppable', 'jquery-qtip',
 				'jquery-sort', 'jquery-json'
 			),
-			'20120519'
+			'20120609'
 		);
 
 		//The editor will need access to some of the plugin data and WP data.

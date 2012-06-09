@@ -963,7 +963,7 @@ $(document).ready(function(){
 			if (menuItem.role_access.hasOwnProperty(roleId)) {
 				roleHasAccess = menuItem.role_access[roleId];
 			} else {
-				roleHasAccess = role.capabilities.hasOwnProperty(requiredCap) && role.capabilities[requiredCap];
+				roleHasAccess = (roleId == requiredCap) || (role.capabilities.hasOwnProperty(requiredCap) && role.capabilities[requiredCap]);
 			}
 
 			if (roleHasAccess) {
