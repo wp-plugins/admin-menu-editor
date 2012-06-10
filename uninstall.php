@@ -15,6 +15,8 @@ if( defined( 'ABSPATH') && defined('WP_UNINSTALL_PLUGIN') ) {
 		delete_site_option('ws_menu_editor');
 	}
 	
+	//Remove hint visibility flags
+    if ( function_exists('delete_metadata') ) {
+        delete_metadata('user', 0, 'ame_show_hints', '', true);
+    }
 }
-
-?>
