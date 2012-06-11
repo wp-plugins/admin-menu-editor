@@ -113,7 +113,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
         $show_hints = $this->get_hint_visibility();
         $hint_id = 'ws_whats_new_120';
         if ( !isset($show_hints[$hint_id]) ) {
-            $show_hints[$hint_id] = empty($this->options['first_install_time']);
+            $show_hints[$hint_id] = empty($this->options['first_install_time']) && !empty($this->options['custom_menu']);
             $this->set_hint_visibility($show_hints);
         }
 
@@ -1002,7 +1002,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
         $defaults = array(
             'ws_sidebar_pro_ad' => true,
-            'ws_whats_new_120' => true,
+            //'ws_whats_new_120' => true, //Set upon activation, default not needed.
             'ws_hint_menu_permissions' => true,
         );
 
