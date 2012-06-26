@@ -100,6 +100,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//AJAXify screen options
 		add_action( 'wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options') );
 
+		//AJAXify hints
+		add_action('wp_ajax_ws_ame_hide_hint', array($this, 'ajax_hide_hint'));
+
 		//Make sure we have access to the original, un-mangled request data.
 		//This is necessary because WordPress will stupidly apply "magic quotes"
 		//to the request vars even if this PHP misfeature is disabled.
@@ -158,6 +161,16 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->plugin_dir_url.'/js/menu-editor.js', 
 			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'), 
 			'1.1'
+		);
+
+		//The editor will need access to some of the plugin data and WP data.
+		wp_localize_script(
+			'menu-editor',
+			'wsEditorData',
+			array(
+				'adminAjaxUrl' => admin_url('admin-ajax.php'),
+				'showHints' => $this->get_hint_visibility(),
+			)
 		);
 	}
 	
@@ -1268,6 +1281,39 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		$this->options['hide_advanced_settings'] = !empty($this->post['hide_advanced_settings']);
 		$this->save_options();
 		die('1');
+	}
+
+	public function ajax_hide_hint() {
+		if ( !isset($this->post['hint']) || !$this->current_user_can_edit_menu() ){
+			die("You're not allowed to do that!");
+		}
+
+		$show_hints = $this->get_hint_visibility();
+		$show_hints[strval($this->post['hint'])] = false;
+		$this->set_hint_visibility($show_hints);
+
+		die("OK");
+	}
+
+	private function get_hint_visibility() {
+		$user = wp_get_current_user();
+		$show_hints = get_user_meta($user->ID, 'ame_show_hints', true);
+		if ( !is_array($show_hints) ) {
+			$show_hints = array();
+		}
+
+        $defaults = array(
+            'ws_sidebar_pro_ad' => true,
+            //'ws_whats_new_120' => true, //Set upon activation, default not needed.
+            'ws_hint_menu_permissions' => true,
+        );
+
+		return array_merge($defaults, $show_hints);
+	}
+
+	private function set_hint_visibility($show_hints) {
+		$user = wp_get_current_user();
+		update_user_meta($user->ID, 'ame_show_hints', $show_hints);
 	}
 
 	/**
