@@ -180,7 +180,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return void
    */
 	function enqueue_styles(){
-		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '1.1');
+		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '20120626');
 	}
 
   /**
