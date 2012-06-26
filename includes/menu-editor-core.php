@@ -27,6 +27,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
     
     private $templates = null; //Template arrays for various menu structures. See the constructor for details.
 
+	//Our personal copy of the request vars, without any "magic quotes".
+	private $post = array();
+	private $get = array();
+
 	function init(){
 		//Determine if the plugin is active network-wide (i.e. either installed in 
 		//the /mu-plugins/ directory or activated "network wide" by the super admin.
@@ -95,6 +99,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//AJAXify screen options
 		add_action( 'wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options') );
+
+		//Make sure we have access to the original, un-mangled request data.
+		//This is necessary because WordPress will stupidly apply "magic quotes"
+		//to the request vars even if this PHP misfeature is disabled.
+		add_action('plugins_loaded', array($this, 'capture_request_vars'));
 
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_menu_fix_script'));
 	}
@@ -170,7 +179,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		global $menu, $submenu;
 		
 		//Menu reset (for emergencies). Executed by accessing http://example.com/wp-admin/?reset_admin_menu=1 
-		$reset_requested = isset($_GET['reset_admin_menu']) && $_GET['reset_admin_menu'];
+		$reset_requested = isset($this->get['reset_admin_menu']) && $this->get['reset_admin_menu'];
 		if ( $reset_requested && $this->current_user_can_edit_menu() ){
 			$this->options['custom_menu'] = null;
 			$this->save_options();
@@ -867,25 +876,17 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			die("Access denied");
 		}
 		
-		$post = $_POST;
-		$get = $_GET;
-		if ( function_exists('wp_magic_quotes') ){
-			//Ceterum censeo, WP shouldn't mangle superglobals.
-			$post = stripslashes_deep($post); 
-			$get = stripslashes_deep($get);
-		}
-		
-		$action = isset($post['action'])?$post['action']:(isset($get['action'])?$get['action']:'');
+		$action = isset($this->post['action']) ? $this->post['action'] : (isset($this->get['action']) ? $this->get['action'] : '');
 		do_action('admin_menu_editor_header', $action);
 		
 		//Handle form submissions
-		if (isset($post['data'])){
+		if (isset($this->post['data'])){
 			check_admin_referer('menu-editor-form');
 
 			//Try to decode a menu tree encoded as JSON
-			$data = $this->json_decode($post['data'], true);
+			$data = $this->json_decode($this->post['data'], true);
 			if (!$data || (count($data) < 2) ){
-				$fixed = stripslashes($post['data']);
+				$fixed = stripslashes($this->post['data']);
 				$data = $this->json_decode( $fixed, true );
 			}
 
@@ -918,7 +919,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		
 		//Handle the survey notice
-		if ( isset($_GET['hide_survey_notice']) && !empty($_GET['hide_survey_notice']) ) {
+		if ( isset($this->get['hide_survey_notice']) && !empty($this->get['hide_survey_notice']) ) {
 			$this->options['display_survey_notice'] = false;
 			$this->save_options();
 		}
@@ -944,10 +945,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 <?php
 	
-	if ( !empty($_GET['message']) ){
-		if ( intval($_GET['message']) == 1 ){
+	if ( !empty($this->get['message']) ){
+		if ( intval($this->get['message']) == 1 ){
 			echo '<div id="message" class="updated fade"><p><strong>Settings saved.</strong></p></div>';
-		} elseif ( intval($_GET['message']) == 2 ) {
+		} elseif ( intval($this->get['message']) == 2 ) {
 			echo '<div id="message" class="error"><p><strong>Failed to decode input! The menu wasn\'t modified.</strong></p></div>';
 		}
 	}
@@ -1264,7 +1265,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 			 )));
 		}
 		
-		$this->options['hide_advanced_settings'] = !empty($_POST['hide_advanced_settings']);
+		$this->options['hide_advanced_settings'] = !empty($this->post['hide_advanced_settings']);
 		$this->save_options();
 		die('1');
 	}
@@ -1291,7 +1292,23 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 	function noop(){
 		//nihil
 	}
-	
+
+	/**
+	 * Capture $_GET and $_POST in $this->get and $this->post.
+	 * Slashes added by "magic quotes" will be stripped.
+	 *
+	 * @return void
+	 */
+	function capture_request_vars(){
+		$this->post = $_POST;
+		$this->get = $_GET;
+
+		if ( function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc() ) {
+			$this->post = stripslashes_deep($this->post);
+			$this->get = stripslashes_deep($this->get);
+		}
+	}
+
 } //class
 
 endif;
