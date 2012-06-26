@@ -94,7 +94,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		 );
 
 		//AJAXify screen options
-		add_action( 'wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options') );		 
+		add_action( 'wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options') );
+
+		add_action('admin_enqueue_scripts', array($this, 'enqueue_menu_fix_script'));
 	}
 	
   /**
@@ -1265,6 +1267,20 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 		$this->options['hide_advanced_settings'] = !empty($_POST['hide_advanced_settings']);
 		$this->save_options();
 		die('1');
+	}
+
+	/**
+	 * Enqueue a script that fixes a bug where pages moved to a different menu
+	 * would not be highlighted properly when the user visits them.
+	 */
+	public function enqueue_menu_fix_script() {
+		wp_enqueue_script(
+			'ame-menu-fix',
+			$this->plugin_dir_url . '/js/menu-highlight-fix.js',
+			array('jquery'),
+			'20120519',
+			true
+		);
 	}
 	
 	/**
