@@ -45,7 +45,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$this->defaults = array(
 			'hide_advanced_settings' => true,
 			'menu_format_version' => 0,
-			'display_survey_notice' => true,
+			'display_survey_notice' => false,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -1070,6 +1070,30 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		do_action('admin_menu_editor_sidebar');
 	?>
 </div>
+
+	<?php
+	$show_hints = $this->get_hint_visibility();
+	$hint_id = 'ws_sidebar_pro_ad';
+	$show_pro_benefits = !apply_filters('admin_menu_editor_is_pro', false) && (!isset($show_hints[$hint_id]) || $show_hints[$hint_id]);
+	if ( $show_pro_benefits ):
+	?>
+		<div class="clear"></div>
+
+		<div class="ws_hint" id="<?php echo esc_attr($hint_id); ?>">
+			<div class="ws_hint_close" title="Close">x</div>
+			<div class="ws_hint_content">
+				<strong>Upgrade to Pro:</strong>
+				<ul>
+					<li>Menu export & import.</li>
+					<li>Per-role menu permissions.</li>
+					<li>Drag items between menu levels.</li>
+				</ul>
+				<a href="http://w-shadow.com/admin-menu-editor-pro/upgrade-to-pro/?utm_source=Admin%2BMenu%2BEditor%2Bfree&utm_medium=text_link&utm_content=sidebar_link&utm_campaign=Plugins" target="_blank">Learn more</a>
+			</div>
+		</div>
+	<?php
+	endif;
+	?>
 
 </div>
 
