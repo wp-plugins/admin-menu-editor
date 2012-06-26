@@ -111,12 +111,11 @@ jQuery(function($) {
 		                              (otherHighlightedMenus.length > 0);
 
 		if (isWrongMenuHighlighted) {
-			otherHighlightedMenus.removeClass('wp-has-current-submenu current').addClass('wp-not-current-submenu');
-
-			//Account for users who use a plugin to keep multiple menus expanded.
-			var shouldCloseOtherMenus = $('#adminmenu li.wp-menu-open').length <= 1;
+			//Account for users who use a plugin to keep all menus expanded.
+			var shouldCloseOtherMenus = $('li.wp-has-current-submenu', '#adminmenu').length <= 1;
 			if (shouldCloseOtherMenus) {
 				otherHighlightedMenus.removeClass('wp-menu-open');
+                otherHighlightedMenus.removeClass('wp-has-current-submenu current').addClass('wp-not-current-submenu');
 			}
 
 			var parentMenuAndLink = parentMenu.add('> a.menu-top', parentMenu);
