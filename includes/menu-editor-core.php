@@ -446,7 +446,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    */
 	function menu_merge($tree, $menu, $submenu){
 		list($menu_defaults, $submenu_defaults) = $this->build_lookups($menu, $submenu);
-		
+
 		//Iterate over all menus and submenus and look up default values
 		foreach ($tree as &$topmenu){
 			$topfile = $this->get_menu_field($topmenu, 'file');
@@ -470,7 +470,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				}
 			}
 
-			if (is_array($topmenu['items'])) {
+			if (isset($topmenu['items']) && is_array($topmenu['items'])) {
 				//Iterate over submenu items
 				foreach ($topmenu['items'] as $file => &$item){
 					$uid = $this->unique_submenu_id($item, $topfile);
@@ -588,10 +588,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Attach submenu items
 			$parent = $tree_item['defaults']['file'];
 			if ( isset($submenu[$parent]) ){
-				foreach($submenu[$parent] as $pos => $subitem){
+				foreach($submenu[$parent] as $subitem_pos => $subitem){
 					$tree_item['items'][$subitem[2]] = array_merge(
 						$this->templates['blank_item'],
-						array('defaults' => $this->submenu2assoc($subitem, $pos, $parent))
+						array('defaults' => $this->submenu2assoc($subitem, $subitem_pos, $parent))
 					);
 				}				
 			}
