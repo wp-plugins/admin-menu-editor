@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 3.0
 Tested up to: 3.4.1
-Stable tag: 1.1.7
+Stable tag: 1.1.8
 
 Lets you edit the WordPress admin menu. You can re-order, hide or rename menus, add custom menus and more. 
 
@@ -19,7 +19,7 @@ Admin Menu Editor lets you manually edit the Dashboard menu. You can reorder the
 * Move a menu item to a different submenu. 
 * Create custom menus that point to any part of the Dashboard or an external URL.
 
-The [Pro version](http://w-shadow.com/AdminMenuEditor/) lets you set per-role [menu permissions](http://w-shadow.com/admin-menu-editor-pro/documentation/permissions/), hide a menu from everyone except a specific user, export your admin menu configuration, drag items between menu levels, make menus open in a new window or iframe, and use shortcodes in the Dashboard menu.
+The [Pro version](http://w-shadow.com/AdminMenuEditor/) lets you set per-role [menu permissions](http://w-shadow.com/admin-menu-editor-pro/documentation/permissions/), hide a menu from everyone except a specific user, export your admin menu, drag items between menu levels, make menus open in a new window and more.
 
 **Notes**
 
@@ -57,6 +57,11 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 
 
 == Changelog ==
+
+= 1.1.8 =
+* Fix author URL (was 404).
+* Tested on WP 3.4.1
+* Update plugin description. Some notes were no longer accurate for the current version.
 
 = 1.1.7 = 
 * Tested on WP 3.4
