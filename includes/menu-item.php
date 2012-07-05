@@ -30,6 +30,11 @@ abstract class ameMenuItem {
 			'parent'       => $parent,
 		);
 
+		if ( is_numeric($item['access_level']) ) {
+			$dummyUser = new WP_User;
+			$item['access_level'] = $dummyUser->translate_level_to_cap($item['access_level']);
+		}
+
 		if ( empty($parent) ) {
 			$item['separator'] = empty($item['file']) || empty($item['menu_title']) || (strpos($item['css_class'], 'wp-menu-separator') !== false);
 			//WP 3.0 in multisite mode has two separators with the same filename. Fix by reindexing separators.
