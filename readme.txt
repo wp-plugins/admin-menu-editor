@@ -55,6 +55,11 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 * When Admin Menu Editor is installed in `mu-plugins` or activated via "Network Activate", only the "super admin" user can access the menu editor page. Other users will see the customized Dashboard menu, but be unable to edit it.
 * It is currently not possible to install Admin Menu Editor as both a normal and global plugin on the same site.
 
+== Screenshots ==
+
+1. Plugin interface
+2. A sample menu created by the plugin
+3. Re-ordering menu items via drag and drop
 
 == Changelog ==
 
