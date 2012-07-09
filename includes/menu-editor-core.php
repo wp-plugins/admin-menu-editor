@@ -149,16 +149,16 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    */
 	function enqueue_scripts(){
 		//jQuery JSON plugin
-		wp_enqueue_script('jquery-json', $this->plugin_dir_url.'/js/jquery.json-1.3.js', array('jquery'), '1.3');
+		wp_enqueue_script('jquery-json', plugins_url('js/jquery.json-1.3.js', $this->plugin_file), array('jquery'), '1.3');
 		//jQuery sort plugin
-		wp_enqueue_script('jquery-sort', $this->plugin_dir_url.'/js/jquery.sort.js', array('jquery'));
+		wp_enqueue_script('jquery-sort', plugins_url('js/jquery.sort.js', $this->plugin_file), array('jquery'));
 		//jQuery UI Droppable
 		wp_enqueue_script('jquery-ui-droppable');
 		
 		//Editor's scipts
         wp_enqueue_script(
-			'menu-editor', 
-			$this->plugin_dir_url.'/js/menu-editor.js', 
+			'menu-editor',
+			plugins_url('js/menu-editor.js', $this->plugin_file),
 			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'), 
 			'1.1'
 		);
@@ -180,7 +180,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return void
    */
 	function enqueue_styles(){
-		wp_enqueue_style('menu-editor-style', $this->plugin_dir_url . '/css/menu-editor.css', array(), '20120626');
+		wp_enqueue_style('menu-editor-style', plugins_url('css/menu-editor.css', $this->plugin_file), array(), '20120626');
 	}
 
   /**
@@ -982,7 +982,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	$custom_menu_js = $this->getMenuAsJS($custom_menu);
 
 	$plugin_url = $this->plugin_dir_url;
-	$images_url = $this->plugin_dir_url . '/images';
+	$images_url = plugins_url('images', $this->plugin_file);
 	
 	//Create a list of all known capabilities and roles. Used for the dropdown list on the access field.
 	$all_capabilities = $this->get_all_capabilities();
@@ -1347,7 +1347,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 	public function enqueue_menu_fix_script() {
 		wp_enqueue_script(
 			'ame-menu-fix',
-			$this->plugin_dir_url . '/js/menu-highlight-fix.js',
+			plugins_url('js/menu-highlight-fix.js', $this->plugin_file),
 			array('jquery'),
 			'20120519',
 			true
