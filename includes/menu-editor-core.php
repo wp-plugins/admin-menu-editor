@@ -1023,7 +1023,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'ame-menu-fix',
 			plugins_url('js/menu-highlight-fix.js', $this->plugin_file),
 			array('jquery'),
-			'20120619',
+			'20120709',
 			true
 		);
 	}
