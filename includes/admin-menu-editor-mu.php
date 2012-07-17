@@ -36,7 +36,7 @@ if ( file_exists($ws_menu_editor_filename) ) {
 }
 
 function ws_ame_installation_error(){
-	if ( !is_site_admin() ) return;
+	if ( !is_super_admin() ) return;
 ?>
 <div class="error fade"><p>
 		<strong>Admin Menu Editor is installed incorrectly!</strong>
