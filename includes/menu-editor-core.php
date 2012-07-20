@@ -13,6 +13,7 @@ require $thisDirectory . '/shadow_plugin_framework.php';
 require $thisDirectory . '/role-utils.php';
 require $thisDirectory . '/menu-item.php';
 require $thisDirectory . '/menu.php';
+require $thisDirectory . '/auto-versioning.php';
 
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
@@ -338,23 +339,23 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	  */
 	function enqueue_scripts(){
 		//jQuery JSON plugin
-		wp_register_script('jquery-json', plugins_url('js/jquery.json-1.3.js', $this->plugin_file), array('jquery'), '1.3');
+		wp_register_auto_versioned_script('jquery-json', plugins_url('js/jquery.json-1.3.js', $this->plugin_file), array('jquery'));
 		//jQuery sort plugin
-		wp_register_script('jquery-sort', plugins_url('js/jquery.sort.js', $this->plugin_file), array('jquery'));
+		wp_register_auto_versioned_script('jquery-sort', plugins_url('js/jquery.sort.js', $this->plugin_file), array('jquery'));
 		//qTip2 - jQuery tooltip plugin
-		wp_register_script('jquery-qtip', plugins_url('js/jquery.qtip.min.js', $this->plugin_file),	array('jquery'), '20120513', true);
+		wp_register_auto_versioned_script('jquery-qtip', plugins_url('js/jquery.qtip.min.js', $this->plugin_file), array('jquery'), true);
 
 		//Editor's scripts
-		wp_enqueue_script(
+		wp_register_auto_versioned_script(
 			'menu-editor',
 			plugins_url('js/menu-editor.js', $this->plugin_file),
 			array(
 				'jquery', 'jquery-ui-sortable', 'jquery-ui-dialog',
 				'jquery-form', 'jquery-ui-droppable', 'jquery-qtip',
 				'jquery-sort', 'jquery-json'
-			),
-			'20120609'
+			)
 		);
+		wp_enqueue_script('menu-editor');
 
 		//The editor will need access to some of the plugin data and WP data.
 		$wp_roles = ameRoleUtils::get_roles();
@@ -391,8 +392,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	  * @return void
 	  */
 	function enqueue_styles(){
-		wp_enqueue_style('jquery-qtip-syle', plugins_url('css/jquery.qtip.min.css', $this->plugin_file), array(), '20120519');
-		wp_enqueue_style('menu-editor-style', plugins_url('css/menu-editor.css', $this->plugin_file), array(), '20120603');
+		wp_enqueue_auto_versioned_style('jquery-qtip-syle', plugins_url('css/jquery.qtip.min.css', $this->plugin_file), array());
+		wp_enqueue_auto_versioned_style('menu-editor-style', plugins_url('css/menu-editor.css', $this->plugin_file), array());
 	}
 
 	/**
@@ -810,7 +811,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		$action = isset($this->post['action']) ? $this->post['action'] : (isset($this->get['action']) ? $this->get['action'] : '');
 		do_action('admin_menu_editor_header', $action);
-		
+
 		$this->handle_form_submission($this->post);
 		$this->display_editor_ui();
 	}
@@ -1019,11 +1020,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * would not be highlighted properly when the user visits them.
 	 */
 	public function enqueue_menu_fix_script() {
-		wp_enqueue_script(
+		wp_enqueue_auto_versioned_script(
 			'ame-menu-fix',
 			plugins_url('js/menu-highlight-fix.js', $this->plugin_file),
 			array('jquery'),
-			'20120709',
 			true
 		);
 	}
