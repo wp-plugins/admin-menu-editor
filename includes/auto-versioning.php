@@ -13,6 +13,17 @@ class AutoVersioning {
 		call_user_func($wp_api_function, $handle, $src, $deps, $version, $last_param);
 	}
 
+	/**
+	 * Automatically version a script or style sheet URL based on file modification time.
+	 *
+	 * Returns auto-versioned $src and $ver values suitable for use with WordPress dependency APIs like
+	 * wp_register_script() and wp_register_style().
+	 *
+	 * @static
+	 * @param string $url
+	 * @param bool $add_ver_to_filename
+	 * @return array array($url, $version)
+	 */
 	private static function auto_version($url, $add_ver_to_filename = true) {
 		global $wp_rewrite; /** @var WP_Rewrite $wp_rewrite */
 
@@ -42,17 +53,17 @@ class AutoVersioning {
 			site_url('/' . WPINC) => ABSPATH . WPINC,
 		);
 
-		$path = null;
+		$filename = null;
 		foreach($url_mappings as $root_url => $directory) {
 			if ( strpos($url, $root_url) === 0 ) {
-				$path = $directory . '/' . substr($url, strlen($root_url));
+				$filename = $directory . '/' . substr($url, strlen($root_url));
 				//Get rid of the query string, if any.
-				list($path, ) = explode('?', $path, 2);
+				list($filename, ) = explode('?', $filename, 2);
 				break;
 			}
 		}
 
-		return $path;
+		return $filename;
 	}
 
 	public static function apply_to_all_dependencies($add_ver_to_filename = true) {
