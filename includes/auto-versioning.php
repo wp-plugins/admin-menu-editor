@@ -3,11 +3,23 @@
 if ( !class_exists('AutoVersioning') ) {
 
 /**
- * @link http://stackoverflow.com/questions/118884/what-is-an-elegant-way-to-force-browsers-to-reload-cached-css-js-files
+ * This class enables automatic versioning of CSS/JS by adding file modification time to the URLs.
+ * @link http://stackoverflow.com/questions/118884/
  */
 class AutoVersioning {
 	private static $version_in_filename = true;
 
+	/**
+	 * An auto-versioning wrapper for wp_register_s*() and wp_enqueue_s*() dependency APIs.
+	 *
+	 * @static
+	 * @param string $wp_api_function
+	 * @param string $handle
+	 * @param string $src
+	 * @param array $deps
+	 * @param bool|string $last_param Either $media (for wp_register_style) or $in_footer (for wp_register_script).
+	 * @param bool $add_ver_to_filename TRUE = add ver. to filename, FALSE = add it to the query string.
+	 */
 	public static function add_dependency($wp_api_function, $handle, $src, $deps, $last_param, $add_ver_to_filename = true ) {
 		list($src, $version) = self::auto_version($src, $add_ver_to_filename);
 		call_user_func($wp_api_function, $handle, $src, $deps, $version, $last_param);
