@@ -1,11 +1,11 @@
 <?php
 
-if ( !class_exists('DependencyAutoVersioner') ) {
+if ( !class_exists('AutoVersioning') ) {
 
 /**
  * @link http://stackoverflow.com/questions/118884/what-is-an-elegant-way-to-force-browsers-to-reload-cached-css-js-files
  */
-class DependencyAutoVersioner {
+class AutoVersioning {
 	private static $version_in_filename = true;
 
 	public static function add_dependency($wp_api_function, $handle, $src, $deps, $last_param, $add_ver_to_filename = true ) {
@@ -17,10 +17,10 @@ class DependencyAutoVersioner {
 		global $wp_rewrite; /** @var WP_Rewrite $wp_rewrite */
 
 		$version = false;
-		$path = self::guess_filename_from_url($url);
+		$filename = self::guess_filename_from_url($url);
 
-		if ( ($path !== null) && is_file($path) ) {
-			$mtime = filemtime($path);
+		if ( ($filename !== null) && is_file($filename) ) {
+			$mtime = filemtime($filename);
 			if ( $add_ver_to_filename && $wp_rewrite->using_mod_rewrite_permalinks() ) {
 				$url = preg_replace('@\.([^./\?]+)(\?.*)?$@', '.' . $mtime . '.$1', $url);
 				$version = null;
@@ -78,24 +78,24 @@ class DependencyAutoVersioner {
 
 if ( !function_exists('wp_register_auto_versioned_script') ) {
 	function wp_register_auto_versioned_script($handle, $src, $deps = array(), $in_footer = false, $add_ver_to_filename = true) {
-		DependencyAutoVersioner::add_dependency('wp_register_script', $handle, $src, $deps, $in_footer, $add_ver_to_filename);
+		AutoVersioning::add_dependency('wp_register_script', $handle, $src, $deps, $in_footer, $add_ver_to_filename);
 	}
 }
 
 if ( !function_exists('wp_register_auto_versioned_style') ) {
 	function wp_register_auto_versioned_style( $handle, $src, $deps = array(), $media = 'all', $add_ver_to_filename = true ) {
-		DependencyAutoVersioner::add_dependency('wp_register_style', $handle, $src, $deps, $media, $add_ver_to_filename);
+		AutoVersioning::add_dependency('wp_register_style', $handle, $src, $deps, $media, $add_ver_to_filename);
 	}
 }
 
 if ( !function_exists('wp_enqueue_auto_versioned_script') ) {
 	function wp_enqueue_auto_versioned_script( $handle, $src, $deps = array(), $in_footer = false, $add_ver_to_filename = true ) {
-		DependencyAutoVersioner::add_dependency('wp_enqueue_script', $handle, $src, $deps, $in_footer, $add_ver_to_filename);
+		AutoVersioning::add_dependency('wp_enqueue_script', $handle, $src, $deps, $in_footer, $add_ver_to_filename);
 	}
 }
 
 if ( !function_exists('wp_enqueue_auto_versioned_style') ) {
 	function wp_enqueue_auto_versioned_style( $handle, $src, $deps = array(), $media = 'all', $add_ver_to_filename = true ) {
-		DependencyAutoVersioner::add_dependency('wp_enqueue_style', $handle, $src, $deps, $media, $add_ver_to_filename);
+		AutoVersioning::add_dependency('wp_enqueue_style', $handle, $src, $deps, $media, $add_ver_to_filename);
 	}
 }
