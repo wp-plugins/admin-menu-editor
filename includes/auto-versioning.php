@@ -20,7 +20,7 @@ class AutoVersioning {
 	 * @param bool|string $last_param Either $media (for wp_register_style) or $in_footer (for wp_register_script).
 	 * @param bool $add_ver_to_filename TRUE = add ver. to filename, FALSE = add it to the query string.
 	 */
-	public static function add_dependency($wp_api_function, $handle, $src, $deps, $last_param, $add_ver_to_filename = true ) {
+	public static function add_dependency($wp_api_function, $handle, $src, $deps, $last_param, $add_ver_to_filename = false ) {
 		list($src, $version) = self::auto_version($src, $add_ver_to_filename);
 		call_user_func($wp_api_function, $handle, $src, $deps, $version, $last_param);
 	}
@@ -100,25 +100,25 @@ class AutoVersioning {
 } //class_exists()
 
 if ( !function_exists('wp_register_auto_versioned_script') ) {
-	function wp_register_auto_versioned_script($handle, $src, $deps = array(), $in_footer = false, $add_ver_to_filename = true) {
+	function wp_register_auto_versioned_script($handle, $src, $deps = array(), $in_footer = false, $add_ver_to_filename = false) {
 		AutoVersioning::add_dependency('wp_register_script', $handle, $src, $deps, $in_footer, $add_ver_to_filename);
 	}
 }
 
 if ( !function_exists('wp_register_auto_versioned_style') ) {
-	function wp_register_auto_versioned_style( $handle, $src, $deps = array(), $media = 'all', $add_ver_to_filename = true ) {
+	function wp_register_auto_versioned_style( $handle, $src, $deps = array(), $media = 'all', $add_ver_to_filename = false) {
 		AutoVersioning::add_dependency('wp_register_style', $handle, $src, $deps, $media, $add_ver_to_filename);
 	}
 }
 
 if ( !function_exists('wp_enqueue_auto_versioned_script') ) {
-	function wp_enqueue_auto_versioned_script( $handle, $src, $deps = array(), $in_footer = false, $add_ver_to_filename = true ) {
+	function wp_enqueue_auto_versioned_script( $handle, $src, $deps = array(), $in_footer = false, $add_ver_to_filename = false ) {
 		AutoVersioning::add_dependency('wp_enqueue_script', $handle, $src, $deps, $in_footer, $add_ver_to_filename);
 	}
 }
 
 if ( !function_exists('wp_enqueue_auto_versioned_style') ) {
-	function wp_enqueue_auto_versioned_style( $handle, $src, $deps = array(), $media = 'all', $add_ver_to_filename = true ) {
+	function wp_enqueue_auto_versioned_style( $handle, $src, $deps = array(), $media = 'all', $add_ver_to_filename = false ) {
 		AutoVersioning::add_dependency('wp_enqueue_style', $handle, $src, $deps, $media, $add_ver_to_filename);
 	}
 }
