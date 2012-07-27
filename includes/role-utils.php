@@ -62,6 +62,7 @@ class ameRoleUtils {
 		if ( !isset($wp_roles) ) {
 			$wp_roles = new WP_Roles();
 		}
+		//TODO: Do something about Super Admin
 		return $wp_roles;
 	}
 }
