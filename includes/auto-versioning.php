@@ -4,21 +4,21 @@ if ( !class_exists('AutoVersioning') ) {
 
 /**
  * This class enables automatic versioning of CSS/JS by adding file modification time to the URLs.
- * @link http://stackoverflow.com/questions/118884/
+ * @see http://stackoverflow.com/questions/118884/
  */
 class AutoVersioning {
-	private static $version_in_filename = true;
+	private static $version_in_filename = false;
 
 	/**
 	 * An auto-versioning wrapper for wp_register_s*() and wp_enqueue_s*() dependency APIs.
 	 *
 	 * @static
-	 * @param string $wp_api_function
-	 * @param string $handle
-	 * @param string $src
-	 * @param array $deps
+	 * @param string $wp_api_function The name of the WP dependency API to call.
+	 * @param string $handle Script or stylesheet handle.
+	 * @param string $src Script or stylesheet URL.
+	 * @param array $deps Dependencies.
 	 * @param bool|string $last_param Either $media (for wp_register_style) or $in_footer (for wp_register_script).
-	 * @param bool $add_ver_to_filename TRUE = add ver. to filename, FALSE = add it to the query string.
+	 * @param bool $add_ver_to_filename TRUE = add version to filename, FALSE = add it to the query string.
 	 */
 	public static function add_dependency($wp_api_function, $handle, $src, $deps, $last_param, $add_ver_to_filename = false ) {
 		list($src, $version) = self::auto_version($src, $add_ver_to_filename);
@@ -78,7 +78,21 @@ class AutoVersioning {
 		return $filename;
 	}
 
-	public static function apply_to_all_dependencies($add_ver_to_filename = true) {
+	/**
+	 * Apply automatic versioning to all scripts and style sheets added using WP dependency APIs.
+	 *
+	 * If you set $add_ver_to_filename to TRUE, make sure to also add the following code to your
+	 * .htaccess file or your site may break:
+	 *
+	 * <IfModule mod_rewrite.c>
+	 *  RewriteEngine On
+	 *  RewriteRule ^(.*)\.[\d]{10}\.(css|js)$ $1.$2 [L]
+	 * </IfModule>
+	 *
+	 * @static
+	 * @param bool $add_ver_to_filename
+	 */
+	public static function apply_to_all_dependencies($add_ver_to_filename = false) {
 		self::$version_in_filename = $add_ver_to_filename;
 		foreach(array('script_loader_src', 'style_loader_src') as $hook) {
 			add_filter($hook, __CLASS__ . '::_filter_dependency_src', 10, 1);
