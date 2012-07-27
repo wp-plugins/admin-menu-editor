@@ -878,10 +878,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Create a list of all roles, too.
 		$all_roles = ameRoleUtils::get_role_names();
-		//Multi-site installs also get the virtual "Super Admin" role
-		if ( is_multisite() && !isset($all_roles['super_admin']) ){
-			$all_roles['super_admin'] = 'Super Admin';
-		}
 		asort($all_roles);
 		$editor_data['all_roles'] = $all_roles;
 
