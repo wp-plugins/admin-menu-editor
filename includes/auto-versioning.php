@@ -37,14 +37,12 @@ class AutoVersioning {
 	 * @return array array($url, $version)
 	 */
 	private static function auto_version($url, $add_ver_to_filename = false) {
-		global $wp_rewrite; /** @var WP_Rewrite $wp_rewrite */
-
 		$version = false;
 		$filename = self::guess_filename_from_url($url);
 
 		if ( ($filename !== null) && is_file($filename) ) {
 			$mtime = filemtime($filename);
-			if ( $add_ver_to_filename && $wp_rewrite->using_mod_rewrite_permalinks() ) {
+			if ( $add_ver_to_filename ) {
 				$url = preg_replace('@\.([^./\?]+)(\?.*)?$@', '.' . $mtime . '.$1', $url);
 				$version = null;
 			} else {
