@@ -36,7 +36,7 @@ class AutoVersioning {
 	 * @param bool $add_ver_to_filename
 	 * @return array array($url, $version)
 	 */
-	private static function auto_version($url, $add_ver_to_filename = true) {
+	private static function auto_version($url, $add_ver_to_filename = false) {
 		global $wp_rewrite; /** @var WP_Rewrite $wp_rewrite */
 
 		$version = false;
