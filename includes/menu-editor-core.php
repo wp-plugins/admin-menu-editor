@@ -114,6 +114,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//User survey
 		add_action('admin_notices', array($this, 'display_survey_notice'));
 	}
+
+	function init_finish() {
+		parent::init_finish();
+
+		if ( !isset($this->options['first_install_time']) ) {
+			$this->options['first_install_time'] = time();
+			$this->save_options();
+		}
+	}
 	
   /**
    * Activation hook
@@ -893,11 +902,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			die("Access denied");
 		}
 
-		if ( !isset($this->options['first_install_time']) ) {
-			$this->options['first_install_time'] = time();
-			$this->save_options();
-		}
-
 		$action = isset($this->post['action']) ? $this->post['action'] : (isset($this->get['action']) ? $this->get['action'] : '');
 		do_action('admin_menu_editor_header', $action);
 		
@@ -1362,7 +1366,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 
 		$display_notice = $this->options['display_survey_notice'] && $this->current_user_can_edit_menu();
 		if ( isset($this->options['first_install_time']) ) {
-			$minimum_usage_period = 60;//3*24*3600;
+			$minimum_usage_period = 3*24*3600;
 			$display_notice = $display_notice && ((time() - $this->options['first_install_time']) > $minimum_usage_period);
 		}
 
