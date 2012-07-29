@@ -127,10 +127,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->import_settings();
 		}
 
-		if ( !isset($this->options['first_install_time']) ) {
-			$this->options['first_install_time'] = time();
-		}
-		
 		parent::activate();
 	}
 	
@@ -896,7 +892,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( !$this->current_user_can_edit_menu() ){
 			die("Access denied");
 		}
-		
+
+		if ( !isset($this->options['first_install_time']) ) {
+			$this->options['first_install_time'] = time();
+			$this->save_options();
+		}
+
 		$action = isset($this->post['action']) ? $this->post['action'] : (isset($this->get['action']) ? $this->get['action'] : '');
 		do_action('admin_menu_editor_header', $action);
 		
