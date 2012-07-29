@@ -75,6 +75,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'menu_format_version' => 0, //BUG: This key appears to be unused.
 			'custom_menu' => null,
 			'first_install_time' => null,
+			'display_survey_notice' => true,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -95,6 +96,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		add_action('plugins_loaded', array($this, 'capture_request_vars'));
 
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_menu_fix_script'));
+
+		//User survey
+		add_action('admin_notices', array($this, 'display_survey_notice'));
 	}
 
   /**
@@ -1138,6 +1142,43 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$parsed['params'] = $params;
 
 		return $parsed;
+	}
+
+	public function display_survey_notice() {
+		//Handle the survey notice
+		$hide_param_name = 'ame_hide_survey_notice';
+		if ( isset($this->get[$hide_param_name]) ) {
+			$this->options['display_survey_notice'] = empty($this->get[$hide_param_name]);
+			$this->save_options();
+		}
+
+		$display_notice = $this->options['display_survey_notice'] && $this->current_user_can_edit_menu();
+		if ( isset($this->options['first_install_time']) ) {
+			$minimum_usage_period = 3*24*3600;
+			$display_notice = $display_notice && ((time() - $this->options['first_install_time']) > $minimum_usage_period);
+		}
+
+		if ( $display_notice ) {
+			$free_survey_url = 'https://docs.google.com/spreadsheet/viewform?formkey=dERyeDk0OWhlbkxYcEY4QTNaMnlTQUE6MQ';
+			$pro_survey_url =  'https://docs.google.com/spreadsheet/viewform?formkey=dHl4MnlHaVI3NE5JdVFDWG01SkRKTWc6MA';
+
+			if ( apply_filters('admin_menu_editor_is_pro', false) ) {
+				$survey_url = $pro_survey_url;
+			} else {
+				$survey_url = $free_survey_url;
+			}
+
+			$hide_url = add_query_arg($hide_param_name, 1);
+			printf(
+				'<div class="updated">
+					<p><strong>Help improve Admin Menu Editor - take the user survey!</strong></p>
+					<p><a href="%s" target="_blank" title="Opens in a new window">Take the survey</a></p>
+					<p><a href="%s">Hide this notice</a></p>
+				</div>',
+				esc_attr($survey_url),
+				esc_attr($hide_url)
+			);
+		}
 	}
 
 	/**
