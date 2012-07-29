@@ -43,7 +43,7 @@ if ( $show_whats_new ):
     <div class="ws_hint" id="<?php echo esc_attr($hint_id); ?>">
         <div class="ws_hint_close" title="Close">x</div>
         <div class="ws_hint_content">
-            <strong>What's New In 1.20</strong>
+            <strong>What's New In 1.20 and 1.30</strong>
             <ul>
                 <li>New menu permissions interface.
                     <a href="http://w-shadow.com/admin-menu-editor-pro/permissions/">Learn more.</a></li>
