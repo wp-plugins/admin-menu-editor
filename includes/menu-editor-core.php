@@ -100,6 +100,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//User survey
 		add_action('admin_notices', array($this, 'display_survey_notice'));
 	}
+	
+	function init_finish() {
+		parent::init_finish();
+		
+        if ( !isset($this->options['first_install_time']) ) {
+			$this->options['first_install_time'] = time();
+			$this->save_options();
+        }
+	}
 
   /**
    * Activation hook
