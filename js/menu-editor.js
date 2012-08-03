@@ -489,10 +489,8 @@ function buildEditboxField(entry, field_name, field_settings){
             break;
 
 		case 'access_editor':
-			inputBox = $('<div>').append(
-				'<input type="text" class="ws_field_value" readonly="readonly">',
-				'<input type="button" class="button ws_launch_access_editor" value="Edit...">'
-			);
+			inputBox = $('<input type="text" class="ws_field_value" readonly="readonly">')
+                .add('<input type="button" class="button ws_launch_access_editor" value="Edit...">');
 			break;
 
 		case 'text':
@@ -556,6 +554,10 @@ function updateItemEditor(containerNode) {
 		var defaultValue = itemTemplates.getDefaultValue(menuItem.template_id, fieldName);
 		var isDefault = hasADefaultValue && (menuItem[fieldName] === null);
 
+        if (fieldName == 'access_level') {
+            isDefault = (getFieldValue(menuItem, 'extra_capability', '') === '') && isEmptyObject(menuItem.role_access);
+        }
+
 		field.toggleClass('ws_has_no_default', !hasADefaultValue);
 		field.toggleClass('ws_input_default', isDefault);
 
@@ -563,8 +565,6 @@ function updateItemEditor(containerNode) {
 		if (knownMenuFields[fieldName].display !== null) {
 			displayValue = knownMenuFields[fieldName].display(menuItem, displayValue, input, containerNode);
 		}
-
-		setInputValue(input, displayValue);
 
 		if (fieldName == 'access_level') {
 			//Permissions display is a little complicated and could use improvement.
@@ -579,10 +579,19 @@ function updateItemEditor(containerNode) {
 					displayValue = displayValue + '+' + extraCap;
 				}
 			}
-
-			setInputValue(input, displayValue);
 		}
-	});
+
+        setInputValue(input, displayValue);
+    });
+}
+
+function isEmptyObject(obj) {
+    for (var prop in obj) {
+        if (obj.hasOwnProperty(prop)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /*
@@ -699,7 +708,7 @@ function readItemState(itemDiv, position){
  */
 function readAllFields(container){
 	if ( !container.hasClass('ws_container') ){
-		container = container.parents('ws_container').first();
+		container = container.closest('.ws_container');
 	}
 
 	if ( !container.data('field_editors_created') ){
@@ -727,6 +736,10 @@ function readAllFields(container){
 			state[field_name] = getInputValue(input_box);
 		}
 	});
+
+    //Permission settings are not stored in the visible access_level field (that's just for show),
+    //so do not attempt to read them from there.
+    state['access_level'] = null;
 
 	return state;
 }
@@ -837,17 +850,26 @@ $(document).ready(function(){
 
 		if ( (input.length > 0) && (field.length > 0) && fieldName ) {
 			//Extract the default value from the menu item.
-			var menuItem = field.parents('.ws_container').first().data('menu_item');
+            var containerNode = field.closest('.ws_container');
+			var menuItem = containerNode.data('menu_item');
 			var defaultValue = itemTemplates.getDefaultValue(menuItem.template_id, fieldName);
 
-			//Set the value to the default, if one exists.
-			if (defaultValue !== null) {
-	            setInputValue(input, defaultValue);
-				field.addClass('ws_input_default');
-			}
+            if (fieldName == 'access_level') {
+                //This is a pretty nasty hack.
+                menuItem.role_access = {};
+                menuItem.extra_capability = null;
+                updateItemEditor(containerNode);
+            } else {
+                //Set the value to the default, if one exists.
+                if (defaultValue !== null) {
+                    setInputValue(input, defaultValue);
+                    field.addClass('ws_input_default');
+                }
 
-			//Trigger the change event to ensure consistency
-			input.change();
+                //Trigger the change event to ensure consistency
+                input.change();
+            }
+
 		}
 	}));
 
@@ -856,6 +878,12 @@ $(document).ready(function(){
         var input = $(this);
 		var field = input.parents('.ws_edit_field').first();
 	    var fieldName = field.data('field_name');
+
+        if (fieldName == 'access_level') {
+            //This field is read-only and can never be directly edited by the user.
+            //Ignore spurious change events.
+            return;
+        }
 
 	    var containerNode = field.parents('.ws_container').first();
 	    var menuItem = containerNode.data('menu_item');
