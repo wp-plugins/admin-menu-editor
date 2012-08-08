@@ -213,6 +213,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//there just wasn't any other, more suitable hook available.
 			add_filter('parent_file', array($this, 'replace_wp_menu'));
 			add_action('adminmenu', array($this, 'restore_wp_menu'));
+
+			//A compatibility hack for Ozh's Admin Drop Down Menu. Make sure it also sees the modified menu.
+			$ozh_adminmenu_priority = has_action('in_admin_header', 'wp_ozh_adminmenu');
+			if ( $ozh_adminmenu_priority !== false ) {
+				add_action('in_admin_header', array($this, 'replace_wp_menu'), $ozh_adminmenu_priority - 1);
+				add_action('in_admin_header', array($this, 'restore_wp_menu'), $ozh_adminmenu_priority + 1);
+			}
 		}
 	}
 
