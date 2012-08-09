@@ -93,7 +93,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Make sure we have access to the original, un-mangled request data.
 		//This is necessary because WordPress will stupidly apply "magic quotes"
 		//to the request vars even if this PHP misfeature is disabled.
-		add_action('plugins_loaded', array($this, 'capture_request_vars'));
+		$this->capture_request_vars();
 
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_menu_fix_script'));
 
