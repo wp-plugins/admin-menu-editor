@@ -1174,6 +1174,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$display_notice = $display_notice && ((time() - $this->options['first_install_time']) > $minimum_usage_period);
 		}
 
+		//Only display the notice on the Menu Editor (Pro) page.
+		$display_notice = $display_notice && isset($this->get['page']) && ($this->get['page'] == 'menu_editor');
+
+		//Let the user override this completely (useful for client sites).
+		if ( file_exists(dirname($this->plugin_file) . '/never-display-surveys.txt') ) {
+			$display_notice = false;
+		}
+
 		if ( $display_notice ) {
 			$free_survey_url = 'https://docs.google.com/spreadsheet/viewform?formkey=dERyeDk0OWhlbkxYcEY4QTNaMnlTQUE6MQ';
 			$pro_survey_url =  'https://docs.google.com/spreadsheet/viewform?formkey=dHl4MnlHaVI3NE5JdVFDWG01SkRKTWc6MA';
