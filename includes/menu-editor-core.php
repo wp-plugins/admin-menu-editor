@@ -1094,7 +1094,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$best_extra_params = PHP_INT_MAX;
 
 		$base_site_url = get_site_url();
-		if ( preg_match('@(^\w+://[^/]+).+@', $base_site_url, $matches) ) { //Extract scheme + hostname.
+		if ( preg_match('@(^\w+://[^/]+)@', $base_site_url, $matches) ) { //Extract scheme + hostname.
 			$base_site_url = $matches[1];
 		}
 
