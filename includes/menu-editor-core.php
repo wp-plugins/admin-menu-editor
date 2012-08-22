@@ -819,7 +819,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Convert relative URls to fully qualified ones. This prevents problems with WordPress
 		//incorrectly converting "index.php?page=xyz" to, say, "tools.php?page=index.php?page=xyz"
 		//if the menu item was moved from "Dashboard" to "Tools".
-		if ( (strpos($item['url'], '://') === false) && (substr($item['url'], 0, 1) != '/') ) {
+		$itemFile = ameMenuItem::remove_query_from($item['file']);
+		if ( (strpos($item['file'], '://') === false) && (substr($item['file'], 0, 1) != '/') && ($itemFile == 'index.php') ) {
 			$item['file'] = admin_url($item['url']);
 		}
 

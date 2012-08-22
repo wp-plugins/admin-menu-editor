@@ -374,7 +374,7 @@ abstract class ameMenuItem {
 		return !$adminFileExists && ($hasHook || $pluginFileExists);
 	}
 
-	private static function remove_query_from($url) {
+	public static function remove_query_from($url) {
 		$pos = strpos($url, '?');
 		if ( $pos !== false ) {
 			return substr($url, 0, $pos);
