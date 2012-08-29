@@ -413,12 +413,20 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	  */
 	function enqueue_styles(){
 		wp_enqueue_auto_versioned_style('jquery-qtip-syle', plugins_url('css/jquery.qtip.min.css', $this->plugin_file), array());
-		wp_enqueue_auto_versioned_style('menu-editor-base-style', plugins_url('css/menu-editor.css', $this->plugin_file), array());
-		wp_enqueue_auto_versioned_style(
+
+		wp_register_auto_versioned_style('menu-editor-base-style', plugins_url('css/menu-editor.css', $this->plugin_file));
+		wp_register_auto_versioned_style(
+			'menu-editor-colours-classic',
+			plugins_url('css/style-classic.css', $this->plugin_file),
+			array('menu-editor-base-style')
+		);
+		wp_register_auto_versioned_style(
 			'menu-editor-colours-wp-gray',
 			plugins_url('css/style-wp-gray.css', $this->plugin_file),
 			array('menu-editor-base-style')
 		);
+
+		wp_enqueue_style('menu-editor-colours-classic');
 	}
 
 	/**
