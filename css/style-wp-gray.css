@@ -92,7 +92,7 @@ a.ws_edit_link:hover {
 }
 
 .ws_menu_separator .ws_item_head {
-	height: 30px;
+	height: 29px;
 	border-radius: 3px;
 	background: #F9F9F9 url("../images/menu-arrows.png") no-repeat 4px 8px;
 }
@@ -125,6 +125,17 @@ a.ws_edit_link:hover {
 	border-bottom-color: #6d6d6d;
 }
 
+/**
+ * Dropping menus on other menus.
+ */
+
+.ws_menu_drop_hover, .ws_menu_drop_hover .ws_item_head  {
+	background: #43b529;
+}
+
+.ws_menu_drop_hover .ws_item_title {
+	text-shadow: none;
+}
 
 /**
  * Misc
