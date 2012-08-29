@@ -129,7 +129,9 @@ endif;
 		<div class="ws_main_container" id="ws_editor_sidebar">
 		<form method="post" action="<?php echo admin_url('options-general.php?page=menu_editor&noheader=1'); ?>" id='ws_main_form' name='ws_main_form'>
 			<?php wp_nonce_field('menu-editor-form'); ?>
+			<input type="hidden" name="action" value="save_menu">
 			<input type="hidden" name="data" id="ws_data" value="">
+			<input type="hidden" name="data_length" id="ws_data_length" value="">
 			<input type="button" id='ws_save_menu' class="button-primary ws_main_button" value="Save Changes" />
 		</form>
 

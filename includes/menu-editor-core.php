@@ -840,29 +840,40 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$action = isset($this->post['action']) ? $this->post['action'] : (isset($this->get['action']) ? $this->get['action'] : '');
 		do_action('admin_menu_editor_header', $action);
 
-		$this->handle_form_submission($this->post);
+		$this->handle_form_submission($this->post, $action);
 		$this->display_editor_ui();
 	}
 
-	private function handle_form_submission($post) {
-		if (isset($post['data'])){
-			check_admin_referer('menu-editor-form');
+	private function handle_form_submission($post, $action = '') {
+		if ( $action == 'save_menu' ) {
+			if ( isset($post['data']) ){
+				check_admin_referer('menu-editor-form');
 
-			//Try to decode a menu tree encoded as JSON
-			$url = remove_query_arg('noheader');
-			try {
-				$menu = ameMenu::load_json($post['data'], true);
-			} catch (InvalidMenuException $ex) {
-				//Or redirect & display the error message
-				wp_redirect( add_query_arg('message', 2, $url) );
+				//Try to decode a menu tree encoded as JSON
+				$url = remove_query_arg(array('noheader'));
+				try {
+					$menu = ameMenu::load_json($post['data'], true);
+				} catch (InvalidMenuException $ex) {
+					//Or redirect & display the error message
+					wp_redirect( add_query_arg('message', 2, $url) );
+					die();
+				}
+
+				//Save the custom menu
+				$this->set_custom_menu($menu);
+				//Redirect back to the editor and display the success message
+				wp_redirect( add_query_arg('message', 1, $url) );
 				die();
+			} else {
+				$message = "Failed to save the menu. ";
+				if ( isset($this->post['data_length']) && is_numeric($this->post['data_length']) ) {
+					$message .= sprintf(
+						'Expected to receive %d bytes of menu data in $_POST[\'data\'], but got nothing.',
+						intval($this->post['data_length'])
+					);
+				}
+				wp_die($message);
 			}
-
-			//Save the custom menu
-			$this->set_custom_menu($menu);
-			//Redirect back to the editor and display the success message
-			wp_redirect( add_query_arg('message', 1, $url) );
-			die();
 		}
 	}
 

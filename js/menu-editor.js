@@ -1459,6 +1459,7 @@ $(document).ready(function(){
 	$('#ws_save_menu').click(function () {
 		var data = encodeMenuAsJSON();
 		$('#ws_data').val(data);
+		$('#ws_data_length').val(data.length);
 		$('#ws_main_form').submit();
 	});
 
