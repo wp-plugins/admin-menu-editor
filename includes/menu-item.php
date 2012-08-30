@@ -101,6 +101,7 @@ abstract class ameMenuItem {
 		$blank_menu = array_fill_keys(array_keys(self::basic_defaults()), null);
 		$blank_menu = array_merge($blank_menu, array(
 			'items' => array(), //List of sub-menu items.
+			'grant_access' => array(), //Per-role and per-user access. Supersedes role_access.
 			'role_access' => array(), //Per-role access settings.
 
 			'custom' => false,  //True if item is made-from-scratch and has no template.
@@ -281,6 +282,13 @@ abstract class ameMenuItem {
 				$item['extra_capability'] = $item['access_level'];
 			}
 			$item['access_level'] = null;
+		}
+
+		//Convert per-role access settings to the more general grant_access format.
+		if ( isset($item['role_access']) ) {
+			foreach($item['role_access'] as $role_id => $has_access) {
+				$item['grant_access']['role:' . $role_id] = $has_access;
+			}
 		}
 
 		if ( isset($item['items']) ) {

@@ -202,6 +202,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->merged_custom_menu = $custom_menu;
 
 			//Convert our custom menu to the $menu + $submenu structure used by WP.
+			//Note: This method sets up multiple internal fields and may cause side-effects.
 			$this->build_custom_wp_menu($this->merged_custom_menu['tree']);
 
 			if ( !$this->user_can_access_current_page() ) {
@@ -688,7 +689,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @uses WPMenuEditor::$custom_wp_submenu Stores the generated sub-menu here.
    *
    * @uses WPMenuEditor::$title_lookups Generates a lookup list of page titles.
-   * @uses WPMenuEditor::reverse_item_lookup Generates a lookup list of url => menu item relationships.
+   * @uses WPMenuEditor::$reverse_item_lookup Generates a lookup list of url => menu item relationships.
    *
    * @param array $tree The new menu, in the internal tree format.
    * @return void
@@ -942,8 +943,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	/**
 	 * Generate a list of "virtual" capabilities that should be granted to certain roles.
 	 *
-	 * This is based on role access settings for the current custom menu and enables
-	 * selected roles to access menu items that they ordinarily would not be able to.
+	 * This is based on grant_access settings for the current custom menu and enables
+	 * selected roles and users to access menu items that they ordinarily would not
+	 * be able to.
 	 *
 	 * @uses self::get_virtual_caps_for() to actually generate the caps.
 	 * @uses self::$cached_virtual_caps to cache the generated list of caps.
@@ -974,13 +976,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		if ( $item['template_id'] !== '' ) {
 			$required_cap = ameMenuItem::get($item, 'access_level');
-			if ( !isset($caps[$required_cap]) ) {
-				$caps[$required_cap] = array();
-			}
-
-			foreach ($item['role_access'] as $role_id => $has_access) {
+			foreach ($item['grant_access'] as $grant => $has_access) {
 				if ( $has_access ) {
-					$caps[$required_cap][$role_id] = true;
+					if ( !isset($caps[$grant]) ) {
+						$caps[$grant] = array();
+					}
+					$caps[$grant][$required_cap] = true;
 				}
 			}
 		}
@@ -1086,6 +1087,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( $current_item === null ) {
 			return true; //Let WordPres handle it.
 		}
+		//Note: Per-role and per-user virtual caps will be applied by has_cap filters.
 		return $this->current_user_can($current_item['access_level']);
 	}
 
@@ -1107,7 +1109,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return array|null Menu item in the internal format, or NULL if no matching item can be found.
 	 */
 	private function get_current_menu_item() {
-		if ( !is_admin() || empty($this->merged_custom_menu)) {
+		if ( !is_admin() || empty($this->reverse_item_lookup)) {
 			return null;
 		}
 
