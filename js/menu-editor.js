@@ -5,6 +5,60 @@
 
 var wsIdCounter = 0;
 
+var AmeCapabilityManager = (function(roles) {
+    var me = {};
+
+    me.has_cap = function(actor, capability) {
+		var separator = actor.indexOf(':');
+	    if (separator == -1) {
+			throw {
+				name: 'InvalidActorException',
+				message: "Actor string does not contain a colon.",
+				value: actor
+			};
+	    }
+
+	    //Super admins have access to everything, unless specifically denied.
+	    if ( actor == 'special:super_admin' ) {
+		    return (capability != 'do_not_allow');
+	    }
+
+	    var actorType = actor.substring(0, separator);
+	    var actorId = actor.substring(separator + 1);
+
+	    if (actorType == 'role') {
+			return me.role_has_cap(actorId, capability);
+	    }
+
+	    throw {
+		    name: 'InvalidActorTypeException',
+		    message: "The specified actor type is not supported",
+		    value: actor,
+		    'actorType': actorType
+	    };
+    };
+
+	me.role_has_cap = function(roleId, capability) {
+		if (!roles.hasOwnProperty(roleId)) {
+			throw {
+				name: 'UnknownRoleException',
+				message: 'Can not check capabilities for an unknown role',
+				value: roleId,
+				requireCapability: capability
+			};
+		}
+
+		var role = roles[roleId];
+		if ( role.capabilities.hasOwnProperty(capability) ) {
+			return role.capabilities[capability] && (role.capabilities[capability] !== '0');
+		} else {
+			return (roleId == capability);
+		}
+	};
+
+	return me;
+})(wsEditorData.roles);
+
 (function ($){
 
 var itemTemplates = {
@@ -555,7 +609,10 @@ function updateItemEditor(containerNode) {
 		var isDefault = hasADefaultValue && (menuItem[fieldName] === null);
 
         if (fieldName == 'access_level') {
-            isDefault = (getFieldValue(menuItem, 'extra_capability', '') === '') && isEmptyObject(menuItem.role_access);
+            isDefault = ((getFieldValue(menuItem, 'extra_capability', '') === '')
+	            && isEmptyObject(menuItem.role_access)
+                && isEmptyObject(menuItem.grant_access)
+			);
         }
 
 		field.toggleClass('ws_has_no_default', !hasADefaultValue);
@@ -855,9 +912,10 @@ $(document).ready(function(){
 			var defaultValue = itemTemplates.getDefaultValue(menuItem.template_id, fieldName);
 
             if (fieldName == 'access_level') {
-                //This is a pretty nasty hack.
+	            //This is a pretty nasty hack.
                 menuItem.role_access = {};
-                menuItem.extra_capability = null;
+	            menuItem.grant_access = {};
+	            menuItem.extra_capability = null;
                 updateItemEditor(containerNode);
             } else {
                 //Set the value to the default, if one exists.
@@ -991,7 +1049,7 @@ $(document).ready(function(){
 			if (menuItem.role_access.hasOwnProperty(roleId)) {
 				roleHasAccess = menuItem.role_access[roleId];
 			} else {
-				roleHasAccess = (roleId == requiredCap) || (role.capabilities.hasOwnProperty(requiredCap) && role.capabilities[requiredCap]);
+				roleHasAccess = AmeCapabilityManager.role_has_cap(roleId, requiredCap);
 			}
 
 			if (roleHasAccess) {
@@ -1034,12 +1092,16 @@ $(document).ready(function(){
 		accessEditorState.menuItem.extra_capability = $('#ws_extra_capability').val();
 
 		var roleAccess = {};
+		var grantAccess = {};
 		$('#ws_menu_access_editor .ws_role_table_body tbody tr').each(function() {
 			var row = $(this);
 			var roleId = row.attr('id').replace(accessEditorState.rowPrefix, '');
-			roleAccess[roleId] = row.find('input.ws_role_access').is(':checked');
+			var checked = row.find('input.ws_role_access').is(':checked');
+			roleAccess[roleId] = checked;
+			grantAccess['role:' + roleId] = checked;
 		});
 		accessEditorState.menuItem.role_access = roleAccess;
+		accessEditorState.menuItem.grant_access = grantAccess;
 
 		updateItemEditor(accessEditorState.containerNode);
 		$('#ws_menu_access_editor').dialog('close');
