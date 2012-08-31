@@ -192,7 +192,7 @@ function outputTopMenu(menu, afterNode){
 
 	//Display
 	submenu.appendTo('#ws_submenu_box');
-	if ( typeof afterNode != 'undefined' ){
+	if ( (typeof afterNode != 'undefined') && (afterNode != null) ){
 		$(afterNode).after(menu_obj);
 	} else {
 		menu_obj.appendTo('#ws_menu_box');
@@ -1334,7 +1334,8 @@ $(document).ready(function(){
 		});
 
 		//Insert the new menu
-		var result = outputTopMenu(menu);
+		var selection = $('#ws_menu_box .ws_active');
+		var result = outputTopMenu(menu, (selection.length > 0) ? selection : null);
 
 		//The menus's editbox is always open
 		result.menu.find('.ws_edit_link').click();
@@ -1360,7 +1361,8 @@ $(document).ready(function(){
 		});
 
 		//Insert the new menu
-		outputTopMenu(menu);
+		var selection = $('#ws_menu_box .ws_active');
+		outputTopMenu(menu, (selection.length > 0) ? selection : null);
 	});
 
 	/*************************************************************************
@@ -1470,8 +1472,14 @@ $(document).ready(function(){
 
 		var menu = buildMenuItem(entry);
 
-		//Insert the item into the box
-		$('#ws_submenu_box .ws_submenu:visible').append(menu);
+		//Insert the item into the currently open submenu.
+		var visibleSubmenu = $('#ws_submenu_box .ws_submenu:visible');
+		var selection = visibleSubmenu.find('.ws_active');
+		if (selection.length > 0) {
+			selection.after(menu);
+		} else {
+			visibleSubmenu.append(menu);
+		}
 
 		//The items's editbox is always open
 		menu.find('.ws_edit_link').click();
