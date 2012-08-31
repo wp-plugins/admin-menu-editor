@@ -289,6 +289,7 @@ abstract class ameMenuItem {
 			foreach($item['role_access'] as $role_id => $has_access) {
 				$item['grant_access']['role:' . $role_id] = $has_access;
 			}
+			$item['role_access'] = array();
 		}
 
 		if ( isset($item['items']) ) {

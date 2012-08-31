@@ -5,8 +5,9 @@
 
 var wsIdCounter = 0;
 
-var AmeCapabilityManager = (function(roles) {
+var AmeCapabilityManager = (function(roles, users) {
     var me = {};
+	users = users || {};
 
     me.has_cap = function(actor, capability) {
 		var separator = actor.indexOf(':');
@@ -28,6 +29,8 @@ var AmeCapabilityManager = (function(roles) {
 
 	    if (actorType == 'role') {
 			return me.role_has_cap(actorId, capability);
+	    } else if ( actorType == 'user' ) {
+		    return me.user_has_cap(actorId, capability);
 	    }
 
 	    throw {
@@ -56,8 +59,25 @@ var AmeCapabilityManager = (function(roles) {
 		}
 	};
 
+	me.user_has_cap = function(login, capability) {
+		if (!users.hasOwnProperty(login)) {
+			throw {
+				name: 'UnknownUserException',
+				message: 'Can not check capabilities for an unknown user',
+				value: login,
+				requireCapability: capability
+			};
+		}
+
+		var user = users[login];
+		if ( user.capabilities.hasOwnProperty(capability) ) {
+			return user.capabilities[capability];
+		}
+		return false;
+	};
+
 	return me;
-})(wsEditorData.roles);
+})(wsEditorData.roles, wsEditorData.users);
 
 (function ($){
 
@@ -609,10 +629,7 @@ function updateItemEditor(containerNode) {
 		var isDefault = hasADefaultValue && (menuItem[fieldName] === null);
 
         if (fieldName == 'access_level') {
-            isDefault = ((getFieldValue(menuItem, 'extra_capability', '') === '')
-	            && isEmptyObject(menuItem.role_access)
-                && isEmptyObject(menuItem.grant_access)
-			);
+            isDefault = (getFieldValue(menuItem, 'extra_capability', '') === '') && isEmptyObject(menuItem.grant_access);
         }
 
 		field.toggleClass('ws_has_no_default', !hasADefaultValue);
@@ -913,7 +930,6 @@ $(document).ready(function(){
 
             if (fieldName == 'access_level') {
 	            //This is a pretty nasty hack.
-                menuItem.role_access = {};
 	            menuItem.grant_access = {};
 	            menuItem.extra_capability = null;
                 updateItemEditor(containerNode);
@@ -1030,39 +1046,37 @@ $(document).ready(function(){
 
 		editor.find('#ws_extra_capability').val(getFieldValue(menuItem, 'extra_capability', ''));
 
-		//Generate the role list.
+		//Generate the actor list.
 		var table = editor.find('.ws_role_table_body tbody').empty();
 		var alternate = '';
-		for(var roleId in wsEditorData.roles) {
-			if (!wsEditorData.roles.hasOwnProperty(roleId)) {
+		for(var actor in wsEditorData.actors) {
+			if (!wsEditorData.actors.hasOwnProperty(actor)) {
 				continue;
 			}
+			var actorName = wsEditorData.actors[actor];
 
-			var role = wsEditorData.roles[roleId];
-
-			var checkboxId = 'role-access-' + roleId;
+			var checkboxId = 'allow_' + actor.replace(/[^a-zA-Z0-9_]/g, '_');
 			var checkbox = $('<input type="checkbox">').addClass('ws_role_access').attr('id', checkboxId);
 
-			//By default, any role that has the required cap has access to the menu.
-			//This can be over-ridden on a per-menu basis.
-			var roleHasAccess = false;
-			if (menuItem.role_access.hasOwnProperty(roleId)) {
-				roleHasAccess = menuItem.role_access[roleId];
+			//By default, any actor that has the required cap has access to the menu.
+			//Users can override this on a per-menu basis.
+			var actorHasAccess = false;
+			if (menuItem.grant_access.hasOwnProperty(actor)) {
+				actorHasAccess = menuItem.grant_access[actor];
 			} else {
-				roleHasAccess = AmeCapabilityManager.role_has_cap(roleId, requiredCap);
+				actorHasAccess = AmeCapabilityManager.has_cap(actor, requiredCap);
 			}
 
-			if (roleHasAccess) {
+			if (actorHasAccess) {
 				checkbox.attr('checked', 'checked');
 			}
 
 			alternate = (alternate == '') ? 'alternate' : '';
-			var rowId = accessEditorState.rowPrefix + roleId;
 
-			var row = $('<tr>').attr('id', rowId).attr('class', alternate).append(
+			var row = $('<tr>').data('actor', actor).attr('class', alternate).append(
 				$('<td>').addClass('ws_column_role post-title').append(
 					$('<label>').attr('for', checkboxId).append(
-						$('<strong>').text(role.name)
+						$('<strong>').text(actorName)
 					)
 				),
 				$('<td>').addClass('ws_column_access').append(checkbox)
@@ -1091,16 +1105,12 @@ $(document).ready(function(){
 		//Save the new settings.
 		accessEditorState.menuItem.extra_capability = $('#ws_extra_capability').val();
 
-		var roleAccess = {};
 		var grantAccess = {};
 		$('#ws_menu_access_editor .ws_role_table_body tbody tr').each(function() {
 			var row = $(this);
-			var roleId = row.attr('id').replace(accessEditorState.rowPrefix, '');
-			var checked = row.find('input.ws_role_access').is(':checked');
-			roleAccess[roleId] = checked;
-			grantAccess['role:' + roleId] = checked;
+			var actor = row.data('actor');
+			grantAccess[actor] = row.find('input.ws_role_access').is(':checked');
 		});
-		accessEditorState.menuItem.role_access = roleAccess;
 		accessEditorState.menuItem.grant_access = grantAccess;
 
 		updateItemEditor(accessEditorState.containerNode);

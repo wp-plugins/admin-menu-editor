@@ -378,8 +378,39 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		);
 		wp_enqueue_script('menu-editor');
 
-		//The editor will need access to some of the plugin data and WP data.
+		//Actors (roles and users) are used in the permissions UI, so we need to pass them along.
+		$actors = array();
+		$roles = array();
+
 		$wp_roles = ameRoleUtils::get_roles();
+		foreach($wp_roles->roles as $role_id => $role) {
+			$actors['role:' . $role_id] = $role['name'];
+			$role['capabilities'] = $this->castValuesToBool($role['capabilities']);
+			$roles[$role_id] = $role;
+		}
+
+		if ( is_multisite() && is_super_admin() ) {
+			$actors['special:super_admin'] = 'Super Admin';
+		}
+
+		//Known users. Right now, this is limited to the current user only.
+		$users = array();
+
+		$current_user = wp_get_current_user();
+		/** @var string $current_user->user_login Provided by a __get() method on WP_User */
+
+		$users[$current_user->user_login] = array(
+			'user_login' => $current_user->user_login,
+			'id' => $current_user->ID,
+			'roles' => array_values($current_user->roles),
+			'caps' => $this->castValuesToBool($current_user->caps),
+			'capabilities' => $this->castValuesToBool($current_user->allcaps),
+		);
+
+		//Note: Users do NOT get added to the actor list because that feature
+		//is not fully implemented.
+
+		//The editor will need access to some of the plugin data and WP data.
 		wp_localize_script(
 			'menu-editor',
 			'wsEditorData',
@@ -401,7 +432,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					'defaults' => ameMenuItem::custom_item_defaults(),
 				),
 
-				'roles' => $wp_roles->roles,
+				'actors' => $actors,
+				'roles' => $roles,
+				'users' => $users,
+
 				'showHints' => $this->get_hint_visibility(),
 			)
 		);
@@ -1192,6 +1226,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$parsed['params'] = $params;
 
 		return $parsed;
+	}
+
+	private function castValuesToBool($capabilities) {
+		foreach($capabilities as $capability => $value) {
+			$capabilities[$capability] = (bool)$value;
+		}
+		return $capabilities;
 	}
 
 	public function display_survey_notice() {
