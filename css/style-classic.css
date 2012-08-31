@@ -3,8 +3,12 @@
 	background-color: #bdd3ff;
 }
 
-.ws_active {
-	background-color : #8eb0f1 !important; /* make sure this overrides ws_menu_separator */
+#ws_menu_editor .ws_active {
+	background-color : #8eb0f1; /* make sure this overrides ws_menu_separator */
+}
+
+#ws_menu_editor .ws_is_hidden_for_actor.ws_active {
+    background-color : #dadee6;
 }
 
 .ws_menu_separator {

@@ -47,6 +47,48 @@
 	height: 30px;
 }
 
+/*************************************************
+                     Actor UI
+ *************************************************/
+#ws_actor_selector li:after {
+    content: ' | ';
+}
+
+#ws_actor_selector li:last-child:after {
+    content: '';
+}
+
+/**
+ * The checkbox that lets the user show/hide a menu for the currently selected actor.
+ */
+.ws_actor_access_checkbox,
+input[type="checkbox"].ws_actor_access_checkbox /* Ensure we override WP defaults. */
+{
+    margin-right: 2px;
+    margin-left: 2px;
+}
+
+/* The checkbox is only visible when viewing the menu configuration for a specific actor. */
+.ws_actor_access_checkbox {
+    display: none;
+}
+
+.ws_is_actor_view .ws_actor_access_checkbox,
+.ws_is_actor_view input[type="checkbox"].ws_actor_access_checkbox
+{
+    display: inline-block;
+}
+
+/* Gray-out items inaccessible to the currently selected actor */
+
+.ws_is_actor_view .ws_container.ws_is_hidden_for_actor {
+    background-color: #F9F9F9;
+}
+
+.ws_is_actor_view .ws_is_hidden_for_actor .ws_item_title {
+    color: #777;
+}
+
 /*
  * The sidebar
  */
@@ -101,7 +143,7 @@
 }
 
 .ws_item_title {
-	display: block;
+	display: inline-block;
 	padding: 2px;
 	cursor: default;
 }

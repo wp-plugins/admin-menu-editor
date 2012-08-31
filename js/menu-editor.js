@@ -81,6 +81,8 @@ var AmeCapabilityManager = (function(roles, users) {
 
 (function ($){
 
+var selectedActor = null;
+
 var itemTemplates = {
 	templates: wsEditorData.itemTemplates,
 
@@ -279,9 +281,11 @@ function buildMenuItem(itemData, isTopLevel) {
 	contents.push(
 		'<div class="ws_item_head">',
 			itemData.separator ? '' : '<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
+			'<input type="checkbox" class="ws_actor_access_checkbox">',
 			'<span class="ws_item_title">',
 				((itemData.menu_title != null) ? itemData.menu_title : itemData.defaults.menu_title),
 			'&nbsp;</span>',
+
 		'</div>',
 		'<div class="ws_editbox" style="display: none;"></div>'
 	);
@@ -605,6 +609,31 @@ function buildEditboxField(entry, field_name, field_settings){
 }
 
 /**
+ * Update the UI elements that that indicate whether the currently selected
+ * actor can access a menu item.
+ *
+ * @param containerNode
+ */
+function updateActorAccessUi(containerNode) {
+	//Update the permissions checkbox & UI
+	if (selectedActor != null) {
+		var menuItem = containerNode.data('menu_item');
+		var hasAccess = actorCanAccessMenu(menuItem, selectedActor);
+
+		var checkbox = containerNode.find('.ws_actor_access_checkbox');
+		if (hasAccess) {
+			checkbox.attr('checked', 'checked');
+		} else {
+			checkbox.removeAttr('checked');
+		}
+
+		containerNode.toggleClass('ws_is_hidden_for_actor', !hasAccess);
+	} else {
+		containerNode.removeClass('ws_is_hidden_for_actor');
+	}
+}
+
+/**
  * Update an edit widget with the current menu item settings.
  *
  * @param containerNode
@@ -617,6 +646,9 @@ function updateItemEditor(containerNode) {
 	for (var i = 0; i < flags.length; i++) {
 		setMenuFlag(containerNode, flags[i], getFieldValue(menuItem, flags[i], false));
 	}
+
+	//Update the permissions checkbox & other actor-specific UI
+	updateActorAccessUi(containerNode);
 
 	//Update all input fields with the current values.
 	containerNode.find('.ws_edit_field').each(function(index, field) {
@@ -852,6 +884,23 @@ function menuHasFlag(item, flag){
 	return $(item).hasClass('ws_'+flag);
 }
 
+/***********************************************************
+                  Capability manipulation
+ ************************************************************/
+
+function actorCanAccessMenu(menuItem, actor) {
+	//By default, any actor that has the required cap has access to the menu.
+	//Users can override this on a per-menu basis.
+	var requiredCap = getFieldValue(menuItem, 'access_level', '< Error: access_level is missing! >');
+	var actorHasAccess = false;
+	if (menuItem.grant_access.hasOwnProperty(actor)) {
+		actorHasAccess = menuItem.grant_access[actor];
+	} else {
+		actorHasAccess = AmeCapabilityManager.has_cap(actor, requiredCap);
+	}
+	return actorHasAccess;
+}
+
 //Cut & paste stuff
 var menu_in_clipboard = null;
 var ws_paste_count = 0;
@@ -1010,6 +1059,27 @@ $(document).ready(function(){
 		return false;
 	});
 
+	$('#ws_menu_editor input.ws_actor_access_checkbox').live('click', function() {
+		if (selectedActor == null) {
+			return;
+		}
+
+		//TODO: Update permissions recursively when the user clicks the checkbox on a top-level item
+
+		var checked = $(this).is(':checked');
+		var containerNode = $(this).closest('.ws_container');
+		var menuItem = containerNode.data('menu_item');
+
+		//grant_access comes from PHP, which JSON-encodes empty assoc. arrays as arrays.
+		//However, we want it to be a dictionary.
+		if (typeof menuItem.grant_access['length'] == 'number') {
+			menuItem.grant_access = {};
+		}
+
+		menuItem.grant_access[selectedActor] = checked;
+		updateItemEditor(containerNode);
+	});
+
 	/*************************************************************************
 	                  Access editor dialog
 	 *************************************************************************/
@@ -1058,15 +1128,7 @@ $(document).ready(function(){
 			var checkboxId = 'allow_' + actor.replace(/[^a-zA-Z0-9_]/g, '_');
 			var checkbox = $('<input type="checkbox">').addClass('ws_role_access').attr('id', checkboxId);
 
-			//By default, any actor that has the required cap has access to the menu.
-			//Users can override this on a per-menu basis.
-			var actorHasAccess = false;
-			if (menuItem.grant_access.hasOwnProperty(actor)) {
-				actorHasAccess = menuItem.grant_access[actor];
-			} else {
-				actorHasAccess = AmeCapabilityManager.has_cap(actor, requiredCap);
-			}
-
+			var actorHasAccess = actorCanAccessMenu(menuItem, actor);
 			if (actorHasAccess) {
 				checkbox.attr('checked', 'checked');
 			}
@@ -1757,6 +1819,64 @@ $(document).ready(function(){
 				'hint' : hint.attr('id')
 			}
 		);
+	});
+
+
+	/******************************************************************
+	                           Actor views
+	 ******************************************************************/
+
+	//Build the list of available actors
+	var actorSelector = $('#ws_actor_selector').empty();
+	actorSelector.append('<li><a href="#" class="current ws_no_actor">All</a></li>');
+	selectedActor = null;
+
+	for(var actor in wsEditorData.actors) {
+		if (!wsEditorData.actors.hasOwnProperty(actor)) {
+			continue;
+		}
+		actorSelector.append(
+			$('<li></li>').append(
+				$('<a></a>')
+					.attr('href', '#' + actor)
+					.text(wsEditorData.actors[actor])
+			)
+		);
+	}
+
+	function setSelectedActor(actor) {
+		selectedActor = actor;
+
+		//Highlight the actor.
+		var actorSelector = $('#ws_actor_selector');
+		$('.current', actorSelector).removeClass('current');
+
+		if (selectedActor == null) {
+			$('a.ws_no_actor').addClass('current');
+		} else {
+			$('a[href$="#'+ actor +'"]').addClass('current');
+		}
+
+		//There are some UI elements that can be visible or hidden depending on whether an actor is selected.
+		$('#ws_menu_editor').toggleClass('ws_is_actor_view', (selectedActor != null));
+
+		//Update the menu item states to indicate whether they're accessible.
+		if (selectedActor != null) {
+			$('#ws_menu_editor .ws_container').each(function() {
+				updateActorAccessUi($(this));
+			});
+		}
+	}
+
+	$('li a', actorSelector).click(function(event) {
+		var actor = $(this).attr('href').substring(1);
+		if (actor == '') {
+			actor = null;
+		}
+
+		setSelectedActor(actor);
+
+		event.preventDefault();
 	});
 
 	//Finally, show the menu
