@@ -160,7 +160,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    */
 	function hook_admin_menu(){
 		global $menu, $submenu;
-		
+
 		//Menu reset (for emergencies). Executed by accessing http://example.com/wp-admin/?reset_admin_menu=1 
 		$reset_requested = isset($this->get['reset_admin_menu']) && $this->get['reset_admin_menu'];
 		if ( $reset_requested && $this->current_user_can_edit_menu() ){
@@ -401,10 +401,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'user_login' => $current_user->user_login,
 			'id' => $current_user->ID,
 			'roles' => array_values($current_user->roles),
-			'caps' => $this->castValuesToBool($current_user->caps),
-			'capabilities' => $this->castValuesToBool($current_user->allcaps),
+			'capabilities' => $this->castValuesToBool($current_user->caps),
 		);
 
+        $actors['user:' . $current_user->user_login] = sprintf(
+            'Current user (%s)',
+            $current_user->user_login
+        );
 		//Note: Users do NOT get added to the actor list because that feature
 		//is not fully implemented.
 
@@ -627,7 +630,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					//Record the menu as missing, unless it's a menu separator
 					if ( empty($topmenu['separator']) ){
 						$topmenu['missing'] = true;
-					}
+                    }
 				}
 			}
 
@@ -645,7 +648,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 						} else {
 							//Record as missing
 							$item['missing'] = true;
-						}
+                        }
 					}
 				}
 			}

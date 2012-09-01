@@ -25,7 +25,8 @@ var AmeCapabilityManager = (function(roles, users) {
         }
     }
 
-    me.hasCap = function(actor, capability) {
+    me.hasCap = function(actor, capability, context) {
+		context = context || {};
         var actorData = parseActorString(actor);
 
 	    //Super admins have access to everything, unless specifically denied.
@@ -36,7 +37,7 @@ var AmeCapabilityManager = (function(roles, users) {
 	    if (actorData.type == 'role') {
 			return me.roleHasCap(actorData.id, capability);
 	    } else if (actorData.type == 'user') {
-		    return me.userHasCap(actorData.id, capability);
+		    return me.userHasCap(actorData.id, capability, context);
 	    }
 
 	    throw {
@@ -59,13 +60,15 @@ var AmeCapabilityManager = (function(roles, users) {
 
 		var role = roles[roleId];
 		if ( role.capabilities.hasOwnProperty(capability) ) {
-			return role.capabilities[capability] && (role.capabilities[capability] !== '0');
-		} else {
-			return (roleId == capability);
+			return role.capabilities[capability];
+		} else if (roleId == capability) {
+			return true;
 		}
+		return false;
 	};
 
-	me.userHasCap = function(login, capability) {
+	me.userHasCap = function(login, capability, context) {
+		context = context || {};
 		if (!users.hasOwnProperty(login)) {
 			throw {
 				name: 'UnknownUserException',
@@ -78,7 +81,22 @@ var AmeCapabilityManager = (function(roles, users) {
 		var user = users[login];
 		if ( user.capabilities.hasOwnProperty(capability) ) {
 			return user.capabilities[capability];
+		} else {
+			//Check if any of the user's roles have the capability.
+			for(var index = 0; index < user.roles.length; index++) {
+				var roleId = user.roles[index];
+
+				//Skip roles that are disabled in this context (i.e. via grant_access).
+				if (context.hasOwnProperty('role:' + roleId) && !context['role:' + roleId]) {
+					continue;
+				}
+
+				if (me.roleHasCap(roleId, capability)) {
+					return true;
+				}
+			}
 		}
+
 		return false;
 	};
 
@@ -936,6 +954,10 @@ function menuHasFlag(item, flag){
  ************************************************************/
 
 function actorCanAccessMenu(menuItem, actor) {
+	if (!$.isPlainObject(menuItem.grant_access)) {
+		menuItem.grant_access = {};
+	}
+
 	//By default, any actor that has the required cap has access to the menu.
 	//Users can override this on a per-menu basis.
 	var requiredCap = getFieldValue(menuItem, 'access_level', '< Error: access_level is missing! >');
@@ -943,7 +965,7 @@ function actorCanAccessMenu(menuItem, actor) {
 	if (menuItem.grant_access.hasOwnProperty(actor)) {
 		actorHasAccess = menuItem.grant_access[actor];
 	} else {
-		actorHasAccess = AmeCapabilityManager.hasCap(actor, requiredCap);
+		actorHasAccess = AmeCapabilityManager.hasCap(actor, requiredCap, menuItem.grant_access);
 	}
 	return actorHasAccess;
 }
@@ -953,7 +975,7 @@ function setActorAccess(containerNode, actor, allowAccess) {
 
 	//grant_access comes from PHP, which JSON-encodes empty assoc. arrays as arrays.
 	//However, we want it to be a dictionary.
-	if (typeof menuItem.grant_access['length'] == 'number') {
+	if (!$.isPlainObject(menuItem.grant_access)) {
 		menuItem.grant_access = {};
 	}
 
@@ -1000,7 +1022,7 @@ function setSelectedActor(actor) {
 function denyAccessForAllExcept(menuItem, actor) {
 	//grant_access comes from PHP, which JSON-encodes empty assoc. arrays as arrays.
 	//However, we want it to be a dictionary.
-	if (typeof menuItem.grant_access['length'] == 'number') {
+	if (!$.isPlainObject(menuItem.grant_access)) {
 		menuItem.grant_access = {};
 	}
 
@@ -1294,7 +1316,10 @@ $(document).ready(function(){
 		//Save the new settings.
 		accessEditorState.menuItem.extra_capability = $('#ws_extra_capability').val();
 
-		var grantAccess = {};
+		var grantAccess = accessEditorState.menuItem.grant_access;
+		if (!$.isPlainObject(grantAccess)) {
+			grantAccess = {};
+		}
 		$('#ws_menu_access_editor .ws_role_table_body tbody tr').each(function() {
 			var row = $(this);
 			var actor = row.data('actor');
