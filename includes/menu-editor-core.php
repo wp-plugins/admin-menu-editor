@@ -326,13 +326,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$separator_found = false;
 		foreach ( $menu as $id => $data ) {
 			if ( 0 == strcmp('wp-menu-separator', $data[4] ) ) {
-				if (false == $separator_found) {
-					$separator_found = true;
-				} else {
-					unset($menu[$id]);
-					$separator_found = false;
-				}
-			} else {
+                if ($separator_found) {
+                    unset($menu[$id]);
+                }
+                $separator_found = true;
+            } else {
 				$separator_found = false;
 			}
 		}
