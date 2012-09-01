@@ -76,6 +76,10 @@ var AmeCapabilityManager = (function(roles, users) {
 		return false;
 	};
 
+	me.role_exists = function(roleId) {
+		return roles.hasOwnProperty(roleId);
+	};
+
 	return me;
 })(wsEditorData.roles, wsEditorData.users);
 
@@ -1203,6 +1207,14 @@ $(document).ready(function(){
 			$('#ws_hint_menu_permissions').show();
 		} else {
 			$('#ws_hint_menu_permissions').hide();
+		}
+
+		//Warn the user if the required capability == role. Can't make it less restrictive.
+		if (requiredCap && AmeCapabilityManager.role_exists(requiredCap)) {
+			$('#ws_hardcoded_role_error').show();
+			$('#ws_hardcoded_role_name').text(requiredCap);
+		} else {
+			$('#ws_hardcoded_role_error').hide();
 		}
 
 		$('#ws_menu_access_editor').dialog('open');

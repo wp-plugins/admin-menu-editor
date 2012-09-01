@@ -10,6 +10,15 @@
 			</div>
 		</div>
 
+		<div class="error inline" id="ws_hardcoded_role_error">
+			<p>
+				<strong>Note:</strong>
+				Only users with the "<span id="ws_hardcoded_role_name">[role]</span>" role
+				can access this menu. This restriction is hard&shy;coded in the plugin that
+				created	the menu.
+			</p>
+		</div>
+
 		<div id="ws_role_access_container" class="ws_dialog_subpanel">
 			<strong>Roles</strong>
 			<a class="ws_tooltip_trigger" title="

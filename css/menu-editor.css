@@ -679,6 +679,15 @@ a.ws_button:hover {
 	color: #555;
 }
 
+#ws_menu_access_editor div.error {
+	margin-left: 0;
+	margin-right: 0;
+	margin-bottom: 5px;
+}
+
+#ws_hardcoded_role_error {
+	display: none;
+}
 
 /************************************
         Tooltips and hints
