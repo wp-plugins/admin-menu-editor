@@ -9,7 +9,7 @@ var AmeCapabilityManager = (function(roles, users) {
     var me = {};
 	users = users || {};
 
-    me.has_cap = function(actor, capability) {
+    me.hasCap = function(actor, capability) {
 		var separator = actor.indexOf(':');
 	    if (separator == -1) {
 			throw {
@@ -28,9 +28,9 @@ var AmeCapabilityManager = (function(roles, users) {
 	    var actorId = actor.substring(separator + 1);
 
 	    if (actorType == 'role') {
-			return me.role_has_cap(actorId, capability);
+			return me.roleHasCap(actorId, capability);
 	    } else if ( actorType == 'user' ) {
-		    return me.user_has_cap(actorId, capability);
+		    return me.userHasCap(actorId, capability);
 	    }
 
 	    throw {
@@ -41,7 +41,7 @@ var AmeCapabilityManager = (function(roles, users) {
 	    };
     };
 
-	me.role_has_cap = function(roleId, capability) {
+	me.roleHasCap = function(roleId, capability) {
 		if (!roles.hasOwnProperty(roleId)) {
 			throw {
 				name: 'UnknownRoleException',
@@ -59,7 +59,7 @@ var AmeCapabilityManager = (function(roles, users) {
 		}
 	};
 
-	me.user_has_cap = function(login, capability) {
+	me.userHasCap = function(login, capability) {
 		if (!users.hasOwnProperty(login)) {
 			throw {
 				name: 'UnknownUserException',
@@ -76,7 +76,7 @@ var AmeCapabilityManager = (function(roles, users) {
 		return false;
 	};
 
-	me.role_exists = function(roleId) {
+	me.roleExists = function(roleId) {
 		return roles.hasOwnProperty(roleId);
 	};
 
@@ -901,7 +901,7 @@ function actorCanAccessMenu(menuItem, actor) {
 	if (menuItem.grant_access.hasOwnProperty(actor)) {
 		actorHasAccess = menuItem.grant_access[actor];
 	} else {
-		actorHasAccess = AmeCapabilityManager.has_cap(actor, requiredCap);
+		actorHasAccess = AmeCapabilityManager.hasCap(actor, requiredCap);
 	}
 	return actorHasAccess;
 }
@@ -1210,7 +1210,7 @@ $(document).ready(function(){
 		}
 
 		//Warn the user if the required capability == role. Can't make it less restrictive.
-		if (requiredCap && AmeCapabilityManager.role_exists(requiredCap)) {
+		if (requiredCap && AmeCapabilityManager.roleExists(requiredCap)) {
 			$('#ws_hardcoded_role_error').show();
 			$('#ws_hardcoded_role_name').text(requiredCap);
 		} else {
