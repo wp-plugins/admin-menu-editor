@@ -9,35 +9,41 @@ var AmeCapabilityManager = (function(roles, users) {
     var me = {};
 	users = users || {};
 
+    function parseActorString(actor) {
+        var separator = actor.indexOf(':');
+        if (separator == -1) {
+            throw {
+                name: 'InvalidActorException',
+                message: "Actor string does not contain a colon.",
+                value: actor
+            };
+        }
+
+        return {
+            'type' : actor.substring(0, separator),
+            'id' : actor.substring(separator + 1)
+        }
+    }
+
     me.hasCap = function(actor, capability) {
-		var separator = actor.indexOf(':');
-	    if (separator == -1) {
-			throw {
-				name: 'InvalidActorException',
-				message: "Actor string does not contain a colon.",
-				value: actor
-			};
-	    }
+        var actorData = parseActorString(actor);
 
 	    //Super admins have access to everything, unless specifically denied.
 	    if ( actor == 'special:super_admin' ) {
 		    return (capability != 'do_not_allow');
 	    }
 
-	    var actorType = actor.substring(0, separator);
-	    var actorId = actor.substring(separator + 1);
-
-	    if (actorType == 'role') {
-			return me.roleHasCap(actorId, capability);
-	    } else if ( actorType == 'user' ) {
-		    return me.userHasCap(actorId, capability);
+	    if (actorData.type == 'role') {
+			return me.roleHasCap(actorData.id, capability);
+	    } else if (actorData.type == 'user') {
+		    return me.userHasCap(actorData.id, capability);
 	    }
 
 	    throw {
 		    name: 'InvalidActorTypeException',
 		    message: "The specified actor type is not supported",
 		    value: actor,
-		    'actorType': actorType
+		    'actorType': actorData.type
 	    };
     };
 
@@ -79,6 +85,42 @@ var AmeCapabilityManager = (function(roles, users) {
 	me.roleExists = function(roleId) {
 		return roles.hasOwnProperty(roleId);
 	};
+
+	/**
+	 * Compare the specificity of two actors.
+	 *
+	 * Returns 1 if the first actor is more specific than the second, 0 if they're both
+	 * equally specific, and -1 if the second actor is more specific.
+	 *
+	 * @param {String} actor1
+	 * @param {String} actor2
+	 * @return {Number}
+	 */
+    me.compareActorSpecificity = function(actor1, actor2) {
+		var delta = me.getActorSpecificity(actor1) - me.getActorSpecificity(actor2);
+		if (delta !== 0) {
+			delta = (delta > 0) ? 1 : -1;
+		}
+		return delta;
+    };
+
+    me.getActorSpecificity = function(actorString) {
+        var actor = parseActorString(actorString);
+		var specificity = 0;
+        switch(actor.type) {
+            case 'role':
+                specificity = 1;
+				break;
+			case 'special':
+				specificity = 2;
+				break;
+			case 'user':
+				specificity = 10;
+				break;
+        }
+		return specificity;
+    };
+
 
 	return me;
 })(wsEditorData.roles, wsEditorData.users);
@@ -944,6 +986,34 @@ function setSelectedActor(actor) {
 	}
 }
 
+/**
+ * Make a menu item inaccessible to everyone except a particular actor.
+ *
+ * Will not change access settings for actors that are more specific than the input actor.
+ * For example, if the input actor is a "role:", this function will only disable other roles,
+ * but will leave "user:" actors untouched.
+ *
+ * @param {Object} menuItem
+ * @param {String} actor
+ * @return {Object}
+ */
+function denyAccessForAllExcept(menuItem, actor) {
+	//grant_access comes from PHP, which JSON-encodes empty assoc. arrays as arrays.
+	//However, we want it to be a dictionary.
+	if (typeof menuItem.grant_access['length'] == 'number') {
+		menuItem.grant_access = {};
+	}
+
+	$.each(wsEditorData.actors, function(otherActor) {
+		//If the input actor is more or equally specific...
+		if (AmeCapabilityManager.compareActorSpecificity(actor, otherActor) >= 0) {
+			menuItem.grant_access[otherActor] = false;
+		}
+	});
+	menuItem.grant_access[actor] = true;
+	return menuItem;
+}
+
 /***************************************************************************
  Event handlers
  ***************************************************************************/
@@ -1464,11 +1534,7 @@ $(document).ready(function(){
 
 		//Make it accessible only to the current actor if one is selected.
 		if (selectedActor != null) {
-			menu.grant_access = {};
-			$.each(wsEditorData.actors, function(actor) {
-				menu.grant_access[actor] = false;
-			});
-			menu.grant_access[selectedActor] = true;
+			denyAccessForAllExcept(menu, selectedActor);
 		}
 
 		//Insert the new menu
@@ -1610,11 +1676,7 @@ $(document).ready(function(){
 
 		//Make it accessible to only the currently selected actor.
 		if (selectedActor != null) {
-			entry.grant_access[actor] = false;
-			$.each(wsEditorData.actors, function(actor) {
-				entry.grant_access[actor] = false;
-			});
-			entry.grant_access[selectedActor] = true;
+			denyAccessForAllExcept(entry, selectedActor);
 		}
 
 		var menu = buildMenuItem(entry);
