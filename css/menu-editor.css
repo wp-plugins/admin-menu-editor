@@ -179,7 +179,7 @@ input[type="checkbox"].ws_actor_access_checkbox /* Ensure we override WP default
 .ws_editbox {
 	display: block;
 	padding: 4px;
-	
+
 	border-radius: 2px;
 	border-top-right-radius: 0;
 
@@ -619,7 +619,7 @@ a.ws_button:hover {
 .ws_has_separate_header .ws_role_table_header {
 	border-bottom: none;
 
-	moz-border-radius-bottomleft: 0;
+	-moz-border-radius-bottomleft: 0;
 	-moz-border-radius-bottomright: 0;
 	-webkit-border-bottom-left-radius: 0;
 	-webkit-border-bottom-right-radius: 0;
@@ -631,7 +631,7 @@ a.ws_button:hover {
 	border-top: none;
 	margin-top: 0;
 
-	moz-border-radius-topleft: 0;
+	-moz-border-radius-topleft: 0;
 	-moz-border-radius-topright: 0;
 	-webkit-border-top-left-radius: 0;
 	-webkit-border-top-right-radius: 0;
@@ -725,8 +725,8 @@ a.ws_button:hover {
 	border-radius: 3px;
 
 	position: absolute;
-	right: 0px;
-	top: 0px;
+	right: 0;
+	top: 0;
 }
 
 .ws_hint_close:hover {
