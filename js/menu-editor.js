@@ -211,6 +211,7 @@ function outputTopMenu(menu, afterNode){
 	//Create the menu widget
 	var menu_obj = buildMenuItem(menu, true);
 	menu_obj.data('submenu_id', submenu.attr('id'));
+	updateItemEditor(menu_obj);
 
 	//Display
 	submenu.appendTo('#ws_submenu_box');
@@ -901,6 +902,48 @@ function actorCanAccessMenu(menuItem, actor) {
 	return actorHasAccess;
 }
 
+function setActorAccess(containerNode, actor, allowAccess) {
+	var menuItem = containerNode.data('menu_item');
+
+	//grant_access comes from PHP, which JSON-encodes empty assoc. arrays as arrays.
+	//However, we want it to be a dictionary.
+	if (typeof menuItem.grant_access['length'] == 'number') {
+		menuItem.grant_access = {};
+	}
+
+	menuItem.grant_access[actor] = allowAccess;
+}
+
+function setSelectedActor(actor) {
+	selectedActor = actor;
+
+	//Highlight the actor.
+	var actorSelector = $('#ws_actor_selector');
+	$('.current', actorSelector).removeClass('current');
+
+	if (selectedActor == null) {
+		$('a.ws_no_actor').addClass('current');
+	} else {
+		$('a[href$="#'+ actor +'"]').addClass('current');
+	}
+
+	//There are some UI elements that can be visible or hidden depending on whether an actor is selected.
+	$('#ws_menu_editor').toggleClass('ws_is_actor_view', (selectedActor != null));
+
+	//Update the menu item states to indicate whether they're accessible.
+	if (selectedActor != null) {
+		$('#ws_menu_editor .ws_container').each(function() {
+			updateActorAccessUi($(this));
+		});
+	} else {
+		$('#ws_menu_editor .ws_is_hidden_for_actor').removeClass('ws_is_hidden_for_actor');
+	}
+}
+
+/***************************************************************************
+ Event handlers
+ ***************************************************************************/
+
 //Cut & paste stuff
 var menu_in_clipboard = null;
 var ws_paste_count = 0;
@@ -948,8 +991,8 @@ $(document).ready(function(){
 		//when the user tries to access access them for the first time.
 		if ( !container.data('field_editors_created') ){
 			buildEditboxFields(box, container.data('menu_item'), container.hasClass('ws_menu'));
-			updateItemEditor(container);
 			container.data('field_editors_created', true);
+			updateItemEditor(container);
 		}
 
 		$(this).toggleClass('ws_edit_link_expanded');
@@ -1059,25 +1102,27 @@ $(document).ready(function(){
 		return false;
 	});
 
+	//Allow/forbid items in actor-specific views
 	$('#ws_menu_editor input.ws_actor_access_checkbox').live('click', function() {
 		if (selectedActor == null) {
 			return;
 		}
 
-		//TODO: Update permissions recursively when the user clicks the checkbox on a top-level item
-
 		var checked = $(this).is(':checked');
+
 		var containerNode = $(this).closest('.ws_container');
-		var menuItem = containerNode.data('menu_item');
-
-		//grant_access comes from PHP, which JSON-encodes empty assoc. arrays as arrays.
-		//However, we want it to be a dictionary.
-		if (typeof menuItem.grant_access['length'] == 'number') {
-			menuItem.grant_access = {};
-		}
-
-		menuItem.grant_access[selectedActor] = checked;
+		setActorAccess(containerNode, selectedActor, checked);
 		updateItemEditor(containerNode);
+
+		//Apply the same permissions to sub-menus.
+		var subMenuId = containerNode.data('submenu_id');
+		if (subMenuId && containerNode.hasClass('ws_menu')) {
+			$('.ws_item', '#' + subMenuId).each(function() {
+				var node = $(this);
+				setActorAccess(node, selectedActor, checked);
+				updateItemEditor(node);
+			});
+		}
 	});
 
 	/*************************************************************************
@@ -1405,6 +1450,15 @@ $(document).ready(function(){
 			defaults: itemTemplates.getDefaults('')
 		});
 
+		//Make it accessible only to the current actor if one is selected.
+		if (selectedActor != null) {
+			menu.grant_access = {};
+			$.each(wsEditorData.actors, function(actor) {
+				menu.grant_access[actor] = false;
+			});
+			menu.grant_access[selectedActor] = true;
+		}
+
 		//Insert the new menu
 		var selection = $('#ws_menu_box .ws_active');
 		var result = outputTopMenu(menu, (selection.length > 0) ? selection : null);
@@ -1542,7 +1596,17 @@ $(document).ready(function(){
 			defaults: itemTemplates.getDefaults('')
 		});
 
+		//Make it accessible to only the currently selected actor.
+		if (selectedActor != null) {
+			entry.grant_access[actor] = false;
+			$.each(wsEditorData.actors, function(actor) {
+				entry.grant_access[actor] = false;
+			});
+			entry.grant_access[selectedActor] = true;
+		}
+
 		var menu = buildMenuItem(entry);
+		updateItemEditor(menu);
 
 		//Insert the item into the currently open submenu.
 		var visibleSubmenu = $('#ws_submenu_box .ws_submenu:visible');
@@ -1831,41 +1895,20 @@ $(document).ready(function(){
 	actorSelector.append('<li><a href="#" class="current ws_no_actor">All</a></li>');
 	selectedActor = null;
 
-	for(var actor in wsEditorData.actors) {
-		if (!wsEditorData.actors.hasOwnProperty(actor)) {
-			continue;
+	if (wsEditorData.wsMenuEditorPro) {
+		for(var actor in wsEditorData.actors) {
+			if (!wsEditorData.actors.hasOwnProperty(actor)) {
+				continue;
+			}
+			actorSelector.append(
+				$('<li></li>').append(
+					$('<a></a>')
+						.attr('href', '#' + actor)
+						.text(wsEditorData.actors[actor])
+				)
+			);
 		}
-		actorSelector.append(
-			$('<li></li>').append(
-				$('<a></a>')
-					.attr('href', '#' + actor)
-					.text(wsEditorData.actors[actor])
-			)
-		);
-	}
-
-	function setSelectedActor(actor) {
-		selectedActor = actor;
-
-		//Highlight the actor.
-		var actorSelector = $('#ws_actor_selector');
-		$('.current', actorSelector).removeClass('current');
-
-		if (selectedActor == null) {
-			$('a.ws_no_actor').addClass('current');
-		} else {
-			$('a[href$="#'+ actor +'"]').addClass('current');
-		}
-
-		//There are some UI elements that can be visible or hidden depending on whether an actor is selected.
-		$('#ws_menu_editor').toggleClass('ws_is_actor_view', (selectedActor != null));
-
-		//Update the menu item states to indicate whether they're accessible.
-		if (selectedActor != null) {
-			$('#ws_menu_editor .ws_container').each(function() {
-				updateActorAccessUi($(this));
-			});
-		}
+		actorSelector.show();
 	}
 
 	$('li a', actorSelector).click(function(event) {
