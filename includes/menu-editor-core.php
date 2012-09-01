@@ -173,7 +173,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$page = add_options_page(
 				apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'), 
 				apply_filters('admin_menu_editor-self_menu_title', 'Menu Editor'), 
-				'manage_options', 
+				apply_filters('admin_menu_editor_capability', 'manage_options'),
 				'menu_editor', 
 				array(&$this, 'page_menu_editor')
 			);
@@ -499,11 +499,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * 
 	 * @return bool
 	 */
-	function current_user_can_edit_menu(){
+	public function current_user_can_edit_menu(){
 		if ( $this->is_super_plugin() ){
 			return is_super_admin();
 		} else {
-			return current_user_can('manage_options');
+			return current_user_can(apply_filters('admin_menu_editor-capability', 'manage_options'));
 		}
 	}
 	
@@ -1054,7 +1054,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return void
 	 */
 	function ajax_save_screen_options(){
-		if (!current_user_can('manage_options') || !check_ajax_referer('ws_ame_save_screen_options', false, false)){
+		if (!$this->current_user_can_edit_menu() || !check_ajax_referer('ws_ame_save_screen_options', false, false)){
 			die( $this->json_encode( array(
 				'error' => "You're not allowed to do that!" 
 			 )));
