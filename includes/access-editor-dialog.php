@@ -20,9 +20,9 @@
 		</div>
 
 		<div id="ws_role_access_container" class="ws_dialog_subpanel">
-			<strong>Roles</strong>
+			<strong>Allow access</strong>
 			<a class="ws_tooltip_trigger" title="
-				Check a box to give that role the required capability and access to this menu.
+				Check a box to give that role or user the required capability and access to this menu.
 				Clear the box to prevent access.
 			">[?]</a>
 			<br>
@@ -67,7 +67,7 @@
 				<strong>Extra capability</strong>
 			</label>
 			<a class="ws_tooltip_trigger" title="
-				Optional. An additional user capability check that will be applied on top of
+				Optional. An additional capability check that will be applied on top of
 				the &quot;Roles&quot; and &quot;Required capability&quot; settings.
 				Leave empty to disable.
 			">[?]</a>
