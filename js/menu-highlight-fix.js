@@ -45,6 +45,11 @@ jQuery(function($) {
 		isTopMenu : false
 	};
 
+	//Special case: ".../wp-admin/" should match ".../wp-admin/index.php".
+	if (currentUri.path.match(/\/wp-admin\/$/)) {
+		currentUri.path = currentUri.path + 'index.php';
+	}
+
 	$('#adminmenu li > a').each(function(index, link) {
 		var $link = $(link);
 
