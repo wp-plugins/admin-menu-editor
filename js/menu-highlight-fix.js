@@ -150,8 +150,10 @@ jQuery(function($) {
 			//Account for users who use a plugin to keep all menus expanded.
 			var shouldCloseOtherMenus = $('li.wp-has-current-submenu', '#adminmenu').length <= 1;
 			if (shouldCloseOtherMenus) {
-				otherHighlightedMenus.removeClass('wp-menu-open');
-                otherHighlightedMenus.removeClass('wp-has-current-submenu current').addClass('wp-not-current-submenu');
+				otherHighlightedMenus
+					.add('> a', otherHighlightedMenus)
+					.removeClass('wp-menu-open wp-has-current-submenu current')
+                	.addClass('wp-not-current-submenu');
 			}
 
 			var parentMenuAndLink = parentMenu.add('> a.menu-top', parentMenu);
