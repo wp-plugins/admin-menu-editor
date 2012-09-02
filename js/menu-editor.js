@@ -306,6 +306,7 @@ function buildSubmenu(items){
 		$.each(items, function(index, item) {
 			entry = buildMenuItem(item, false);
 			if ( entry ){
+				updateItemEditor(entry);
 				submenu.append(entry);
 			}
 		});
