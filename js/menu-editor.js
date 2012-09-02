@@ -802,14 +802,15 @@ function makeBoxSortable(menuBox){
                        Parsing & encoding menu inputs
  ***************************************************************************/
 
-/*
+/**
  * Encode the current menu structure as JSON
  *
- * Returns :
- *	A JSON-encoded string representing the current menu tree loaded in the editor.
+ * @return {String} A JSON-encoded string representing the current menu tree loaded in the editor.
  */
-function encodeMenuAsJSON(){
-	var tree = readMenuTreeState();
+function encodeMenuAsJSON(tree){
+	if (typeof tree == 'undefined' || !tree) {
+		tree = readMenuTreeState();
+	}
 	tree.format = {
 		name: wsEditorData.menuFormatName,
 		version: wsEditorData.menuFormatVersion
@@ -1763,7 +1764,37 @@ $(document).ready(function(){
 
 	//Save Changes - encode the current menu as JSON and save
 	$('#ws_save_menu').click(function () {
-		var data = encodeMenuAsJSON();
+		var tree = readMenuTreeState();
+
+		function findItemByTemplateId(items, templateId) {
+			var foundItem = null;
+
+			$.each(items, function(index, item) {
+				if (item.template_id == templateId) {
+					foundItem = item;
+					return false;
+				}
+				if (item.hasOwnProperty('items') && (item.items.length > 0)) {
+					foundItem = findItemByTemplateId(item.items, templateId);
+					if (foundItem != null) {
+						return false;
+					}
+				}
+			});
+
+			return foundItem;
+		}
+
+		//Abort the save if it would make the editor inaccessible.
+		var myMenuItem = findItemByTemplateId(tree.tree, 'options-general.php>menu_editor');
+		if (myMenuItem == null) {
+			//This is OK - the missing menu item will be re-inserted automatically.
+		} else if (!actorCanAccessMenu(myMenuItem, 'user:' + wsEditorData.currentUserLogin)) {
+			alert("Error: This configuration would make you unable to access the menu editor!");
+			return;
+		}
+
+		var data = encodeMenuAsJSON(tree);
 		$('#ws_data').val(data);
 		$('#ws_data_length').val(data.length);
 		$('#ws_main_form').submit();
