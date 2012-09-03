@@ -95,6 +95,12 @@ var AmeCapabilityManager = (function(roles, users) {
 					return true;
 				}
 			}
+
+            //Super Admins have all capabilities, except those explicitly denied.
+            //We also need to check if the Super Admin actor is allowed in this context.
+            if (user.is_super_admin && (!context.hasOwnProperty('special:super_admin') || context['special:super_admin'])) {
+                return (capability != 'do_not_allow');
+            }
 		}
 
 		return false;

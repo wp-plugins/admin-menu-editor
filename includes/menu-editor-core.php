@@ -402,6 +402,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'id' => $current_user->ID,
 			'roles' => array_values($current_user->roles),
 			'capabilities' => $this->castValuesToBool($current_user->caps),
+			'is_super_admin' => is_multisite() && is_super_admin(),
 		);
 
         $actors['user:' . $current_user->user_login] = sprintf(
