@@ -1786,13 +1786,15 @@ $(document).ready(function(){
 		}
 
 		//Abort the save if it would make the editor inaccessible.
-		var myMenuItem = findItemByTemplateId(tree.tree, 'options-general.php>menu_editor');
-		if (myMenuItem == null) {
-			//This is OK - the missing menu item will be re-inserted automatically.
-		} else if (!actorCanAccessMenu(myMenuItem, 'user:' + wsEditorData.currentUserLogin)) {
-			alert("Error: This configuration would make you unable to access the menu editor!");
-			return;
-		}
+        if (wsEditorData.wsMenuEditorPro) {
+            var myMenuItem = findItemByTemplateId(tree.tree, 'options-general.php>menu_editor');
+            if (myMenuItem == null) {
+                //This is OK - the missing menu item will be re-inserted automatically.
+            } else if (!actorCanAccessMenu(myMenuItem, 'user:' + wsEditorData.currentUserLogin)) {
+                alert("Error: This configuration would make you unable to access the menu editor!");
+                return;
+            }
+        }
 
 		var data = encodeMenuAsJSON(tree);
 		$('#ws_data').val(data);
