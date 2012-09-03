@@ -1177,8 +1177,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$item_url = $this->parse_url($item_url);
 
 			//Must match scheme, host, port, user, pass and path.
-			$components = array('scheme', 'host', 'port', 'user', 'pass', 'path');
-			$is_close_match = true;
+			$components = array('scheme', 'host', 'port', 'user', 'pass');
+			$is_close_match = $this->urlPathsMatch($current_url['path'], $item_url['path']);
 			foreach($components as $component) {
 				$is_close_match = $is_close_match && ($current_url[$component] == $item_url[$component]);
 				if ( !$is_close_match ) {
@@ -1228,6 +1228,44 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$parsed['params'] = $params;
 
 		return $parsed;
+	}
+
+	/**
+	 * Check if two paths match. Intended for comparing WP admin URLs.
+	 *
+	 * @param string $path1
+	 * @param string $path2
+	 * @return bool
+	 */
+	private function urlPathsMatch($path1, $path2) {
+		if ( $path1 == $path2 ) {
+			return true;
+		}
+
+		// "/wp-admin/index.php" should match "/wp-admin/".
+		if (
+			($this->endsWith($path1, '/wp-admin/index.php') && $this->endsWith($path2, '/wp-admin/'))
+			|| ($this->endsWith($path2, '/wp-admin/index.php') && $this->endsWith($path1, '/wp-admin/'))
+		) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Determine if the input $string ends with the specified $suffix.
+	 *
+	 * @param string $string
+	 * @param string $suffix
+	 * @return bool
+	 */
+	private function endsWith($string, $suffix) {
+		$len = strlen($suffix);
+		if ( $len == 0 ) {
+			return true;
+		}
+		return substr($string, -$len) === $suffix;
 	}
 
 	private function castValuesToBool($capabilities) {
