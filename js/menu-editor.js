@@ -82,6 +82,15 @@ var AmeCapabilityManager = (function(roles, users) {
 		if ( user.capabilities.hasOwnProperty(capability) ) {
 			return user.capabilities[capability];
 		} else {
+            //Super Admins have all capabilities, except those explicitly denied.
+            //We also need to check if the Super Admin actor is allowed in this context.
+            if (user.is_super_admin ) {
+                if (context.hasOwnProperty('special:super_admin')) {
+                    return context['special:super_admin'];
+                }
+                return (capability != 'do_not_allow');
+            }
+
 			//Check if any of the user's roles have the capability.
 			for(var index = 0; index < user.roles.length; index++) {
 				var roleId = user.roles[index];
@@ -95,12 +104,6 @@ var AmeCapabilityManager = (function(roles, users) {
 					return true;
 				}
 			}
-
-            //Super Admins have all capabilities, except those explicitly denied.
-            //We also need to check if the Super Admin actor is allowed in this context.
-            if (user.is_super_admin && (!context.hasOwnProperty('special:super_admin') || context['special:super_admin'])) {
-                return (capability != 'do_not_allow');
-            }
 		}
 
 		return false;
