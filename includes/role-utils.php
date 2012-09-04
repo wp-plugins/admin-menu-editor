@@ -43,11 +43,6 @@ class ameRoleUtils {
 			$roles[$role_id] = $role['name'];
 		}
 
-		//Multi-site installs also get the virtual "Super Admin" role, but only the Super Admin sees it.
-		if ( is_multisite() && !isset($roles['super_admin']) && is_super_admin() ){
-			$roles['super_admin'] = 'Super Admin';
-		}
-
 		return $roles;
 	}
 

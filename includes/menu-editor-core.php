@@ -964,6 +964,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		$all_capabilities = array_keys($all_capabilities);
 		natcasesort($all_capabilities);
+
+		//Multi-site installs also get the virtual "Super Admin" cap, but only the Super Admin sees it.
+		if ( is_multisite() && !isset($all_capabilities['super_admin']) && is_super_admin() ){
+			array_unshift($all_capabilities, 'super_admin');
+		}
 		$editor_data['all_capabilities'] = $all_capabilities;
 
 		//Create a list of all roles, too.
