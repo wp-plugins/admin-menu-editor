@@ -16,6 +16,7 @@ require $thisDirectory . '/menu.php';
 require $thisDirectory . '/auto-versioning.php';
 
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
+	private $plugin_db_version = 140;
 
 	/** @var array The default WordPress menu, before display-specific filtering. */
 	protected $default_wp_menu;
@@ -76,6 +77,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'custom_menu' => null,
 			'first_install_time' => null,
 			'display_survey_notice' => true,
+			'plugin_db_version' => 0,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -103,41 +105,33 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	
 	function init_finish() {
 		parent::init_finish();
-		
-        if ( !isset($this->options['first_install_time']) ) {
-			$this->options['first_install_time'] = time();
-			$this->save_options();
-        }
-	}
+		$should_save_options = false;
 
-  /**
-   * Activation hook
-   * 
-   * @return void
-   */
-	function activate(){
 		//If we have no stored settings for this version of the plugin, try importing them
 		//from other versions (i.e. the free or the Pro version).
 		if ( !$this->load_options() ){
 			$this->import_settings();
+			$should_save_options = true;
 		}
 
-		//Track first install time. Could be useful for, for example, selectively displaying
-		//a "What's New" message only to users who upgraded from an older version.
-        $show_hints = $this->get_hint_visibility();
-        $hint_id = 'ws_whats_new_120';
-        if ( !isset($show_hints[$hint_id]) ) {
-            $show_hints[$hint_id] = empty($this->options['first_install_time']) && !empty($this->options['custom_menu']);
-            $this->set_hint_visibility($show_hints);
-        }
-
-        if ( empty($this->options['first_install_time']) ) {
+		//Track first install time.
+        if ( !isset($this->options['first_install_time']) ) {
 			$this->options['first_install_time'] = time();
+			$should_save_options = true;
         }
 
-		parent::activate();
+		if ( $this->options['plugin_db_version'] < $this->plugin_db_version ) {
+			/* Put any activation code here. */
+
+			$this->options['plugin_db_version'] = $this->plugin_db_version;
+			$should_save_options = true;
+		}
+
+		if ( $should_save_options ) {
+			$this->save_options();
+		}
 	}
-	
+
   /**
    * Import settings from a different version of the plugin.
    * 
@@ -1094,7 +1088,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
         $defaults = array(
             'ws_sidebar_pro_ad' => true,
-            //'ws_whats_new_120' => true, //Set upon activation, default not needed.
+            'ws_whats_new_120' => false,
             'ws_hint_menu_permissions' => true,
         );
 

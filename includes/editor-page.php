@@ -37,7 +37,7 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 
 <?php
 $hint_id = 'ws_whats_new_120';
-$show_whats_new = apply_filters('admin_menu_editor_is_pro', false) && !empty($editor_data['show_hints'][$hint_id]);
+$show_whats_new = false && apply_filters('admin_menu_editor_is_pro', false) && !empty($editor_data['show_hints'][$hint_id]);
 if ( $show_whats_new ):
     ?>
     <div class="ws_hint" id="<?php echo esc_attr($hint_id); ?>">
