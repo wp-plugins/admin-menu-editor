@@ -1291,10 +1291,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Only display the notice on the Menu Editor (Pro) page.
 		$display_notice = $display_notice && isset($this->get['page']) && ($this->get['page'] == 'menu_editor');
-
+		
 		//Let the user override this completely (useful for client sites).
-		if ( file_exists(dirname($this->plugin_file) . '/never-display-surveys.txt') ) {
+		if ( $display_notice && file_exists(dirname($this->plugin_file) . '/never-display-surveys.txt') ) {
 			$display_notice = false;
+			$this->options['display_survey_notice'] = false;
+			$this->save_options();
 		}
 
 		if ( $display_notice ) {
