@@ -174,6 +174,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Output our JS & CSS on that page only
 			add_action("admin_print_scripts-$page", array(&$this, 'enqueue_scripts'));
 			add_action("admin_print_styles-$page", array(&$this, 'enqueue_styles'));
+
+			//Compatibility fix for All In One Event Calendar; see the callback for details.
+			add_action("admin_print_scripts-$page", array($this, 'dequeue_ai1ec_scripts'));
 			
 			//Make a placeholder for our screen options (hacky)
 			add_meta_box("ws-ame-screen-options", "You should never see this", '__return_false', $page);
@@ -436,6 +439,23 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'showHints' => $this->get_hint_visibility(),
 			)
 		);
+	}
+
+	/**
+	 * Compatibility workaround for All In One Event Calendar 1.8.3-premium.
+	 *
+	 * The event calendar plugin is known to crash Admin Menu Editor Pro 1.40. The exact cause
+	 * of the crash is unknown, but we can prevent it by removing AIOEC scripts from the menu
+	 * editor page.
+	 *
+	 * This should not affect the functionality of the event calendar plugin. The scripts
+	 * in question don't seem to do anything on pages not related to the event calendar. AIOEC
+	 * just loads them indiscriminately on all pages.
+	 */
+	public function dequeue_ai1ec_scripts() {
+		wp_dequeue_script('ai1ec_requirejs');
+		wp_dequeue_script('ai1ec_common_backend');
+		wp_dequeue_script('ai1ec_add_new_event_require');
 	}
 
 	 /**
