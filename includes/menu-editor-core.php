@@ -1342,7 +1342,7 @@ window.wsMenuEditorPro = false; //Will be overwritten if extras are loaded
 			'ame-menu-fix',
 			plugins_url('js/menu-highlight-fix.js', $this->plugin_file),
 			array('jquery'),
-			'20120709',
+			'20120915',
 			true
 		);
 	}
