@@ -173,7 +173,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'menu-editor',
 			plugins_url('js/menu-editor.js', $this->plugin_file),
 			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'), 
-			'1.1'
+			'20120915'
 		);
 
 		//The editor will need access to some of the plugin data and WP data.
