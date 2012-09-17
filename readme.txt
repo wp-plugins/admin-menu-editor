@@ -64,7 +64,7 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 == Changelog ==
 
 = 1.1.11 =
-* Tested on WP 3.4.2 and WP 3.5-alpha-21751.
+* Tested on WP 3.4.2 and WP 3.5-alpha-21879.
 * Fixed a visual glitch related to the arrow that's used to expand menu settings. In certain situations clicking it would cause the arrow icon to be briefly replaced with multiple copies of the same icon.
 * Fixed the position of the URL and capability dropdown lists. Now they should show up directly under the corresponding input box instead of appearing some distance down and to the right.
 * Fixed the size of the toolbar buttons - now they're perfectly square.
@@ -172,6 +172,9 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 * Added a readme.txt
 
 == Upgrade Notice ==
+
+= 1.1.11 =
+This version fixes several minor bugs and layout problems.
 
 = 1.1.9 =
 Optional upgrade. Just adds a couple of screenshots for the WordPress.org plugin description.
