@@ -1,16 +1,23 @@
-/*
-* qTip2 - Pretty powerful tooltips
+/*! qTip2 - Pretty powerful tooltips - v2.0.0 - 2012-09-10
 * http://craigsworks.com/projects/qtip2/
-*
-* Version: nightly
-* Copyright 2009-2010 Craig Michael Thompson - http://craigsworks.com
-*
-* Dual licensed under MIT or GPLv2 licenses
-*   http://en.wikipedia.org/wiki/MIT_License
-*   http://en.wikipedia.org/wiki/GNU_General_Public_License
-*
-* Date: Sun May 13 12:07:36.0000000000 2012
-*/
+* Copyright (c) 2012 Craig Michael Thompson; Licensed MIT, GPL */
+
+/* Fluid class for determining actual width in IE */
+#qtip-rcontainer{
+	position: absolute;
+	left: -28000px;
+	top: -28000px;
+	display: block;
+	visibility: hidden;
+}
+
+	/* Fluid class for determining actual width in IE */
+	#qtip-rcontainer .ui-tooltip{
+		display: block !important;
+		visibility: hidden !important;
+		position: static !important;
+		float: left !important;
+	}
 
 /* Core qTip styles */
 .ui-tooltip, .qtip{
@@ -24,18 +31,7 @@
 	
 	font-size: 10.5px;
 	line-height: 12px;
-
-	border-width: 1px;
-	border-style: solid;
 }
-
-	/* Fluid class for determining actual width in IE */
-	.ui-tooltip-fluid{
-		display: block;
-		visibility: hidden;
-		position: static !important;
-		float: left !important;
-	}
 
 	.ui-tooltip-content{
 		position: relative;
@@ -44,7 +40,6 @@
 
 		text-align: left;
 		word-wrap: break-word;
-		overflow: hidden;
 	}
 
 	.ui-tooltip-titlebar{
@@ -57,9 +52,9 @@
 		font-weight: bold;
 	}
 
-	.ui-tooltip-titlebar + .ui-tooltip-content{ border-top-width: 0px !important; }
+	.ui-tooltip-titlebar + .ui-tooltip-content{ border-top-width: 0 !important; }
 
-		/*! Default close button class */
+		/* Default close button class */
 		.ui-tooltip-titlebar .ui-state-default{
 			position: absolute;
 			right: 4px;
@@ -79,12 +74,14 @@
 		.ui-tooltip-icon .ui-icon{
 			display: block;
 			text-indent: -1000em;
+			direction: ltr;
 		}
 
 		.ui-tooltip-icon, .ui-tooltip-icon .ui-icon{
 			-moz-border-radius: 3px;
 			-webkit-border-radius: 3px;
 			border-radius: 3px;
+			text-decoration: none;
 		}
 
 			.ui-tooltip-icon .ui-icon{
@@ -101,19 +98,17 @@
 
 
 /* Applied to 'focused' tooltips e.g. most recently displayed/interacted with */
-.ui-tooltip-focus{
-
-}
+.ui-tooltip-focus{}
 
 /* Applied on hover of tooltips i.e. added/removed on mouseenter/mouseleave respectively */
-.ui-tooltip-hover{
-	
-}
+.ui-tooltip-hover{}
 
-
-/*! Default tooltip style */
+/* Default tooltip style */
 .ui-tooltip-default{
+	border-width: 1px;
+	border-style: solid;
 	border-color: #F1D031;
+
 	background-color: #FFFFA3;
 	color: #555;
 }
@@ -132,27 +127,6 @@
 		border-color: #AAA;
 		color: #111;
 	}
-
-/* Tips plugin */
-.ui-tooltip .ui-tooltip-tip{
-	margin: 0 auto;
-	overflow: hidden;
-	z-index: 10;
-}
-
-	.ui-tooltip .ui-tooltip-tip,
-	.ui-tooltip .ui-tooltip-tip *{
-		position: absolute;
-		
-		line-height: 0.1px !important;
-		font-size: 0.1px !important;
-		color: #123456;
-
-		background: transparent;
-		border: 0px dashed transparent;
-	}
-	
-	.ui-tooltip .ui-tooltip-tip canvas{ top: 0; left: 0; }
 
 
 /*! Light tooltip style */
@@ -258,51 +232,55 @@
 		background-position: -2px 0;
 	}
 
-/*! Add shadows to your tooltips in: FF3+, Chrome 2+, Opera 10.6+, IE6+, Safari 2+ */
+
+/* Add shadows to your tooltips in: FF3+, Chrome 2+, Opera 10.6+, IE9+, Safari 2+ */
 .ui-tooltip-shadow{
 	-webkit-box-shadow: 1px 1px 3px 1px rgba(0, 0, 0, 0.15);
 	-moz-box-shadow: 1px 1px 3px 1px rgba(0, 0, 0, 0.15);
 	box-shadow: 1px 1px 3px 1px rgba(0, 0, 0, 0.15);
 }
 
-	.ui-tooltip-shadow .ui-tooltip-titlebar,
-	.ui-tooltip-shadow .ui-tooltip-content{
-		filter: progid:DXImageTransform.Microsoft.Shadow(Color='gray', Direction=135, Strength=3);
-		-ms-filter:"progid:DXImageTransform.Microsoft.Shadow(Color='gray', Direction=135, Strength=3)";
-
-		_margin-bottom: -3px; /* IE6 */
-		.margin-bottom: -3px; /* IE7 */
-	}
-
-
-/*! Add rounded corners to your tooltips in: FF3+, Chrome 2+, Opera 10.6+, IE9+, Safari 2+ */
+/* Add rounded corners to your tooltips in: FF3+, Chrome 2+, Opera 10.6+, IE9+, Safari 2+ */
 .ui-tooltip-rounded,
 .ui-tooltip-tipsy,
-.ui-tooltip-youtube,
-.ui-tooltip-youtube > div,
 .ui-tooltip-bootstrap{
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
 	border-radius: 5px;
 }
 
-/*! Youtube tooltip style */
+/* Youtube tooltip style */
 .ui-tooltip-youtube{
+	-moz-border-radius: 2px;
+	-webkit-border-radius: 2px;
+	border-radius: 2px;
+	
 	-webkit-box-shadow: 0 0 3px #333;
 	-moz-box-shadow: 0 0 3px #333;
 	box-shadow: 0 0 3px #333;
 
 	color: white;
-	border-color: #CCCCCC;
+	border-width: 0;
 
-	background: transparent;
-	background: rgba(0, 0, 0, 0.85);
-	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#D9000000,endColorstr=#D9000000);
-	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#D9000000,endColorstr=#D9000000)";
+	background: #4A4A4A;
+	background-image: -webkit-gradient(linear,left top,left bottom,color-stop(0,#4A4A4A),color-stop(100%,black));
+	background-image: -webkit-linear-gradient(top,#4A4A4A 0,black 100%);
+	background-image: -moz-linear-gradient(top,#4A4A4A 0,black 100%);
+	background-image: -ms-linear-gradient(top,#4A4A4A 0,black 100%);
+	background-image: -o-linear-gradient(top,#4A4A4A 0,black 100%);
 }
 
 	.ui-tooltip-youtube .ui-tooltip-titlebar{
-		background-color: transparent;
+		background-color: #4A4A4A;
+		background-color: rgba(0,0,0,0);
+	}
+	
+	.ui-tooltip-youtube .ui-tooltip-content{
+		padding: .75em;
+		font: 12px arial,sans-serif;
+		
+		filter: progid:DXImageTransform.Microsoft.Gradient(GradientType=0,StartColorStr=#4a4a4a,EndColorStr=#000000);
+		-ms-filter: "progid:DXImageTransform.Microsoft.Gradient(GradientType=0,StartColorStr=#4a4a4a,EndColorStr=#000000);";
 	}
 
 	.ui-tooltip-youtube .ui-tooltip-icon{
@@ -318,8 +296,11 @@
 .ui-tooltip-jtools{
 	background: #232323;
 	background: rgba(0, 0, 0, 0.7);
-	background-image: -moz-linear-gradient(top, #717171, #232323);
 	background-image: -webkit-gradient(linear, left top, left bottom, from(#717171), to(#232323));
+	background-image: -moz-linear-gradient(top, #717171, #232323);
+	background-image: -webkit-linear-gradient(top, #717171, #232323);
+	background-image: -ms-linear-gradient(top, #717171, #232323);
+	background-image: -o-linear-gradient(top, #717171, #232323);
 
 	border: 2px solid #ddd;
 	border: 2px solid rgba(241,241,241,1);
@@ -393,7 +374,7 @@
 	background: rgba(0, 0, 0, .87);
 
 	color: white;
-	border: 0px solid transparent;
+	border: 0 solid transparent;
 
 	font-size: 11px;
 	font-family: 'Lucida Grande', sans-serif;
@@ -441,8 +422,11 @@
 
 		color: white;
 		background: #3A79B8;
-		background-image: -moz-linear-gradient(top, #3A79B8, #2E629D);
 		background-image: -webkit-gradient(linear, left top, left bottom, from(#3A79B8), to(#2E629D));
+		background-image: -webkit-linear-gradient(top, #3A79B8, #2E629D);
+		background-image: -moz-linear-gradient(top, #3A79B8, #2E629D);
+		background-image: -ms-linear-gradient(top, #3A79B8, #2E629D);
+		background-image: -o-linear-gradient(top, #3A79B8, #2E629D);
 		filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#3A79B8,endColorstr=#2E629D);
 		-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#3A79B8,endColorstr=#2E629D)";
 	}
@@ -536,4 +520,54 @@
 	filter: none;
 	-ms-filter: none;
 }
+
+
+/* Tips plugin */
+.ui-tooltip .ui-tooltip-tip{
+	margin: 0 auto;
+	overflow: hidden;
+	z-index: 10;
+}
+
+	.ui-tooltip .ui-tooltip-tip,
+	.ui-tooltip .ui-tooltip-tip .qtip-vml{
+		position: absolute;
+		
+		line-height: 0.1px !important;
+		font-size: 0.1px !important;
+		color: #123456;
+
+		background: transparent;
+		border: 0 dashed transparent;
+	}
+	
+	.ui-tooltip .ui-tooltip-tip canvas{ top: 0; left: 0; }
+
+	.ui-tooltip .ui-tooltip-tip .qtip-vml{
+		behavior: url(#default#VML);
+		display: inline-block;
+		visibility: visible;
+	}
+/* Modal plugin */
+#qtip-overlay{
+	position: fixed;
+	left: -10000em;
+	top: -10000em;
+}
+
+	/* Applied to modals with show.modal.blur set to true */
+	#qtip-overlay.blurs{ cursor: pointer; }
+
+	/* Change opacity of overlay here */
+	#qtip-overlay div{
+		position: absolute;
+		left: 0; top: 0;
+		width: 100%; height: 100%;
+
+		background-color: black;
+
+		opacity: 0.7;
+		filter:alpha(opacity=70);
+		-ms-filter:"progid:DXImageTransform.Microsoft.Alpha(Opacity=70)";
+	}
 

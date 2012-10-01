@@ -359,7 +359,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//jQuery sort plugin
 		wp_register_auto_versioned_script('jquery-sort', plugins_url('js/jquery.sort.js', $this->plugin_file), array('jquery'));
 		//qTip2 - jQuery tooltip plugin
-		wp_register_auto_versioned_script('jquery-qtip', plugins_url('js/jquery.qtip.min.js', $this->plugin_file), array('jquery'), true);
+		wp_register_auto_versioned_script('jquery-qtip', plugins_url('js/jquery.qtip.min.js', $this->plugin_file), array('jquery'));
 
 		//Editor's scripts
 		wp_register_auto_versioned_script(
