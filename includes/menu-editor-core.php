@@ -1172,6 +1172,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Find an item where *all* query params match the current ones, with as few extraneous params as possible,
 		//preferring sub-menu items. This is intentionally more strict than what we do in menu-highlight-fix.js,
 		//since this function is used to check menu access.
+		//TODO: Use get_current_screen() to determine the current post type and taxonomy.
 
 		$best_item = null;
 		$best_extra_params = PHP_INT_MAX;
