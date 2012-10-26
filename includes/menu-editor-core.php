@@ -1395,6 +1395,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
 	private function castValuesToBool($capabilities) {
+		if ( !is_array($capabilities) ) {
+			if ( empty($capabilities) ) {
+				$capabilities = array();
+			} else {
+				trigger_error("Unexpected capability array: " . print_r($capabilities, true), E_USER_WARNING);
+				return array();
+			}
+		}
 		foreach($capabilities as $capability => $value) {
 			$capabilities[$capability] = (bool)$value;
 		}
