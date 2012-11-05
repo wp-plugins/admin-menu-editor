@@ -398,8 +398,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$users = array();
 
 		$current_user = wp_get_current_user();
-		/** @var string $current_user->user_login Provided by a __get() method on WP_User */
-
 		$users[$current_user->user_login] = array(
 			'user_login' => $current_user->user_login,
 			'id' => $current_user->ID,
