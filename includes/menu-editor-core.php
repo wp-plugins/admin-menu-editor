@@ -956,7 +956,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//incorrectly converting "index.php?page=xyz" to, say, "tools.php?page=index.php?page=xyz"
 		//if the menu item was moved from "Dashboard" to "Tools".
 		$itemFile = ameMenuItem::remove_query_from($item['file']);
-		if ( (strpos($item['file'], '://') === false) && (substr($item['file'], 0, 1) != '/') && ($itemFile == 'index.php') ) {
+		$shouldMakeAbsolute =
+			   (strpos($item['file'], '://') === false)
+			&& (substr($item['file'], 0, 1) != '/')
+			&& ($itemFile == 'index.php')
+			&& (strpos($item['file'], '?') !== false);
+
+		if ( $shouldMakeAbsolute ) {
 			$item['file'] = admin_url($item['url']);
 		}
 
