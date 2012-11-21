@@ -105,6 +105,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		add_action('admin_enqueue_scripts', array($this, 'enqueue_menu_fix_script'));
 
+		//Enqueue miscellaneous helper scripts and styles.
+		add_action('admin_enqueue_scripts', array($this, 'enqueue_helper_scripts'));
+		add_action('admin_print_styles', array($this, 'enqueue_helper_styles'));
+
 		//User survey
 		add_action('admin_notices', array($this, 'display_survey_notice'));
 	}
@@ -669,8 +673,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 							//Yes, load defaults from that item
 							$item['defaults'] = $this->item_templates[$template_id]['defaults'];
 							$this->item_templates[$template_id]['used'] = true;
-						} else {
-							//Record as missing
+						} else if ( empty($item['separator']) ) {
+							//Record as missing, unless it's a menu separator
 							$item['missing'] = true;
 
 							$temp = ameMenuItem::apply_defaults($item);
@@ -1475,5 +1479,24 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->get = stripslashes_deep($this->get);
 		}
 	}
+
+	public function enqueue_helper_scripts() {
+		wp_enqueue_script(
+			'ame-helper-script',
+			plugins_url('js/admin-helpers.js', $this->plugin_file),
+			array('jquery'),
+			'20121121'
+		);
+	}
+
+	public function enqueue_helper_styles() {
+		wp_enqueue_style(
+			'ame-helper-style',
+			plugins_url('css/admin.css', $this->plugin_file),
+			array(),
+			'20121121'
+		);
+	}
+
 
 } //class

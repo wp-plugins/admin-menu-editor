@@ -118,6 +118,11 @@ endif;
 
 				<div class="ws_separator">&nbsp;</div>
 
+				<?php if ( apply_filters('admin_menu_editor_is_pro', false) ): ?>
+					<a id='ws_new_submenu_separator' class='ws_button' href='javascript:void(0)' title='New separator'><img src='<?php echo $images_url; ?>/separator_add.png' alt="New separator" /></a>
+					<div class="ws_separator">&nbsp;</div>
+				<?php endif; ?>
+
 				<a id='ws_sort_ascending' class='ws_button' href='javascript:void(0)' title='Sort ascending'>
 					<img src='<?php echo $images_url; ?>/sort_ascending.png' alt="Sort ascending" />
 				</a>

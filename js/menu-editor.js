@@ -345,7 +345,7 @@ function buildMenuItem(itemData, isTopLevel) {
 		.data('field_editors_created', false);
 
 	item.addClass(isTopLevel ? 'ws_menu' : 'ws_item');
-	if ( isTopLevel && itemData.separator ) {
+	if ( itemData.separator ) {
 		item.addClass('ws_menu_separator');
 	}
 
@@ -1582,7 +1582,7 @@ $(document).ready(function(){
 	});
 
 	//New separator
-	$('#ws_new_separator').click(function () {
+	$('#ws_new_separator, #ws_new_submenu_separator').click(function () {
 		ws_paste_count++;
 
 		//The new menu starts out rather bare
@@ -1600,9 +1600,14 @@ $(document).ready(function(){
 			}
 		});
 
-		//Insert the new menu
-		var selection = $('#ws_menu_box .ws_active');
-		outputTopMenu(menu, (selection.length > 0) ? selection : null);
+		if ( $(this).attr('id').indexOf('submenu') == -1 ) {
+			//Insert in the top-level menu.
+			var selection = $('#ws_menu_box .ws_active');
+			outputTopMenu(menu, (selection.length > 0) ? selection : null);
+		} else {
+			//Insert in the currently visible submenu.
+			pasteItem(menu);
+		}
 	});
 
 	/*************************************************************************
@@ -1687,6 +1692,11 @@ $(document).ready(function(){
 	$('#ws_paste_item').click(function () {
 		//Check if anything has been copied/cut
 		if (!menu_in_clipboard) return;
+
+		//You can only add separators to submenus in the Pro version.
+		if ( menu_in_clipboard.separator && !wsEditorData.wsMenuEditorPro ) {
+			return;
+		}
 
 		//Paste it.
 		var item = $.extend(true, {}, menu_in_clipboard);
@@ -1992,9 +2002,6 @@ $(document).ready(function(){
 				return (
 					//Accept top-level menus
 					thing.hasClass('ws_menu') &&
-
-					//But not separators.
-					!thing.hasClass('ws_menu_separator') &&
 
 					//Prevent users from dropping a menu on its own sub-menu.
 					(visibleSubmenu.attr('id') != thing.data('submenu_id'))
