@@ -99,19 +99,19 @@ input[type="checkbox"].ws_actor_access_checkbox /* Ensure we override WP default
 	padding: 2px;
 }
 
-.ws_main_button {
+#ws_menu_editor .ws_main_button {
 	clear: both;
 	display: block;
 	margin: 4px;
 	width: 120px;
-	padding: 4px !important;
+	padding: 4px;
 }
 
-#ws_save_menu {
+#ws_menu_editor #ws_save_menu {
 	margin-bottom: 20px;
 }
 
-#ws_export_menu {
+#ws_menu_editor #ws_export_menu {
 	margin-top: 12px;
 }
 
