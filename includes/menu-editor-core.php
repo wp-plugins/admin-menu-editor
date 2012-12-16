@@ -187,7 +187,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 			//Compatibility fix for All In One Event Calendar; see the callback for details.
 			add_action("admin_print_scripts-$page", array($this, 'dequeue_ai1ec_scripts'));
-			
+
+			//Compatibility fix for Participants Database.
+			add_action("admin_print_scripts-$page", array($this, 'dequeue_pd_scripts'));
+
 			//Make a placeholder for our screen options (hacky)
 			add_meta_box("ws-ame-screen-options", "You should never see this", '__return_false', $page);
 		}
@@ -464,6 +467,21 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		wp_dequeue_script('ai1ec_requirejs');
 		wp_dequeue_script('ai1ec_common_backend');
 		wp_dequeue_script('ai1ec_add_new_event_require');
+	}
+
+	/**
+	 * Compatibility workaround for Participants Database 1.4.5.2.
+	 *
+	 * Participants Database loads its settings JavaScript on every page in the "Settings" menu,
+	 * not just its own. It doesn't bother to also load the script's dependencies, though, so
+	 * the script crashes *and* it breaks the menu editor by way of collateral damage.
+	 *
+	 * Fix by forcibly removing the offending script from the queue.
+	 */
+	public function dequeue_pd_scripts() {
+		if ( is_plugin_active('participants-database/participants-database.php') ) {
+			wp_dequeue_script('settings_script');
+		}
 	}
 
 	 /**
