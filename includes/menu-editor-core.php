@@ -187,6 +187,21 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		);
 	}
 	
+	/**
+	 * Compatibility workaround for Participants Database 1.4.5.2.
+	 *
+	 * Participants Database loads its settings JavaScript on every page in the "Settings" menu,
+	 * not just its own. It doesn't bother to also load the script's dependencies, though, so
+	 * the script crashes *and* it breaks the menu editor by way of collateral damage.
+	 *
+	 * Fix by forcibly removing the offending script from the queue.
+	 */
+	public function dequeue_pd_scripts() {
+		if ( is_plugin_active('participants-database/participants-database.php') ) {
+			wp_dequeue_script('settings_script');
+		}
+	}
+	
   /**
    * Add the editor's CSS file to the page header
    *
@@ -224,6 +239,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Output our JS & CSS on that page only
 			add_action("admin_print_scripts-$page", array(&$this, 'enqueue_scripts'));
 			add_action("admin_print_styles-$page", array(&$this, 'enqueue_styles'));
+			
+			//Compatibility fix for Participants Database.
+			add_action("admin_print_scripts-$page", array($this, 'dequeue_pd_scripts'));
 			
 			//Make a placeholder for our screen options (hacky)
 			add_meta_box("ws-ame-screen-options", "You should never see this", array(&$this, 'noop'), $page);
