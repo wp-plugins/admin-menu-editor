@@ -1921,7 +1921,6 @@ $(document).ready(function(){
 	});
 
 	//AJAXify the upload form
-	//noinspection JSUnusedGlobalSymbols
 	$('#import_menu_form').ajaxForm({
 		dataType : 'json',
 		beforeSubmit: function(formData) {
@@ -1940,6 +1939,7 @@ $(document).ready(function(){
 			$('#import_progress_notice').show();
 
 			$('#ws_start_import').attr('disabled', 'disabled');
+			return true;
 		},
 		success: function(data){
 			if ( !$('#import_dialog').dialog('isOpen') ){
