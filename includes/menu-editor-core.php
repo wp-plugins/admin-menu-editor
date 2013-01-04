@@ -191,6 +191,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Compatibility fix for Participants Database.
 			add_action("admin_print_scripts-$page", array($this, 'dequeue_pd_scripts'));
 
+			//Experimental compatibility fix for Ultimate TinyMCE
+			add_action("admin_print_scripts-$page", array($this, 'remove_ultimate_tinymce_qtags'));
+
 			//Make a placeholder for our screen options (hacky)
 			add_meta_box("ws-ame-screen-options", "You should never see this", '__return_false', $page);
 		}
@@ -373,6 +376,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		wp_register_auto_versioned_script('jquery-sort', plugins_url('js/jquery.sort.js', $this->plugin_file), array('jquery'));
 		//qTip2 - jQuery tooltip plugin
 		wp_register_auto_versioned_script('jquery-qtip', plugins_url('js/jquery.qtip.min.js', $this->plugin_file), array('jquery'));
+		//jQuery Form plugin. This is a more recent version than the one included with WP.
+		wp_register_auto_versioned_script('ame-jquery-form', plugins_url('js/jquery.form.js', $this->plugin_file), array('jquery'));
 
 		//Editor's scripts
 		wp_register_auto_versioned_script(
@@ -380,11 +385,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			plugins_url('js/menu-editor.js', $this->plugin_file),
 			array(
 				'jquery', 'jquery-ui-sortable', 'jquery-ui-dialog',
-				'jquery-form', 'jquery-ui-droppable', 'jquery-qtip',
+				'ame-jquery-form', 'jquery-ui-droppable', 'jquery-qtip',
 				'jquery-sort', 'jquery-json'
 			)
 		);
 		wp_enqueue_script('menu-editor');
+
+		//Remove the default jQuery Form plugin to prevent conflicts with our custom version.
+		wp_dequeue_script('jquery-form');
 
 		//Actors (roles and users) are used in the permissions UI, so we need to pass them along.
 		$actors = array();
@@ -482,6 +490,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( is_plugin_active('participants-database/participants-database.php') ) {
 			wp_dequeue_script('settings_script');
 		}
+	}
+
+	public function remove_ultimate_tinymce_qtags() {
+		remove_action('admin_print_footer_scripts', 'jwl_ult_quicktags');
 	}
 
 	 /**
