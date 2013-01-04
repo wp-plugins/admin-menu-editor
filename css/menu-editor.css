@@ -104,7 +104,6 @@ input[type="checkbox"].ws_actor_access_checkbox /* Ensure we override WP default
 	display: block;
 	margin: 4px;
 	width: 120px;
-	padding: 4px;
 }
 
 #ws_menu_editor #ws_save_menu {
