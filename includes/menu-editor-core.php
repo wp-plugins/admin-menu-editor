@@ -413,17 +413,17 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$users = array();
 
 		$current_user = wp_get_current_user();
-		$users[$current_user->user_login] = array(
-			'user_login' => $current_user->user_login,
+		$users[$current_user->get('user_login')] = array(
+			'user_login' => $current_user->get('user_login'),
 			'id' => $current_user->ID,
 			'roles' => array_values($current_user->roles),
 			'capabilities' => $this->castValuesToBool($current_user->caps),
 			'is_super_admin' => is_multisite() && is_super_admin(),
 		);
 
-        $actors['user:' . $current_user->user_login] = sprintf(
+        $actors['user:' . $current_user->get('user_login')] = sprintf(
             'Current user (%s)',
-            $current_user->user_login
+            $current_user->get('user_login')
         );
 		//Note: Users do NOT get added to the actor list because that feature
 		//is not fully implemented.
@@ -973,6 +973,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				if ( $parent != $default_parent ){
 					$item['file'] = $template['defaults']['url'];
 				}
+			}
+		}
+
+		//Menus that have both a custom icon URL and a "menu-icon-*" class will get two overlapping icons.
+		//Fix this by automatically removing the class. The user can set a custom class attr. to override.
+		if ( ameMenuItem::is_default($item, 'css_class') && !ameMenuItem::is_default($item, 'icon_url') ) {
+			$new_classes = preg_replace('@\bmenu-icon-[^\s]+\b@', '', $item['defaults']['css_class']);
+			if ( $new_classes !== $item['defaults']['css_class'] ) {
+				$item['css_class'] = $new_classes;
 			}
 		}
 
