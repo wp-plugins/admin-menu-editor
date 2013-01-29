@@ -383,6 +383,21 @@ abstract class ameMenuItem {
 		return !$adminFileExists && ($hasHook || $pluginFileExists);
 	}
 
+	/**
+	 * Check if a field is currently set to its default value.
+	 *
+	 * @param array $item
+	 * @param string $field_name
+	 * @return bool
+	 */
+	public static function is_default($item, $field_name) {
+		if ( isset($item[$field_name]) ){
+			return false;
+		} else {
+			return isset($item['defaults'], $item['defaults'][$field_name]);
+		}
+	}
+
 	public static function remove_query_from($url) {
 		$pos = strpos($url, '?');
 		if ( $pos !== false ) {
