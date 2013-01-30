@@ -248,9 +248,10 @@ function randomMenuId(prefix, size){
 
 function outputWpMenu(menu){
 	var menuCopy = $.extend(true, {}, menu);
+	var menuBox = $('#ws_menu_box');
 
 	//Remove the current menu data
-	$('#ws_menu_box').empty();
+	menuBox.empty();
 	$('#ws_submenu_box').empty();
 
 	//Display the new menu
@@ -264,7 +265,7 @@ function outputWpMenu(menu){
 	}
 
 	//Automatically select the first top-level menu
-	$('#ws_menu_box .ws_menu:first').click();
+	menuBox.find('.ws_menu:first').click();
 }
 
 /*
@@ -834,7 +835,7 @@ function readMenuTreeState(){
 	var menu_position = 0;
 
 	//Gather all menus and their items
-	$('#ws_menu_box .ws_menu').each(function() {
+	$('#ws_menu_box').find('.ws_menu').each(function() {
 		var menu = readItemState(this, menu_position++);
 
 		//Attach the current menu to the main struct
@@ -908,7 +909,9 @@ function readAllFields(container){
 		//Get the name of this field
 		var field_name = field.data('field_name');
 		//Skip if unnamed
-		if (!field_name) return true;
+		if (!field_name) {
+			return true;
+		}
 
 		//Find the field (usually an input or select element).
 		var input_box = field.find('.ws_field_value');
@@ -919,6 +922,7 @@ function readAllFields(container){
 		} else {
 			state[field_name] = getInputValue(input_box);
 		}
+		return true;
 	});
 
     //Permission settings are not stored in the visible access_level field (that's just for show),
@@ -1009,15 +1013,16 @@ function setSelectedActor(actor) {
 	}
 
 	//There are some UI elements that can be visible or hidden depending on whether an actor is selected.
-	$('#ws_menu_editor').toggleClass('ws_is_actor_view', (selectedActor != null));
+	var editorNode = $('#ws_menu_editor');
+	editorNode.toggleClass('ws_is_actor_view', (selectedActor != null));
 
 	//Update the menu item states to indicate whether they're accessible.
 	if (selectedActor != null) {
-		$('#ws_menu_editor .ws_container').each(function() {
+		editorNode.find('.ws_container').each(function() {
 			updateActorAccessUi($(this));
 		});
 	} else {
-		$('#ws_menu_editor .ws_is_hidden_for_actor').removeClass('ws_is_hidden_for_actor');
+		editorNode.find('.ws_is_hidden_for_actor').removeClass('ws_is_hidden_for_actor');
 	}
 }
 
@@ -1070,10 +1075,11 @@ $(document).ready(function(){
 	/***************************************************************************
 	                  Event handlers for editor widgets
 	 ***************************************************************************/
+	var menuEditorNode = $('#ws_menu_editor');
 
 	//Highlight the clicked menu item and show it's submenu
 	var currentVisibleSubmenu = null;
-    $('#ws_menu_editor .ws_container').live('click', (function () {
+    menuEditorNode.find('.ws_container').live('click', (function () {
 		var container = $(this);
 		if ( container.hasClass('ws_active') ){
 			return;
@@ -1092,7 +1098,7 @@ $(document).ready(function(){
     }));
 
     //Show/hide a menu's properties
-    $('#ws_menu_editor .ws_edit_link').live('click', (function () {
+    menuEditorNode.find('.ws_edit_link').live('click', (function () {
     	var container = $(this).parents('.ws_container').first();
 		var box = container.find('.ws_editbox');
 
@@ -1116,7 +1122,7 @@ $(document).ready(function(){
     }));
 
     //The "Default" button : Reset to default value when clicked
-    $('#ws_menu_editor .ws_reset_button').live('click', (function () {
+    menuEditorNode.find('.ws_reset_button').live('click', (function () {
         //Find the field div (it holds the field name)
         var field = $(this).parents('.ws_edit_field');
 	    var fieldName = field.data('field_name');
@@ -1192,11 +1198,11 @@ $(document).ready(function(){
 
 	    field.toggleClass('ws_input_default', (menuItem[fieldName] === null));
     }
-	$('#ws_menu_editor .ws_field_value').live('click', fieldValueChange);
-	$('#ws_menu_editor .ws_field_value').live('change', fieldValueChange);
+	menuEditorNode.find('.ws_field_value').live('click', fieldValueChange);
+	menuEditorNode.find('.ws_field_value').live('change', fieldValueChange);
 
 	//Show/hide advanced fields
-	$('#ws_menu_editor .ws_toggle_advanced_fields').live('click', function(){
+	menuEditorNode.find('.ws_toggle_advanced_fields').live('click', function(){
 		var self = $(this);
 		var advancedFields = self.parents('.ws_container').first().find('.ws_advanced');
 
@@ -1212,7 +1218,7 @@ $(document).ready(function(){
 	});
 
 	//Allow/forbid items in actor-specific views
-	$('#ws_menu_editor input.ws_actor_access_checkbox').live('click', function() {
+	menuEditorNode.find('input.ws_actor_access_checkbox').live('click', function() {
 		if (selectedActor == null) {
 			return;
 		}
@@ -1289,13 +1295,14 @@ $(document).ready(function(){
 
 			alternate = (alternate == '') ? 'alternate' : '';
 
+			var cell = '<td>';
 			var row = $('<tr>').data('actor', actor).attr('class', alternate).append(
-				$('<td>').addClass('ws_column_role post-title').append(
+				$(cell).addClass('ws_column_role post-title').append(
 					$('<label>').attr('for', checkboxId).append(
 						$('<strong>').text(actorName)
 					)
 				),
-				$('<td>').addClass('ws_column_access').append(checkbox)
+				$(cell).addClass('ws_column_access').append(checkbox)
 			);
 
 			table.append(row);
@@ -1308,21 +1315,18 @@ $(document).ready(function(){
 		var itemHasSubmenus = containerNode.data('submenu_id') &&
 			$('#' + containerNode.data('submenu_id')).find('.ws_item').length > 0;
 		var hintIsEnabled = !wsEditorData.showHints.hasOwnProperty('ws_hint_menu_permissions') || wsEditorData.showHints['ws_hint_menu_permissions'];
-		if (hintIsEnabled && itemHasSubmenus) {
-			$('#ws_hint_menu_permissions').show();
-		} else {
-			$('#ws_hint_menu_permissions').hide();
-		}
+		$('#ws_hint_menu_permissions').toggle(hintIsEnabled && itemHasSubmenus);
 
 		//Warn the user if the required capability == role. Can't make it less restrictive.
+		var roleError = $('#ws_hardcoded_role_error');
 		if (requiredCap && AmeCapabilityManager.roleExists(requiredCap)) {
-			$('#ws_hardcoded_role_error').show();
+			roleError.show();
 			$('#ws_hardcoded_role_name').text(requiredCap);
 		} else {
-			$('#ws_hardcoded_role_error').hide();
+			roleError.hide();
 		}
 
-		$('#ws_menu_access_editor').dialog('open');
+		editor.dialog('open');
 	});
 
 	$('#ws_save_access_settings').click(function() {
@@ -1333,7 +1337,8 @@ $(document).ready(function(){
 		if (!$.isPlainObject(grantAccess)) {
 			grantAccess = {};
 		}
-		$('#ws_menu_access_editor .ws_role_table_body tbody tr').each(function() {
+		var editor = $('#ws_menu_access_editor');
+		editor.find('.ws_role_table_body tbody tr').each(function() {
 			var row = $(this);
 			var actor = row.data('actor');
 			grantAccess[actor] = row.find('input.ws_role_access').is(':checked');
@@ -1341,7 +1346,7 @@ $(document).ready(function(){
 		accessEditorState.menuItem.grant_access = grantAccess;
 
 		updateItemEditor(accessEditorState.containerNode);
-		$('#ws_menu_access_editor').dialog('close');
+		editor.dialog('close');
 	});
 
 	/***************************************************************************
@@ -1459,10 +1464,14 @@ $(document).ready(function(){
     /*************************************************************************
 	                           Menu toolbar buttons
 	 *************************************************************************/
+    function getSelectedMenu() {
+	    return $('#ws_menu_box').find('.ws_active');
+    }
+
 	//Show/Hide menu
 	$('#ws_hide_menu').click(function () {
 		//Get the selected menu
-		var selection = $('#ws_menu_box .ws_active');
+		var selection = getSelectedMenu();
 		if (!selection.length) return;
 
 		//Mark the menu as hidden/visible
@@ -1481,7 +1490,7 @@ $(document).ready(function(){
 	//Delete menu
 	$('#ws_delete_menu').click(function () {
 		//Get the selected menu
-		var selection = $('#ws_menu_box .ws_active');
+		var selection = getSelectedMenu();
 		if (!selection.length) return;
 
 		if (confirm('Delete this menu?')){
@@ -1495,7 +1504,7 @@ $(document).ready(function(){
 	//Copy menu
 	$('#ws_copy_menu').click(function () {
 		//Get the selected menu
-		var selection = $('#ws_menu_box .ws_active');
+		var selection = $('#ws_menu_box').find('.ws_active');
 		if (!selection.length) return;
 
 		//Store a copy of the current menu state in clipboard
@@ -1505,7 +1514,7 @@ $(document).ready(function(){
 	//Cut menu
 	$('#ws_cut_menu').click(function () {
 		//Get the selected menu
-		var selection = $('#ws_menu_box .ws_active');
+		var selection = $('#ws_menu_box').find('.ws_active');
 		if (!selection.length) return;
 
 		//Store a copy of the current menu state in clipboard
@@ -1550,7 +1559,7 @@ $(document).ready(function(){
 		var menu = $.extend(true, {}, menu_in_clipboard);
 
 		//Get the selected menu
-		var selection = $('#ws_menu_box .ws_active');
+		var selection = $('#ws_menu_box').find('.ws_active');
 		//Paste the menu after the selection.
 		pasteMenu(menu, (selection.length > 0) ? selection : null);
 	});
@@ -1576,7 +1585,7 @@ $(document).ready(function(){
 		}
 
 		//Insert the new menu
-		var selection = $('#ws_menu_box .ws_active');
+		var selection = $('#ws_menu_box').find('.ws_active');
 		var result = outputTopMenu(menu, (selection.length > 0) ? selection : null);
 
 		//The menus's editbox is always open
@@ -1604,7 +1613,7 @@ $(document).ready(function(){
 
 		if ( $(this).attr('id').indexOf('submenu') == -1 ) {
 			//Insert in the top-level menu.
-			var selection = $('#ws_menu_box .ws_active');
+			var selection = $('#ws_menu_box').find('.ws_active');
 			outputTopMenu(menu, (selection.length > 0) ? selection : null);
 		} else {
 			//Insert in the currently visible submenu.
@@ -1615,10 +1624,14 @@ $(document).ready(function(){
 	/*************************************************************************
 	                          Item toolbar buttons
 	 *************************************************************************/
+	function getSelectedSubmenuItem() {
+		return $('#ws_submenu_box').find('.ws_submenu:visible .ws_active');
+	}
+
 	//Show/Hide item
 	$('#ws_hide_item').click(function () {
 		//Get the selected item
-		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
+		var selection = getSelectedSubmenuItem();
 		if (!selection.length) return;
 
 		//Mark the item as hidden/visible
@@ -1630,7 +1643,7 @@ $(document).ready(function(){
 	//Delete menu
 	$('#ws_delete_item').click(function () {
 		//Get the selected menu
-		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
+		var selection = getSelectedSubmenuItem();
 		if (!selection.length) return;
 
 		if (confirm('Delete this menu item?')){
@@ -1642,7 +1655,7 @@ $(document).ready(function(){
 	//Copy item
 	$('#ws_copy_item').click(function () {
 		//Get the selected item
-		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
+		var selection = getSelectedSubmenuItem();
 		if (!selection.length) return;
 
 		//Store a copy of item state in the clipboard
@@ -1652,7 +1665,7 @@ $(document).ready(function(){
 	//Cut item
 	$('#ws_cut_item').click(function () {
 		//Get the selected item
-		var selection = $('#ws_submenu_box .ws_submenu:visible .ws_active');
+		var selection = getSelectedSubmenuItem();
 		if (!selection.length) return;
 
 		//Store a copy of item state in the clipboard
@@ -1677,7 +1690,7 @@ $(document).ready(function(){
 		newItems.unshift(buildMenuItem(item, false));
 
 		//Get the selected menu
-		var visibleSubmenu = $('#ws_submenu_box .ws_submenu:visible');
+		var visibleSubmenu = $('#ws_submenu_box').find('.ws_submenu:visible');
 		var selection = visibleSubmenu.find('.ws_active');
 		for(var i = 0; i < newItems.length; i++) {
 			if (selection.length > 0) {
@@ -1731,7 +1744,7 @@ $(document).ready(function(){
 		updateItemEditor(menu);
 
 		//Insert the item into the currently open submenu.
-		var visibleSubmenu = $('#ws_submenu_box .ws_submenu:visible');
+		var visibleSubmenu = $('#ws_submenu_box').find('.ws_submenu:visible');
 		var selection = visibleSubmenu.find('.ws_active');
 		if (selection.length > 0) {
 			selection.after(menu);
@@ -1759,7 +1772,7 @@ $(document).ready(function(){
 
 	//Sort items in ascending order
 	$('#ws_sort_ascending').click(function () {
-		var submenu = $('#ws_submenu_box .ws_submenu:visible');
+		var submenu = $('#ws_submenu_box').find('.ws_submenu:visible');
 		if (submenu.length < 1) {
 			return; //Abort if no submenu visible
 		}
@@ -1769,7 +1782,7 @@ $(document).ready(function(){
 
 	//Sort items in descending order
 	$('#ws_sort_descending').click(function () {
-		var submenu = $('#ws_submenu_box .ws_submenu:visible');
+		var submenu = $('#ws_submenu_box').find('.ws_submenu:visible');
 		if (submenu.length < 1) {
 			return; //Abort if no submenu visible
 		}
@@ -1801,6 +1814,7 @@ $(document).ready(function(){
 						return false;
 					}
 				}
+				return true;
 			});
 
 			return foundItem;
@@ -1909,17 +1923,13 @@ $(document).ready(function(){
 		//The "Upload" button is disabled until the user selects a file
 		$('#ws_start_import').attr('disabled', 'disabled');
 
-		$('#import_dialog .hide-when-uploading').show();
-
-		$('#import_dialog').dialog('open');
+		var importDialog = $('#import_dialog');
+		importDialog.find('.hide-when-uploading').show();
+		importDialog.dialog('open');
 	});
 
 	$('#import_file_selector').change(function(){
-		if ( $(this).val() ){
-			$('#ws_start_import').removeAttr('disabled');
-		} else {
-			$('#ws_start_import').attr('disabled', 'disabled');
-		}
+		$('#ws_start_import').prop('disabled', ! $(this).val() );
 	});
 
 	//AJAXify the upload form
@@ -1937,14 +1947,15 @@ $(document).ready(function(){
 				}
 			}
 
-			$('#import_dialog .hide-when-uploading').hide();
+			$('#import_dialog').find('.hide-when-uploading').hide();
 			$('#import_progress_notice').show();
 
 			$('#ws_start_import').attr('disabled', 'disabled');
 			return true;
 		},
 		success: function(data){
-			if ( !$('#import_dialog').dialog('isOpen') ){
+			var importDialog = $('#import_dialog');
+			if ( !importDialog.dialog('isOpen') ){
 				//Whoops, the user closed the dialog while the upload was in progress.
 				//Discard the response silently.
 				return;
@@ -1954,16 +1965,16 @@ $(document).ready(function(){
 				alert(data.error);
 				//Let the user try again
 				$('#import_menu_form').resetForm();
-				$('#import_dialog .hide-when-uploading').show();
+				importDialog.find('.hide-when-uploading').show();
 			}
 			$('#import_progress_notice').hide();
 
 			if ( (typeof data['tree'] != 'undefined') && data.tree ){
 				//Whee, we got back a (seemingly) valid menu. A veritable miracle!
 				//Lets load it into the editor.
-				$('#import_progress_notice2').show();
+				var progressNotice = $('#import_progress_notice2').show();
 				outputWpMenu(data.tree);
-				$('#import_progress_notice2').hide();
+				progressNotice.hide();
 				//Display a success notice, then automatically close the window after a few moments
 				$('#import_complete_notice').show();
 				setTimeout((function(){
@@ -2002,7 +2013,7 @@ $(document).ready(function(){
 			'hoverClass' : 'ws_dropzone_hover',
 
 			'accept' : (function(thing){
-				var visibleSubmenu = $('#ws_submenu_box .ws_submenu:visible');
+				var visibleSubmenu = $('#ws_submenu_box').find('.ws_submenu:visible');
 				return (
 					//Accept top-level menus
 					thing.hasClass('ws_menu') &&
@@ -2100,12 +2111,13 @@ jQuery(function($){
 	//Update editor state when settings change
 	checkbox.click(function(){
 		wsEditorData.hideAdvancedSettings = $(this).attr('checked'); //Using '$(this)' instead of 'checkbox' due to jQuery bugs
+		var menuEditorNode = $('#ws_menu_editor');
 		if ( wsEditorData.hideAdvancedSettings ){
-			$('#ws_menu_editor div.ws_advanced').hide();
-			$('#ws_menu_editor a.ws_toggle_advanced_fields').text(wsEditorData.captionShowAdvanced).show();
+			menuEditorNode.find('div.ws_advanced').hide();
+			menuEditorNode.find('a.ws_toggle_advanced_fields').text(wsEditorData.captionShowAdvanced).show();
 		} else {
-			$('#ws_menu_editor div.ws_advanced').show();
-			$('#ws_menu_editor a.ws_toggle_advanced_fields').text(wsEditorData.captionHideAdvanced).hide();
+			menuEditorNode.find('div.ws_advanced').show();
+			menuEditorNode.find('a.ws_toggle_advanced_fields').text(wsEditorData.captionHideAdvanced).hide();
 		}
 
 		$.post(
