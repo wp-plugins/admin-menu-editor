@@ -386,7 +386,9 @@ function buildMenuItem(itemData, isTopLevel) {
 				var new_item = buildMenuItem(droppedItemData, false);
 				var submenu = $('#' + item.data('submenu_id'));
 				submenu.append(new_item);
-				ui.draggable.remove();
+				if ( !event.ctrlKey ) {
+					ui.draggable.remove();
+				}
 			})
 		});
 	}
@@ -1989,7 +1991,9 @@ $(document).ready(function(){
 			'drop' : (function(event, ui){
 				var droppedItemData = readItemState(ui.draggable);
 				pasteMenu(droppedItemData);
-				ui.draggable.remove();
+				if ( !event.ctrlKey ) {
+					ui.draggable.remove();
+				}
 			})
 		});
 
@@ -2011,7 +2015,9 @@ $(document).ready(function(){
 			'drop' : (function(event, ui){
 				var droppedItemData = readItemState(ui.draggable);
 				pasteItem(droppedItemData);
-				ui.draggable.remove();
+				if ( !event.ctrlKey ) {
+					ui.draggable.remove();
+				}
 			})
 		});
 	}
