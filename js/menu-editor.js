@@ -556,16 +556,16 @@ var knownMenuFields = {
 		onlyForTopMenus: true
 	}),
 
-	'hookname' : $.extend({}, baseField, {
-		caption: 'Hook name',
-		advanced : true,
-		onlyForTopMenus: true
-	}),
-
 	'icon_url' : $.extend({}, baseField, {
 		caption: 'Icon URL',
 		advanced : true,
 		defaultValue: 'div',
+		onlyForTopMenus: true
+	}),
+
+	'hookname' : $.extend({}, baseField, {
+		caption: 'Hook name',
+		advanced : true,
 		onlyForTopMenus: true
 	})
 };
