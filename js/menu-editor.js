@@ -1459,6 +1459,16 @@ $(document).ready(function(){
 		}
 	});
 
+	/*************************************************************************
+	                           Icon selector
+	 *************************************************************************/
+
+	var iconSelector = $('#ws_icon_selector');
+	iconSelector.find('.ws_icon_option').click(function() {
+		iconSelector.find('.ws_selected_icon').removeClass('ws_selected_icon');
+		$(this).addClass('ws_selected_icon');
+	});
+
 
     /*************************************************************************
 	                           Menu toolbar buttons

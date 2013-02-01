@@ -220,6 +220,27 @@ endif;
  	echo implode("\n", $capSelector);
 ?>
 
+<!-- Menu icon selector widget -->
+<div id="ws_icon_selector">
+	<?php
+	$defaultWpIcons = array(
+		'generic', 'dashboard', 'post', 'media', 'links', 'page', 'comments',
+		'appearance', 'plugins', 'users', 'tools', 'settings', 'site',
+	);
+	foreach($defaultWpIcons as $icon) {
+		printf(
+			'<div class="ws_icon_option%s" title="%s">
+				<div class="ws_icon_image icon16 icon-%s"><br></div>
+			</div>',
+			$icon == 'post' ? ' ws_selected_icon' : '',
+			esc_attr(ucwords($icon)),
+			$icon
+		);
+	}
+	?>
+	<div class="clear"></div>
+</div>
+
 <span id="ws-ame-screen-meta-contents" style="display:none;">
 <label for="ws-hide-advanced-settings">
 	<input type="checkbox" id="ws-hide-advanced-settings"<?php
