@@ -1079,7 +1079,7 @@ $(document).ready(function(){
 
 	//Highlight the clicked menu item and show it's submenu
 	var currentVisibleSubmenu = null;
-    menuEditorNode.find('.ws_container').live('click', (function () {
+    menuEditorNode.on('click', '.ws_container', (function () {
 		var container = $(this);
 		if ( container.hasClass('ws_active') ){
 			return;
@@ -1098,7 +1098,7 @@ $(document).ready(function(){
     }));
 
     //Show/hide a menu's properties
-    menuEditorNode.find('.ws_edit_link').live('click', (function () {
+    menuEditorNode.on('click', '.ws_edit_link', (function () {
     	var container = $(this).parents('.ws_container').first();
 		var box = container.find('.ws_editbox');
 
@@ -1122,7 +1122,7 @@ $(document).ready(function(){
     }));
 
     //The "Default" button : Reset to default value when clicked
-    menuEditorNode.find('.ws_reset_button').live('click', (function () {
+    menuEditorNode.on('click', '.ws_reset_button', (function () {
         //Find the field div (it holds the field name)
         var field = $(this).parents('.ws_edit_field');
 	    var fieldName = field.data('field_name');
@@ -1198,11 +1198,10 @@ $(document).ready(function(){
 
 	    field.toggleClass('ws_input_default', (menuItem[fieldName] === null));
     }
-	menuEditorNode.find('.ws_field_value').live('click', fieldValueChange);
-	menuEditorNode.find('.ws_field_value').live('change', fieldValueChange);
+	menuEditorNode.on('click change', '.ws_field_value', fieldValueChange);
 
 	//Show/hide advanced fields
-	menuEditorNode.find('.ws_toggle_advanced_fields').live('click', function(){
+	menuEditorNode.on('click', '.ws_toggle_advanced_fields', function(){
 		var self = $(this);
 		var advancedFields = self.parents('.ws_container').first().find('.ws_advanced');
 
@@ -1218,7 +1217,7 @@ $(document).ready(function(){
 	});
 
 	//Allow/forbid items in actor-specific views
-	menuEditorNode.find('input.ws_actor_access_checkbox').live('click', function() {
+	menuEditorNode.on('click', 'input.ws_actor_access_checkbox', function() {
 		if (selectedActor == null) {
 			return;
 		}
@@ -1258,7 +1257,7 @@ $(document).ready(function(){
 		draggable: false
 	});
 
-	$('.ws_launch_access_editor').live('click', function() {
+	menuEditorNode.on('click', '.ws_launch_access_editor', function() {
 		var containerNode = $(this).parents('.ws_container').first();
 		var menuItem = containerNode.data('menu_item');
 
@@ -1353,7 +1352,7 @@ $(document).ready(function(){
 		              General dialog handlers
 	 ***************************************************************************/
 
-	$('.ws_close_dialog').live('click', function() {
+	$(document).on('click', '.ws_close_dialog', function() {
 		$(this).parents('.ui-dialog-content').dialog('close');
 	});
 
