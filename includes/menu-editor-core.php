@@ -453,7 +453,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'actors' => $actors,
 				'roles' => $roles,
 				'users' => $users,
-                'currentUserLogin' => $current_user->user_login,
+                'currentUserLogin' => $current_user->get('user_login'),
 
 				'showHints' => $this->get_hint_visibility(),
 			)
