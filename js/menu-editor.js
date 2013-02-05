@@ -559,9 +559,37 @@ var knownMenuFields = {
 
 	'icon_url' : $.extend({}, baseField, {
 		caption: 'Icon URL',
+		type : 'icon_selector',
 		advanced : true,
 		defaultValue: 'div',
-		onlyForTopMenus: true
+		onlyForTopMenus: true,
+
+		display: function(menuItem, displayValue, input) {
+			//Display the current icon in the selector.
+			var cssClass = getFieldValue(menuItem, 'css_class', '');
+			var iconUrl = getFieldValue(menuItem, 'icon_url', '');
+
+			var selectButton = input.closest('.ws_edit_field').find('.ws_select_icon');
+			var cssIcon = selectButton.find('.icon16');
+			var imageIcon = selectButton.find('img');
+
+			var matches = cssClass.match(/\bmenu-icon-([^\s]+)\b/);
+			//Icon URL take precedence over icon class.
+			if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' ) {
+				cssIcon.hide();
+				imageIcon.prop('src', iconUrl).show();
+			} else if ( matches ) {
+				imageIcon.hide();
+				cssIcon.removeClass().addClass('icon16 icon-' + matches[1]).show();
+			} else {
+				//This menu has no icon at all. This is actually a valid state
+				//and WordPress will display a menu like that correctly.
+				imageIcon.hide();
+				cssIcon.removeClass().addClass('icon16').show();
+			}
+
+			return displayValue;
+		}
 	}),
 
 	'hookname' : $.extend({}, baseField, {
@@ -623,6 +651,7 @@ function buildEditboxField(entry, field_name, field_settings){
 
 	//Build a form field of the appropriate type
 	var inputBox = null;
+	var basicTextField = '<input type="text" class="ws_field_value">';
 	switch(field_settings.type){
 		case 'select':
 			inputBox = $('<select class="ws_field_value">');
@@ -649,9 +678,14 @@ function buildEditboxField(entry, field_name, field_settings){
                 .add('<input type="button" class="button ws_launch_access_editor" value="Edit...">');
 			break;
 
+		case 'icon_selector':
+			inputBox = $(basicTextField)
+                .add('<button class="button ws_select_icon" title="Select icon"><div class="icon16 icon-settings"></div><img src="" style="display:none;"></button>');
+			break;
+
 		case 'text':
 		default:
-			inputBox = $('<input type="text" class="ws_field_value">');
+			inputBox = $(basicTextField);
 	}
 
 
@@ -1133,24 +1167,17 @@ $(document).ready(function(){
 			//Extract the default value from the menu item.
             var containerNode = field.closest('.ws_container');
 			var menuItem = containerNode.data('menu_item');
-			var defaultValue = itemTemplates.getDefaultValue(menuItem.template_id, fieldName);
 
-            if (fieldName == 'access_level') {
+			if (fieldName == 'access_level') {
 	            //This is a pretty nasty hack.
 	            menuItem.grant_access = {};
 	            menuItem.extra_capability = null;
-                updateItemEditor(containerNode);
-            } else {
-                //Set the value to the default, if one exists.
-                if (defaultValue !== null) {
-                    setInputValue(input, defaultValue);
-                    field.addClass('ws_input_default');
-                }
-
-                //Trigger the change event to ensure consistency
-                input.change();
             }
 
+			if (itemTemplates.hasDefaultValue(menuItem.template_id, fieldName)) {
+				menuItem[fieldName] = null;
+				updateItemEditor(containerNode);
+			}
 		}
 	}));
 
@@ -1462,11 +1489,86 @@ $(document).ready(function(){
 	/*************************************************************************
 	                           Icon selector
 	 *************************************************************************/
-
+	//TODO: Add tests for the icon selector.
 	var iconSelector = $('#ws_icon_selector');
-	iconSelector.find('.ws_icon_option').click(function() {
+	var currentIconButton = null;
+
+	iconSelector.on('click', '.ws_icon_option', function() {
+		var selectedIcon = $(this).addClass('ws_selected_icon');
+		iconSelector.hide();
+
+		//Assign the selected icon to the menu.
+		if ( currentIconButton ) {
+			var container = currentIconButton.closest('.ws_container');
+			var item = container.data('menu_item');
+
+			if ( selectedIcon.data('icon-class') ) {
+
+				//Remove the existing icon class, if any.
+				var cssClass = getFieldValue(item, 'css_class', '');
+				cssClass = jsTrim( cssClass.replace(/\bmenu-icon-[^\s]+\b/, '') );
+
+				//Add the new class.
+				cssClass = selectedIcon.data('icon-class') + ' ' + cssClass;
+				item.css_class = cssClass;
+
+				//Can't have both a class and an image or we'll get two overlapping icons.
+				item.icon_url = '';
+			}
+
+			updateItemEditor(container);
+		}
+
+		currentIconButton = null;
+	});
+
+	menuEditorNode.on('click', '.ws_select_icon', function() {
+		var button = $(this);
+		if ( currentIconButton && button.is(currentIconButton) ) {
+			iconSelector.hide();
+			//noinspection JSUnusedAssignment
+			currentIconButton = null;
+			return;
+		}
+
+		currentIconButton = button;
+
+		var menuItem = currentIconButton.closest('.ws_container').data('menu_item');
+		var cssClass = getFieldValue(menuItem, 'css_class', '');
+		var iconUrl = getFieldValue(menuItem, 'icon_url', '');
+
+		//Highlight the currently selected icon.
 		iconSelector.find('.ws_selected_icon').removeClass('ws_selected_icon');
-		$(this).addClass('ws_selected_icon');
+		var matches = cssClass.match(/\bmenu-icon-([^\s]+)\b/);
+		if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' ) {
+			//TODO: Display and highlight the specified image.
+		} else if ( matches ) {
+			iconSelector.find('.icon-' + matches[1]).closest('.ws_icon_option').addClass('ws_selected_icon');
+		}
+
+		iconSelector.show();
+		iconSelector.position({ //Requires jQuery UI.
+			my: 'right top',
+			at: 'right bottom',
+			of: button
+		});
+	});
+
+	//Hide the icon selector if the user clicks outside of it.
+	//Exception: Clicks on "Select icon" buttons are handled above.
+	$(document).on('mouseup', function(event) {
+		if ( !iconSelector.is(':visible') ) {
+			return;
+		}
+
+		if (
+			!iconSelector.is(event.target)
+			&& iconSelector.has(event.target).length === 0
+			&& $(event.target).closest('.ws_select_icon').length == 0
+		) {
+			iconSelector.hide();
+			currentIconButton = null;
+		}
 	});
 
 
@@ -1765,11 +1867,11 @@ $(document).ready(function(){
 		menu.find('.ws_edit_link').click();
 	});
 
-	function compareMenus(a, b){
-		function jsTrim(str){
-			return str.replace(/^\s+|\s+$/g, "");
-		}
+	function jsTrim(str){
+		return str.replace(/^\s+|\s+$/g, "");
+	}
 
+	function compareMenus(a, b){
 		var aTitle = jsTrim( $(a).find('.ws_item_title').text() );
 		var bTitle = jsTrim( $(b).find('.ws_item_title').text() );
 

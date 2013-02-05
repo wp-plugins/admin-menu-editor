@@ -466,6 +466,8 @@ a.ws_button:hover {
 
 #ws_icon_selector {
 	border: 1px solid silver;
+	border-radius: 3px;
+	background-color: white;
 	width: 144px;
 	padding: 2px;
 }
@@ -507,6 +509,42 @@ a.ws_button:hover {
 #ws_icon_selector .icon16 {
 	float: none;
 	margin: 0;
+}
+
+#ws_menu_editor .ws_edit_field-icon_url input.ws_field_value {
+	width: 220px;
+	margin-right: 5px;
+}
+
+/* The icon button that displays the pop-up icon selector. */
+#ws_menu_editor .ws_select_icon {
+	margin: 0;
+	padding: 0;
+	position: relative;
+}
+
+/* Current icon node (CSS class version, for the built-in WP icon sprites) */
+.ws_select_icon .icon16 {
+	margin: 0;
+	float: none;
+	padding: 3px;
+
+	/*
+	The default .icon16 style has a 6px padding which would normally make it too large
+	to fit in the button. We can't change the padding without making the background-position
+	look wrong, so lets offset the icon so that it fits.
+	*/
+	position: relative;
+	top: -3px;
+	left: -3px;
+}
+
+/* Current icon node (image version) */
+.ws_select_icon img {
+	margin: 0;
+	padding: 4px;
+	width: 16px;
+	height: 16px;
 }
 
 /************************************

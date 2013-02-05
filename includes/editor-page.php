@@ -221,7 +221,7 @@ endif;
 ?>
 
 <!-- Menu icon selector widget -->
-<div id="ws_icon_selector">
+<div id="ws_icon_selector" style="display: none;">
 	<?php
 	$defaultWpIcons = array(
 		'generic', 'dashboard', 'post', 'media', 'links', 'page', 'comments',
@@ -229,10 +229,9 @@ endif;
 	);
 	foreach($defaultWpIcons as $icon) {
 		printf(
-			'<div class="ws_icon_option%s" title="%s">
-				<div class="ws_icon_image icon16 icon-%s"><br></div>
+			'<div class="ws_icon_option" title="%1$s" data-icon-class="menu-icon-%2$s">
+				<div class="ws_icon_image icon16 icon-%2$s"><br></div>
 			</div>',
-			$icon == 'post' ? ' ws_selected_icon' : '',
 			esc_attr(ucwords($icon)),
 			$icon
 		);

@@ -978,7 +978,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Menus that have both a custom icon URL and a "menu-icon-*" class will get two overlapping icons.
 		//Fix this by automatically removing the class. The user can set a custom class attr. to override.
-		if ( ameMenuItem::is_default($item, 'css_class') && !ameMenuItem::is_default($item, 'icon_url') ) {
+		if (
+			ameMenuItem::is_default($item, 'css_class')
+			&& !ameMenuItem::is_default($item, 'icon_url')
+			&& !in_array($item['icon_url'], array('', 'none', 'div')) //Skip "no custom icon" icons.
+		) {
 			$new_classes = preg_replace('@\bmenu-icon-[^\s]+\b@', '', $item['defaults']['css_class']);
 			if ( $new_classes !== $item['defaults']['css_class'] ) {
 				$item['css_class'] = $new_classes;
@@ -991,6 +995,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		$item['access_level'] = $this->get_menu_capability($item);
 		$this->add_access_lookup($item, $item['access_level'], $item_type);
+
+		//Menus without a custom icon image should have it set to "none" (or "div" in older WP versions).
+		//See /wp-admin/menu-header.php for details on how this works.
+		if ( $item['icon_url'] === '' ) {
+			$item['icon_url'] = 'none';
+		}
 
 		//Used later to determine the current page based on URL.
 		$item['url'] = ameMenuItem::generate_url($item['file'], $parent);
