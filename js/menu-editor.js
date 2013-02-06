@@ -468,9 +468,6 @@ var knownMenuFields = {
 				    menuItem[fieldName] = getInputValue(field.find('.ws_field_value'));
 			    }
 		    });
-
-		    // Display new defaults, etc.
-		    updateItemEditor(containerNode);
 		}
 	}),
 
@@ -489,7 +486,7 @@ var knownMenuFields = {
 			return displayValue;
 		},
 
-		write: function(menuItem, value, input, containerNode) {
+		write: function(menuItem, value) {
 			// A menu must always have a non-empty URL. If the user deletes the current value,
 			// reset it to the old value.
 			if (value === '') {
@@ -500,7 +497,6 @@ var knownMenuFields = {
 				value = null;
 			}
 			menuItem.file = value;
-			updateItemEditor(containerNode);
 		}
 	}),
 
@@ -1223,7 +1219,7 @@ $(document).ready(function(){
 		    menuItem[fieldName] = value;
 	    }
 
-	    field.toggleClass('ws_input_default', (menuItem[fieldName] === null));
+	    updateItemEditor(containerNode);
     }
 	menuEditorNode.on('click change', '.ws_field_value', fieldValueChange);
 
