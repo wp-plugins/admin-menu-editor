@@ -172,6 +172,35 @@ input[type="checkbox"].ws_actor_access_checkbox /* Ensure we override WP default
 	cursor: move !important;
 }
 
+/*
+  If you ever want to apply a right-arrow style to the currently selected menu item,
+  you can do it like this. Commented out for now since it doesn't look all that great,
+  but might be useful in the future.
+*/
+/*
+.ws_container {
+	position: relative;
+}
+
+.ws_menu.ws_active::after {
+	content: "";
+	display: block;
+	z-index: 1002;
+
+	border-left: 14px solid #8EB0F1;
+	border-top: 14px solid transparent;
+	border-bottom: 14px solid transparent;
+	background: #8EB0F1;
+
+	position: absolute;
+	right: -14px;
+	top: -1px;
+
+	width: 0;
+	height: 0;
+}
+*/
+
 /****************************************
     Per-menu settings fields & panels
 *****************************************/
