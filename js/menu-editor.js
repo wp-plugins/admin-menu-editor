@@ -1498,23 +1498,23 @@ $(document).ready(function(){
 		iconSelector.hide();
 
 		//Assign the selected icon to the menu.
-		if ( currentIconButton ) {
+		if (currentIconButton) {
 			var container = currentIconButton.closest('.ws_container');
 			var item = container.data('menu_item');
 
-			if ( selectedIcon.data('icon-class') ) {
+			//Remove the existing icon class, if any.
+			var cssClass = getFieldValue(item, 'css_class', '');
+			cssClass = jsTrim( cssClass.replace(/\bmenu-icon-[^\s]+\b/, '') );
 
-				//Remove the existing icon class, if any.
-				var cssClass = getFieldValue(item, 'css_class', '');
-				cssClass = jsTrim( cssClass.replace(/\bmenu-icon-[^\s]+\b/, '') );
-
+			if (selectedIcon.data('icon-class')) {
 				//Add the new class.
 				cssClass = selectedIcon.data('icon-class') + ' ' + cssClass;
-				item.css_class = cssClass;
-
 				//Can't have both a class and an image or we'll get two overlapping icons.
 				item.icon_url = '';
+			} else if (selectedIcon.data('icon-url')) {
+				item.icon_url = selectedIcon.data('icon-url');
 			}
+			item.css_class = cssClass;
 
 			updateItemEditor(container);
 		}
@@ -1524,6 +1524,7 @@ $(document).ready(function(){
 
 	menuEditorNode.on('click', '.ws_select_icon', function() {
 		var button = $(this);
+		//Clicking the same button a second time hides the icon list.
 		if ( currentIconButton && button.is(currentIconButton) ) {
 			iconSelector.hide();
 			//noinspection JSUnusedAssignment
@@ -1537,11 +1538,15 @@ $(document).ready(function(){
 		var cssClass = getFieldValue(menuItem, 'css_class', '');
 		var iconUrl = getFieldValue(menuItem, 'icon_url', '');
 
+		var customImageOption = iconSelector.find('.ws_custom_image_icon').hide();
+
 		//Highlight the currently selected icon.
 		iconSelector.find('.ws_selected_icon').removeClass('ws_selected_icon');
 		var matches = cssClass.match(/\bmenu-icon-([^\s]+)\b/);
 		if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' ) {
-			//TODO: Display and highlight the specified image.
+			//Display and highlight the custom image.
+			customImageOption.find('img').prop('src', iconUrl);
+			customImageOption.addClass('ws_selected_icon').show().data('icon-url', iconUrl);
 		} else if ( matches ) {
 			iconSelector.find('.icon-' + matches[1]).closest('.ws_icon_option').addClass('ws_selected_icon');
 		}

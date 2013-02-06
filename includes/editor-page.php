@@ -237,6 +237,9 @@ endif;
 		);
 	}
 	?>
+	<div class="ws_icon_option ws_custom_image_icon" title="Custom image" style="display: none;">
+		<img src="<?php echo esc_attr(admin_url('images/loading.gif')); ?>">
+	</div>
 	<div class="clear"></div>
 </div>
 

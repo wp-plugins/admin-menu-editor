@@ -474,6 +474,8 @@ a.ws_button:hover {
 
 #ws_icon_selector .ws_icon_option {
 	float: left;
+	height: 30px;
+
 	margin: 2px;
 	cursor: pointer;
 	border: 1px solid #bbb;
@@ -509,6 +511,15 @@ a.ws_button:hover {
 #ws_icon_selector .icon16 {
 	float: none;
 	margin: 0;
+}
+
+#ws_icon_selector .ws_icon_option img {
+	display: inline-block;
+	margin: 0;
+	padding: 7px;
+
+	width: 16px;
+	height: 16px;
 }
 
 #ws_menu_editor .ws_edit_field-icon_url input.ws_field_value {
