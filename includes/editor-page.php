@@ -146,6 +146,7 @@ endif;
 			<input type="hidden" name="action" value="save_menu">
 			<input type="hidden" name="data" id="ws_data" value="">
 			<input type="hidden" name="data_length" id="ws_data_length" value="">
+			<input type="hidden" name="selected_actor" id="ws_selected_actor" value="">
 			<input type="button" id='ws_save_menu' class="button-primary ws_main_button" value="Save Changes" />
 		</form>
 

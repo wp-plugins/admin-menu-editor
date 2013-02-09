@@ -1030,6 +1030,15 @@ function setActorAccess(containerNode, actor, allowAccess) {
 }
 
 function setSelectedActor(actor) {
+	//Check if the specified actor really exists. The actor ID
+	//could be invalid if it was supplied by the user.
+	if (actor !== null) {
+		var newSelectedItem = $('a[href$="#'+ actor +'"]');
+		if (newSelectedItem.length === 0) {
+			return;
+		}
+	}
+
 	selectedActor = actor;
 
 	//Highlight the actor.
@@ -1039,7 +1048,7 @@ function setSelectedActor(actor) {
 	if (selectedActor == null) {
 		$('a.ws_no_actor').addClass('current');
 	} else {
-		$('a[href$="#'+ actor +'"]').addClass('current');
+		newSelectedItem.addClass('current');
 	}
 
 	//There are some UI elements that can be visible or hidden depending on whether an actor is selected.
@@ -1946,6 +1955,7 @@ $(document).ready(function(){
 		var data = encodeMenuAsJSON(tree);
 		$('#ws_data').val(data);
 		$('#ws_data_length').val(data.length);
+		$('#ws_selected_actor').val(selectedActor === null ? '' : selectedActor);
 		$('#ws_main_form').submit();
 	});
 
@@ -2171,7 +2181,6 @@ $(document).ready(function(){
 	//Build the list of available actors
 	var actorSelector = $('#ws_actor_selector').empty();
 	actorSelector.append('<li><a href="#" class="current ws_no_actor">All</a></li>');
-	selectedActor = null;
 
 	if (wsEditorData.wsMenuEditorPro) {
 		for(var actor in wsEditorData.actors) {
@@ -2187,6 +2196,12 @@ $(document).ready(function(){
 			);
 		}
 		actorSelector.show();
+
+		if ( wsEditorData.hasOwnProperty('selectedActor') && wsEditorData.selectedActor ) {
+			setSelectedActor(wsEditorData.selectedActor);
+		} else {
+			setSelectedActor(null);
+		}
 	}
 
 	$('li a', actorSelector).click(function(event) {

@@ -454,6 +454,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'roles' => $roles,
 				'users' => $users,
                 'currentUserLogin' => $current_user->get('user_login'),
+                'selectedActor' => isset($this->get['selected_actor']) ? strval($this->get['selected_actor']) : null,
 
 				'showHints' => $this->get_hint_visibility(),
 			)
@@ -1088,8 +1089,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 				//Save the custom menu
 				$this->set_custom_menu($menu);
-				//Redirect back to the editor and display the success message
-				wp_redirect( add_query_arg('message', 1, $url) );
+
+				//Redirect back to the editor and display the success message.
+				//Also, automatically select the last selected actor (convenience feature).
+				$query = array('message' => 1);
+				if ( isset($post['selected_actor']) && !empty($post['selected_actor']) ) {
+					$query['selected_actor'] = strval($post['selected_actor']);
+				}
+				wp_redirect( add_query_arg($query, $url) );
 				die();
 			} else {
 				$message = "Failed to save the menu. ";
