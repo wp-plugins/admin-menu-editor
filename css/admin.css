@@ -8,12 +8,35 @@
 hr.ws-submenu-separator {
 	display: block;
 	margin: 2px 0;
+	padding: 0;
     height: 0;
 
-    border-width: 1px 0;
-	border-style: inset;
-	border-color: #cddce1;
+    border-width: 1px 0 0 0;
+	border-style: solid;
+	border-color: #ccc;
 }
+
+/* Custom separator style suggested by a customer (Slavo) */
+/*
+#adminmenu .ws-submenu-separator {
+	border-bottom: none;
+	border-top: 1px dotted rgba(0,0,0,.3);
+	width: 90%;
+}
+*/
+
+/* S2Member separator style */
+/*
+#adminmenu .ws-submenu-separator {
+	display: block;
+	border: 0;
+	margin: 1px 0 1px -5px;
+	padding: 0;
+	height: 1px;
+	line-height: 1px;
+	background: #CCCCCC;
+}
+*/
 
 /* No pointer/hand on separators. */
 #adminmenu li.ws-submenu-separator-wrap a {
