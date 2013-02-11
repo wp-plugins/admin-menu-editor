@@ -587,6 +587,10 @@ a.ws_button:hover {
 	height: 16px;
 }
 
+#ws_choose_icon_from_media {
+	margin: 2px;
+}
+
 /************************************
            Export and import
 *************************************/

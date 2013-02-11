@@ -1496,8 +1496,9 @@ $(document).ready(function(){
 	 *************************************************************************/
 	//TODO: Add tests for the icon selector.
 	var iconSelector = $('#ws_icon_selector');
-	var currentIconButton = null;
+	var currentIconButton = null; //Keep track of the last clicked icon button.
 
+	//When the user clicks one of the available icons, update the menu item.
 	iconSelector.on('click', '.ws_icon_option', function() {
 		var selectedIcon = $(this).addClass('ws_selected_icon');
 		iconSelector.hide();
@@ -1527,6 +1528,7 @@ $(document).ready(function(){
 		currentIconButton = null;
 	});
 
+	//Show/hide the icon selector when the user clicks the icon button.
 	menuEditorNode.on('click', '.ws_select_icon', function() {
 		var button = $(this);
 		//Clicking the same button a second time hides the icon list.
@@ -1553,6 +1555,7 @@ $(document).ready(function(){
 			customImageOption.find('img').prop('src', iconUrl);
 			customImageOption.addClass('ws_selected_icon').show().data('icon-url', iconUrl);
 		} else if ( matches ) {
+			//Highlight the icon that corresponds to the current CSS class.
 			iconSelector.find('.icon-' + matches[1]).closest('.ws_icon_option').addClass('ws_selected_icon');
 		}
 
@@ -1562,6 +1565,68 @@ $(document).ready(function(){
 			at: 'right bottom',
 			of: button
 		});
+	});
+
+	//Alternatively, use the WordPress media uploader to select a custom icon.
+	//This code is based on the header selection script in /wp-admin/js/custom-header.js.
+	$('#ws_choose_icon_from_media').click(function(event) {
+		event.preventDefault();
+		var frame = null;
+
+        //If the media frame already exists, reopen it.
+        if ( frame ) {
+            frame.open();
+            return;
+        }
+
+        //Create a custom media frame.
+        frame = wp.media.frames.customAdminMenuIcon = wp.media({
+            //Set the title of the modal.
+            title: 'Choose a Custom Icon (16x16)',
+
+            //Tell it to show only images.
+            library: {
+                type: 'image'
+            },
+
+            //Customize the submit button.
+            button: {
+                text: 'Set as icon', //Button text.
+                close: true //Clicking the button closes the frame.
+            }
+        });
+
+        //When an image is selected, set it as the menu icon.
+        frame.on( 'select', function() {
+            //Grab the selected attachment.
+            var attachment = frame.state().get('selection').first();
+            //TODO: Warn the user if the image exceeds 16x16 pixels.
+
+	        //Set the menu icon to the attachment URL.
+            if (currentIconButton) {
+                var container = currentIconButton.closest('.ws_container');
+                var item = container.data('menu_item');
+
+                //Remove the existing icon class, if any.
+                var cssClass = getFieldValue(item, 'css_class', '');
+	            item.css_class = jsTrim( cssClass.replace(/\bmenu-icon-[^\s]+\b/, '') );
+
+	            //Set the new icon URL.
+	            item.icon_url = attachment.attributes.url;
+
+                updateItemEditor(container);
+            }
+
+            currentIconButton = null;
+        });
+
+		//If the user closes the frame by via Esc or the "X" button, clear up state.
+		frame.on('escape', function(){
+			currentIconButton = null;
+		});
+
+        frame.open();
+		iconSelector.hide();
 	});
 
 	//Hide the icon selector if the user clicks outside of it.

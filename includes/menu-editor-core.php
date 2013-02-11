@@ -391,6 +391,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		);
 		wp_enqueue_script('menu-editor');
 
+		//We use WordPress media uploader to let the user upload custom menu icons (WP 3.5+).
+		if ( function_exists('wp_enqueue_media') ) {
+			wp_enqueue_media();
+		}
+
 		//Remove the default jQuery Form plugin to prevent conflicts with our custom version.
 		wp_dequeue_script('jquery-form');
 

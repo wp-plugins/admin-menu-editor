@@ -224,6 +224,19 @@ endif;
 <!-- Menu icon selector widget -->
 <div id="ws_icon_selector" style="display: none;">
 	<?php
+	//Let the user select a custom icon via the media uploader.
+	//We only support the new WP 3.5+ media API. Hence the function_exists() check.
+	if ( function_exists('wp_enqueue_media') ):
+	?>
+		<a class="button"
+		   id="ws_choose_icon_from_media"
+		   title="Upload an image or choose one from your media library">Choose Icon</a>
+		<div class="clear"></div>
+	<?php
+	endif;
+	?>
+
+	<?php
 	$defaultWpIcons = array(
 		'generic', 'dashboard', 'post', 'media', 'links', 'page', 'comments',
 		'appearance', 'plugins', 'users', 'tools', 'settings', 'site',
