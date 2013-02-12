@@ -228,9 +228,10 @@ endif;
 	//We only support the new WP 3.5+ media API. Hence the function_exists() check.
 	if ( function_exists('wp_enqueue_media') ):
 	?>
-		<a class="button"
+		<input type="button" class="button"
 		   id="ws_choose_icon_from_media"
-		   title="Upload an image or choose one from your media library">Choose Icon</a>
+		   title="Upload an image or choose one from your media library"
+		   value="Choose Icon">
 		<div class="clear"></div>
 	<?php
 	endif;
