@@ -2012,7 +2012,11 @@ $(document).ready(function(){
             if (myMenuItem == null) {
                 //This is OK - the missing menu item will be re-inserted automatically.
             } else if (!actorCanAccessMenu(myMenuItem, 'user:' + wsEditorData.currentUserLogin)) {
-                alert("Error: This configuration would make you unable to access the menu editor!");
+                alert(
+	                "Error: This configuration would make you unable to access the menu editor!\n\n" +
+	                "Please click either your role name or \"Current user (" + wsEditorData.currentUserLogin + ")\" "+
+	                "and enable the \"Menu Editor Pro\" menu item."
+                );
                 return;
             }
         }
