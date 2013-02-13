@@ -569,43 +569,36 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 	
 	/**
-	 * Fix the page title for moved plugin pages.
-	 * The 'admin_title' filter is only available in WP 3.1+
+	 * Apply the custom page title, if any.
+	 *
+	 * This is a callback for the "admin_title" filter. It will change the browser window/tab
+	 * title (i.e. <title>), but not the title displayed on the admin page itself.
 	 * 
 	 * @param string $admin_title The current admin title (full).
 	 * @param string $title The current page title. 
 	 * @return string New admin title.
 	 */
 	function hook_admin_title($admin_title, $title){
-		if ( empty($title) ){
-			$admin_title = $this->get_real_page_title() . $admin_title;
+		$item = $this->get_current_menu_item();
+		if ( $item === null ) {
+			return $admin_title;
 		}
+
+		//Check if the we have a custom title for this page.
+		$default_title = isset($item['defaults']['page_title']) ? $item['defaults']['page_title'] : '';
+		if ( !empty($item['page_title']) && $item['page_title'] != $default_title ) {
+			if ( empty($title) ) {
+				$admin_title = $item['page_title'] . $admin_title;
+			} else {
+				//Replace the first occurrence of the default title with the custom one.
+				$title_pos = strpos($admin_title, $title);
+				$admin_title = substr_replace($admin_title, $item['page_title'], $title_pos, strlen($title));
+			}
+		}
+
 		return $admin_title;
 	}
 	
-	/**
-	 * Get the correct page title for a plugin page that's been moved to a different menu.
-	 *  
-	 * @return string
-	 */
-	function get_real_page_title(){
-		global $title;
-		global $pagenow;
-		global $plugin_page;
-
-		//TODO: Consider using get_current_menu_item() here.
-		$real_title = $title;
-		if ( empty($title) && !empty($plugin_page) && !empty($pagenow) ){
-			$file = sprintf('%s?page=%s', $pagenow, $plugin_page);
-			if ( isset($this->title_lookups[$file]) ){
-				$real_title = esc_html( strip_tags( $this->title_lookups[$file] ) );
-			}
-		}
-		
-		return $real_title;
-	}	
-	
-
   /**
    * Populate a lookup array with default values (templates) from $menu and $submenu.
    * Used later to merge a custom menu with the native WordPress menu structure.
@@ -1315,7 +1308,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private function user_can_access_current_page() {
 		$current_item = $this->get_current_menu_item();
 		if ( $current_item === null ) {
-			return true; //Let WordPres handle it.
+			return true; //Let WordPress handle it.
 		}
 		//Note: Per-role and per-user virtual caps will be applied by has_cap filters.
 		return $this->current_user_can($current_item['access_level']);
@@ -1341,6 +1334,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private function get_current_menu_item() {
 		if ( !is_admin() || empty($this->reverse_item_lookup)) {
 			return null;
+		}
+
+		//The current menu item doesn't change during a request, so we can cache it
+		//and avoid searching the entire menu every time.
+		static $cached_item = null;
+		if ( $cached_item !== null ) {
+			return $cached_item;
 		}
 
 		//Find an item where *all* query params match the current ones, with as few extraneous params as possible,
@@ -1393,6 +1393,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			}
 		}
 
+		$cached_item = $best_item;
 		return $best_item;
 	}
 
