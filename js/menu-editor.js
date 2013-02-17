@@ -285,10 +285,11 @@ function outputTopMenu(menu, afterNode){
 	//Create the menu widget
 	var menu_obj = buildMenuItem(menu, true);
 	menu_obj.data('submenu_id', submenu.attr('id'));
-	updateItemEditor(menu_obj);
+	submenu.data('parent_menu_id', menu_obj.attr('id'));
 
 	//Display
 	submenu.appendTo('#ws_submenu_box');
+	updateItemEditor(menu_obj);
 	if ( (typeof afterNode != 'undefined') && (afterNode != null) ){
 		$(afterNode).after(menu_obj);
 	} else {
@@ -385,11 +386,20 @@ function buildMenuItem(itemData, isTopLevel) {
 			'drop' : (function(event, ui){
 				var droppedItemData = readItemState(ui.draggable);
 				var new_item = buildMenuItem(droppedItemData, false);
+
+				var sourceSubmenu = ui.draggable.parent();
 				var submenu = $('#' + item.data('submenu_id'));
 				submenu.append(new_item);
+
 				if ( !event.ctrlKey ) {
 					ui.draggable.remove();
 				}
+
+				updateItemEditor(new_item);
+
+				//Moving an item can change aggregate menu permissions. Update the UI accordingly.
+				updateParentAccessUi(submenu);
+				updateParentAccessUi(sourceSubmenu);
 			})
 		});
 	}
@@ -729,15 +739,56 @@ function updateActorAccessUi(containerNode) {
 		var hasAccess = actorCanAccessMenu(menuItem, selectedActor);
 
 		var checkbox = containerNode.find('.ws_actor_access_checkbox');
-		if (hasAccess) {
-			checkbox.attr('checked', 'checked');
+		checkbox.prop('checked', hasAccess);
+
+		//Display the checkbox differently if some items of this menu are hidden and some are visible,
+		//or if their permissions don't match this menu's permissions.
+		var submenuId = containerNode.data('submenu_id');
+		var submenuItems = submenuId ? $('#' + submenuId).children('.ws_container') : [];
+		if (!submenuId || submenuItems.length === 0) {
+			//This menu doesn't contain any items.
+			checkbox.prop('indeterminate', false);
 		} else {
-			checkbox.removeAttr('checked');
+			var differentPermissions = false;
+			submenuItems.each(function() {
+				var item = $(this).data('menu_item');
+				if ( !item ) { //Skip placeholder items created by drag & drop operations.
+					return true;
+				}
+				var hasSubmenuAccess = actorCanAccessMenu(item, selectedActor);
+				if (hasSubmenuAccess !== hasAccess) {
+					differentPermissions = true;
+					return false;
+				}
+				return true;
+			});
+
+			checkbox.prop('indeterminate', differentPermissions);
 		}
 
 		containerNode.toggleClass('ws_is_hidden_for_actor', !hasAccess);
 	} else {
 		containerNode.removeClass('ws_is_hidden_for_actor');
+	}
+}
+
+/**
+ * Like updateActorAccessUi() except it updates the specified menu's parent, not the menu itself.
+ * If the menu has no parent (i.e. it's a top-level menu), this function does nothing.
+ *
+ * @param containerNode Either a menu item or a submenu container.
+ */
+function updateParentAccessUi(containerNode) {
+	var submenu;
+	if ( containerNode.is('.ws_submenu') ) {
+		submenu = containerNode;
+	} else {
+		submenu = containerNode.parent();
+	}
+
+	var parentId = submenu.data('parent_menu_id');
+	if (parentId) {
+		updateActorAccessUi($('#' + parentId));
 	}
 }
 
@@ -1182,6 +1233,7 @@ $(document).ready(function(){
 			if (itemTemplates.hasDefaultValue(menuItem.template_id, fieldName)) {
 				menuItem[fieldName] = null;
 				updateItemEditor(containerNode);
+				updateParentAccessUi(containerNode);
 			}
 		}
 	}));
@@ -1229,6 +1281,7 @@ $(document).ready(function(){
 	    }
 
 	    updateItemEditor(containerNode);
+	    updateParentAccessUi(containerNode)
     }
 	menuEditorNode.on('click change', '.ws_field_value', fieldValueChange);
 
@@ -1258,7 +1311,6 @@ $(document).ready(function(){
 
 		var containerNode = $(this).closest('.ws_container');
 		setActorAccess(containerNode, selectedActor, checked);
-		updateItemEditor(containerNode);
 
 		//Apply the same permissions to sub-menus.
 		var subMenuId = containerNode.data('submenu_id');
@@ -1269,6 +1321,9 @@ $(document).ready(function(){
 				updateItemEditor(node);
 			});
 		}
+
+		updateItemEditor(containerNode);
+		updateParentAccessUi(containerNode);
 	});
 
 	/*************************************************************************
@@ -1494,7 +1549,7 @@ $(document).ready(function(){
 	/*************************************************************************
 	                           Icon selector
 	 *************************************************************************/
-	//TODO: Add tests for the icon selector.
+	//TODO: Add more tests for the icon selector.
 	var iconSelector = $('#ws_icon_selector');
 	var currentIconButton = null; //Keep track of the last clicked icon button.
 
@@ -1826,15 +1881,17 @@ $(document).ready(function(){
 		setMenuFlag(selection, 'hidden', menuItem.hidden);
 	});
 
-	//Delete menu
+	//Delete item
 	$('#ws_delete_item').click(function () {
 		//Get the selected menu
 		var selection = getSelectedSubmenuItem();
 		if (!selection.length) return;
 
 		if (confirm('Delete this menu item?')){
+			var submenu = selection.parent();
 			//Delete the item
 			selection.remove();
+			updateParentAccessUi(submenu);
 		}
 	});
 
@@ -1857,8 +1914,10 @@ $(document).ready(function(){
 		//Store a copy of item state in the clipboard
 		menu_in_clipboard = readItemState(selection);
 
+		var submenu = selection.parent();
 		//Remove the original item
 		selection.remove();
+		updateParentAccessUi(submenu);
 	});
 
 	//Paste item
@@ -1886,8 +1945,12 @@ $(document).ready(function(){
 				//Otherwise add the pasted items at the end
 				visibleSubmenu.append(newItems[i]);
 			}
+
+			updateItemEditor(newItems[i]);
 			newItems[i].show();
 		}
+
+		updateParentAccessUi(visibleSubmenu);
 	}
 
 	$('#ws_paste_item').click(function () {
@@ -1940,6 +2003,8 @@ $(document).ready(function(){
 
 		//The items's editbox is always open
 		menu.find('.ws_edit_link').click();
+
+		updateParentAccessUi(menu);
 	});
 
 	function jsTrim(str){
