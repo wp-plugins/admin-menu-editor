@@ -462,6 +462,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
                 'selectedActor' => isset($this->get['selected_actor']) ? strval($this->get['selected_actor']) : null,
 
 				'showHints' => $this->get_hint_visibility(),
+
+			    'isDemoMode' => defined('IS_DEMO_MODE'),
+			    'isMasterMode' => defined('IS_MASTER_MODE'),
 			)
 		);
 	}

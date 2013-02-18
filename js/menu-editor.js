@@ -1549,7 +1549,6 @@ $(document).ready(function(){
 	/*************************************************************************
 	                           Icon selector
 	 *************************************************************************/
-	//TODO: Add more tests for the icon selector.
 	var iconSelector = $('#ws_icon_selector');
 	var currentIconButton = null; //Keep track of the last clicked icon button.
 
@@ -1632,6 +1631,12 @@ $(document).ready(function(){
 	$('#ws_choose_icon_from_media').click(function(event) {
 		event.preventDefault();
 		var frame = null;
+
+		//This option is not usable on the demo site since the filesystem is usually read-only.
+		if (wsEditorData.isDemoMode) {
+			alert('Sorry, image upload is disabled in demo mode!');
+			return;
+		}
 
         //If the media frame already exists, reopen it.
         if ( frame ) {
