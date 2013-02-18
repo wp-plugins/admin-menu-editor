@@ -1606,9 +1606,14 @@ $(document).ready(function(){
 		iconSelector.find('.ws_selected_icon').removeClass('ws_selected_icon');
 		var matches = cssClass.match(/\bmenu-icon-([^\s]+)\b/);
 		if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' ) {
-			//Display and highlight the custom image.
-			customImageOption.find('img').prop('src', iconUrl);
-			customImageOption.addClass('ws_selected_icon').show().data('icon-url', iconUrl);
+			var currentIcon = iconSelector.find('.ws_icon_option img[src="' + iconUrl + '"]').first().closest('.ws_icon_option');
+			if ( currentIcon.length > 0 ) {
+				currentIcon.addClass('ws_selected_icon').show();
+			} else {
+				//Display and highlight the custom image.
+				customImageOption.find('img').prop('src', iconUrl);
+				customImageOption.addClass('ws_selected_icon').show().data('icon-url', iconUrl);
+			}
 		} else if ( matches ) {
 			//Highlight the icon that corresponds to the current CSS class.
 			iconSelector.find('.icon-' + matches[1]).closest('.ws_icon_option').addClass('ws_selected_icon');

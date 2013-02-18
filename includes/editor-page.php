@@ -251,6 +251,18 @@ endif;
 			$icon
 		);
 	}
+
+	$defaultIconImages = array(
+		'images/generic.png',
+	);
+	foreach($defaultIconImages as $icon) {
+		printf(
+			'<div class="ws_icon_option" data-icon-url="%1$s">
+				<img src="%1$s">
+			</div>',
+			esc_attr($icon)
+		);
+	}
 	?>
 	<div class="ws_icon_option ws_custom_image_icon" title="Custom image" style="display: none;">
 		<img src="<?php echo esc_attr(admin_url('images/loading.gif')); ?>">
