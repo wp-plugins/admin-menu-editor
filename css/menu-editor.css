@@ -40,7 +40,6 @@
 	display: block;
 	margin: 4px;
 	width: 120px;
-	padding: 4px;
 }
 
 #ws_editor_sidebar #ws_save_menu {
@@ -245,7 +244,7 @@ a.ws_edit_link:hover {
 	float: left;
 	
 	width: 20px;
-	height: 20px;
+	height: 22px;
 	
 	margin: 1px 1px 1px 0;
 	padding: 0;
