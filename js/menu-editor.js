@@ -361,7 +361,7 @@ function buildEditboxField(entry, field_name, field_settings){
 					.val(field_settings.options[optionTitle])
 					.text(optionTitle);
 				if ( field_settings.options[optionTitle] == value ){
-					option.attr('selected', 'selected');
+					option.prop('selected', 'selected');
 				}
 				option.appendTo(inputBox);
 			}
@@ -817,17 +817,8 @@ $(document).ready(function(){
 			updateIconField(input.closest('.ws_container').find('.ws_edit_field-icon_url .ws_field_value'));
 		}
     }
-	$('#ws_menu_editor .ws_field_value').live('click', fieldValueChange);
-	//jQuery 1.3.x can't catch 'change' events with live(), 
-	//so we handle that by using event delegation instead.
-	//TODO: Update for jQuery 1.4.2 in WP 3.0
-	$('#ws_menu_editor').change(function(event){
-		var target = $(event.target);
-		if ( target.is('.ws_field_value') ){
-			fieldValueChange.call(target, event);
-		}
-	});
-	
+	menuEditorNode.on('click change', '.ws_field_value', fieldValueChange);
+
 	//Show/hide advanced fields
 	$('#ws_menu_editor .ws_toggle_advanced_fields').live('click', function(){
 		var self = $(this);
