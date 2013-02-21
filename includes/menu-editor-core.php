@@ -169,13 +169,18 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		wp_enqueue_script('jquery-sort', plugins_url('js/jquery.sort.js', $this->plugin_file), array('jquery'));
 		//jQuery UI Droppable
 		wp_enqueue_script('jquery-ui-droppable');
+
+		//We use WordPress media uploader to let the user upload custom menu icons (WP 3.5+).
+		if ( function_exists('wp_enqueue_media') ) {
+			wp_enqueue_media();
+		}
 		
 		//Editor's scipts
         wp_enqueue_script(
 			'menu-editor',
 			plugins_url('js/menu-editor.js', $this->plugin_file),
 			array('jquery', 'jquery-ui-sortable', 'jquery-ui-dialog', 'jquery-form'), 
-			'20120915'
+			'20130221'
 		);
 
 		//The editor will need access to some of the plugin data and WP data.
@@ -210,7 +215,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return void
    */
 	function enqueue_styles(){
-		wp_enqueue_style('menu-editor-style', plugins_url('css/menu-editor.css', $this->plugin_file), array(), '20121210');
+		wp_enqueue_style('menu-editor-style', plugins_url('css/menu-editor.css', $this->plugin_file), array(), '20130221');
 	}
 
   /**
@@ -1193,6 +1198,55 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
  	$pageSelector[] = '</select>';
  	echo implode("\n", $pageSelector);
 ?>
+
+<!-- Menu icon selector widget -->
+<div id="ws_icon_selector" style="display: none;">
+	<?php
+	//Let the user select a custom icon via the media uploader.
+	//We only support the new WP 3.5+ media API. Hence the function_exists() check.
+	if ( function_exists('wp_enqueue_media') ):
+	?>
+		<input type="button" class="button"
+		   id="ws_choose_icon_from_media"
+		   title="Upload an image or choose one from your media library"
+		   value="Choose Icon">
+		<div class="clear"></div>
+	<?php
+	endif;
+	?>
+
+	<?php
+	$defaultWpIcons = array(
+		'generic', 'dashboard', 'post', 'media', 'links', 'page', 'comments',
+		'appearance', 'plugins', 'users', 'tools', 'settings', 'site',
+	);
+	foreach($defaultWpIcons as $icon) {
+		printf(
+			'<div class="ws_icon_option" title="%1$s" data-icon-class="menu-icon-%2$s">
+				<div class="ws_icon_image icon16 icon-%2$s"><br></div>
+			</div>',
+			esc_attr(ucwords($icon)),
+			$icon
+		);
+	}
+
+	$defaultIconImages = array(
+		'images/generic.png',
+	);
+	foreach($defaultIconImages as $icon) {
+		printf(
+			'<div class="ws_icon_option" data-icon-url="%1$s">
+				<img src="%1$s">
+			</div>',
+			esc_attr($icon)
+		);
+	}
+	?>
+	<div class="ws_icon_option ws_custom_image_icon" title="Custom image" style="display: none;">
+		<img src="<?php echo esc_attr(admin_url('images/loading.gif')); ?>" alt="Custom image">
+	</div>
+	<div class="clear"></div>
+</div>
 
 <span id="ws-ame-screen-meta-contents" style="display:none;">
 <label for="ws-hide-advanced-settings">
