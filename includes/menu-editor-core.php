@@ -9,7 +9,9 @@ if (class_exists('WPMenuEditor')){
 }
 
 //Load the "framework"
-require 'shadow_plugin_framework.php';
+$thisDirectory = dirname(__FILE__);
+require $thisDirectory . '/shadow_plugin_framework.php';
+require $thisDirectory . '/menu-item.php';
 
 if ( !class_exists('WPMenuEditor') ) :
 
@@ -814,11 +816,24 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if ( !empty($topmenu['separator']) && !$first_nonseparator_found ) continue;
 			
 			$first_nonseparator_found = true;
+
+			//Menus that have both a custom icon URL and a "menu-icon-*" class will get two overlapping icons.
+			//Fix this by automatically removing the class. The user can set a custom class attr. to override.
+			if (
+				ameMenuItem::is_default($topmenu, 'css_class')
+				&& !ameMenuItem::is_default($topmenu, 'icon_url')
+				&& !in_array($topmenu['icon_url'], array('', 'none', 'div')) //Skip "no custom icon" icons.
+			) {
+				$new_classes = preg_replace('@\bmenu-icon-[^\s]+\b@', '', $topmenu['defaults']['css_class']);
+				if ( $new_classes !== $topmenu['defaults']['css_class'] ) {
+					$topmenu['css_class'] = $new_classes;
+				}
+			}
 			
 			//Apply defaults & filters
 			$topmenu = $this->apply_defaults($topmenu);
 			$topmenu = $this->apply_menu_filters($topmenu, 'menu');
-			
+
 			//Skip hidden entries
 			if (!empty($topmenu['hidden'])) continue;
 			
