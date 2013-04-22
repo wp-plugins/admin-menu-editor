@@ -440,6 +440,7 @@ a.ws_button:hover {
 	background-color: white;
 	width: 144px;
 	padding: 2px;
+    position: absolute;
 }
 
 #ws_icon_selector .ws_icon_option {
