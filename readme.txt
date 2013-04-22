@@ -3,8 +3,8 @@ Contributors: whiteshadow
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A6P9S6CE3SRSW
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 3.2
-Tested up to: 3.5.1
-Stable tag: 1.2
+Tested up to: 3.6-beta1
+Stable tag: 1.2.1
 
 Lets you edit the WordPress admin menu. You can re-order, hide or rename menus, add custom menus and more. 
 
@@ -62,6 +62,11 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 3. Re-ordering menu items via drag and drop
 
 == Changelog ==
+
+= 1.2.1 =
+* Fixed a rare bug where the icon selector would appear at the bottom of the page instead of right below the icon button.
+* Fixed incorrect icon alignment when running the MP6 admin UI.
+* Tested on WP 3.6-beta1-24044.
 
 = 1.2 =
 * Added an icon drop-down that lets you pick one of the default WordPress menu icons or upload your own through the media library (only in WP 3.5+).
