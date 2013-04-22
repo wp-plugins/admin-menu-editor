@@ -529,6 +529,16 @@ a.ws_button:hover {
 	height: 16px;
 }
 
+/* MP6 admin style compatibility */
+#ws_icon_selector .ws_icon_option .icon16::before {
+    margin: 0;
+    padding: 0;
+}
+.ws_select_icon .icon16::before {
+    padding: 0;
+    margin: 1px 0 0 2px;
+}
+
 #ws_choose_icon_from_media {
 	margin: 2px;
 }
