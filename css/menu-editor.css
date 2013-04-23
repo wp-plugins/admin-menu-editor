@@ -61,22 +61,21 @@
 /**
  * The checkbox that lets the user show/hide a menu for the currently selected actor.
  */
-.ws_actor_access_checkbox,
-input[type="checkbox"].ws_actor_access_checkbox /* Ensure we override WP defaults. */
+#ws_menu_editor .ws_actor_access_checkbox,
+#ws_menu_editor input[type="checkbox"].ws_actor_access_checkbox /* Ensure we override WP defaults. */
 {
     margin-right: 2px;
     margin-left: 2px;
+    margin-top: 1px;
     vertical-align: text-top;
 }
 
 /* The checkbox is only visible when viewing the menu configuration for a specific actor. */
-.ws_actor_access_checkbox {
+#ws_menu_editor .ws_actor_access_checkbox {
     display: none;
 }
 
-.ws_is_actor_view .ws_actor_access_checkbox,
-.ws_is_actor_view input[type="checkbox"].ws_actor_access_checkbox
-{
+#ws_menu_editor.ws_is_actor_view .ws_actor_access_checkbox {
     display: inline-block;
 }
 
