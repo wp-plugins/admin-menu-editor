@@ -59,7 +59,7 @@ $requiredFiles = array(
 	'js/menu-highlight-fix.js',
 	'js/jquery.sort.js',
 	'js/jquery.qtip.min.js',
-	'js/jquery.json-1.3.js',
+	'js/jquery.json.js',
 	'images/cut.png',
 	'images/delete.png',
 	'images/page_white_add.png',
