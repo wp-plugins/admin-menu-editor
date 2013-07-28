@@ -899,11 +899,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->page_access_lookup[$url] = reset($capabilities);
 		}
 
-		//var_dump($this->page_access_lookup);
 		//Convert the prepared tree to the internal WordPress format.
 		foreach($new_tree as $topmenu) {
-			if ( isset($this->page_access_lookup[$topmenu['url']]) ) {
-				$topmenu['access_level'] = $this->page_access_lookup[$topmenu['url']];
+			$trueAccess = isset($this->page_access_lookup[$topmenu['url']]) ? $this->page_access_lookup[$topmenu['url']] : null;
+			if ( $trueAccess === 'do_not_allow' ) {
+				$topmenu['access_level'] = $trueAccess;
 			}
 			if ( !isset($this->reverse_item_lookup[$topmenu['url']]) ) { //Prefer sub-menus.
 				$this->reverse_item_lookup[$topmenu['url']] = $topmenu;
@@ -912,8 +912,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$new_menu[] = $this->convert_to_wp_format($topmenu);
 
 			foreach($topmenu['items'] as $item) {
-				if ( isset($this->page_access_lookup[$item['url']]) ) {
-					$item['access_level'] = $this->page_access_lookup[$item['url']];
+				$trueAccess = isset($this->page_access_lookup[$item['url']]) ? $this->page_access_lookup[$item['url']] : null;
+				if ( $trueAccess === 'do_not_allow' ) {
+					$item['access_level'] = $trueAccess;
 				}
 				$this->reverse_item_lookup[$item['url']] = $item;
 				$new_submenu[$topmenu['file']][] = $this->convert_to_wp_format($item);
@@ -996,7 +997,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$item = ameMenuItem::apply_filters($item, $item_type, $parent); //may cause side-effects
 
 		$item['access_level'] = $this->get_menu_capability($item);
-		$this->add_access_lookup($item, $item['access_level'], $item_type);
+		$this->add_access_lookup($item, $item_type);
 
 		//Menus without a custom icon image should have it set to "none" (or "div" in older WP versions).
 		//See /wp-admin/menu-header.php for details on how this works.
