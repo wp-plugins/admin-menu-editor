@@ -404,7 +404,7 @@ to accommodate the drop-down button.
 
 /* user-created items */
 .ws_custom_flag {
-	background-image: url('../images/page_white_add.png');
+	background-image: url('../images/page-add.png');
 }
 
 /* unused items - those that are in the default menu but not in the custom one */
@@ -414,7 +414,7 @@ to accommodate the drop-down button.
 
 /* hidden items */
 .ws_hidden_flag {
-	background-image: url('../images/plugin_disabled.png');
+	background-image: url('../images/icon-extension-grey.png');
 }
 
 /* These classes could be used to apply different styles to items depending on their flags */

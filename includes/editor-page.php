@@ -9,6 +9,9 @@ $icons = array(
 	'copy' => '/gion/edit-copy.png',
 	'paste' => '/gnome-icon-theme/edit-paste.png',
 	'hide'  => '/icon-extension-grey.png',
+	'new' => '/page-add.png',
+	'delete' => '/page-delete.png',
+	'new-separator' => '/separator-add.png',
 );
 foreach($icons as $name => $url) {
 	$icons[$name] = $images_url . $url;
@@ -97,13 +100,13 @@ endif;
 
 				<div class="ws_separator">&nbsp;</div>
 
-				<a id='ws_new_menu' class='ws_button' href='javascript:void(0)' title='New menu'><img src='<?php echo $images_url; ?>/page_white_add.png' alt="New menu" /></a>
+				<a id='ws_new_menu' class='ws_button' href='javascript:void(0)' title='New menu'><img src='<?php echo $icons['new']; ?>' alt="New menu" /></a>
 				<a id='ws_hide_menu' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $icons['hide']; ?>' alt="Show/Hide" /></a>
-				<a id='ws_delete_menu' class='ws_button' href='javascript:void(0)' title='Delete menu'><img src='<?php echo $images_url; ?>/page_white_delete.png' alt="Delete menu" /></a>
+				<a id='ws_delete_menu' class='ws_button' href='javascript:void(0)' title='Delete menu'><img src='<?php echo $icons['delete']; ?>' alt="Delete menu" /></a>
 
 				<div class="ws_separator">&nbsp;</div>
 
-				<a id='ws_new_separator' class='ws_button' href='javascript:void(0)' title='New separator'><img src='<?php echo $images_url; ?>/separator_add.png' alt="New separator" /></a>
+				<a id='ws_new_separator' class='ws_button' href='javascript:void(0)' title='New separator'><img src='<?php echo $icons['new-separator']; ?>' alt="New separator" /></a>
 			</div>
 		</div>
 
@@ -122,14 +125,14 @@ endif;
 
 				<div class="ws_separator">&nbsp;</div>
 
-				<a id='ws_new_item' class='ws_button' href='javascript:void(0)' title='New menu item'><img src='<?php echo $images_url; ?>/page_white_add.png' alt="New menu item" /></a>
+				<a id='ws_new_item' class='ws_button' href='javascript:void(0)' title='New menu item'><img src='<?php echo $icons['new']; ?>' alt="New menu item" /></a>
 				<a id='ws_hide_item' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $icons['hide']; ?>' alt="Show/Hide" /></a>
-				<a id='ws_delete_item' class='ws_button' href='javascript:void(0)' title='Delete menu item'><img src='<?php echo $images_url; ?>/page_white_delete.png' alt="Delete menu item" /></a>
+				<a id='ws_delete_item' class='ws_button' href='javascript:void(0)' title='Delete menu item'><img src='<?php echo $icons['delete']; ?>' alt="Delete menu item" /></a>
 
 				<div class="ws_separator">&nbsp;</div>
 
 				<?php if ( apply_filters('admin_menu_editor_is_pro', false) ): ?>
-					<a id='ws_new_submenu_separator' class='ws_button' href='javascript:void(0)' title='New separator'><img src='<?php echo $images_url; ?>/separator_add.png' alt="New separator" /></a>
+					<a id='ws_new_submenu_separator' class='ws_button' href='javascript:void(0)' title='New separator'><img src='<?php echo $icons['new-separator']; ?>' alt="New separator" /></a>
 					<div class="ws_separator">&nbsp;</div>
 				<?php endif; ?>
 
