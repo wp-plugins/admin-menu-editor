@@ -339,7 +339,7 @@ to accomodate the dropdown button.
 
 /* user-created items */
 .ws_custom_item_flag {
-	background-image: url('../images/page_white_add.png');
+	background-image: url('../images/page-add.png');
 }
 
 /* items not present in the default menu */
@@ -354,7 +354,7 @@ to accomodate the dropdown button.
 
 /* hidden items */
 .ws_hidden_flag {
-	background-image: url('../images/plugin_disabled.png');
+	background-image: url('../images/icon-extension-grey.png');
 }
 
 /* These classes could be used to apply different styles to items depending on their flags */

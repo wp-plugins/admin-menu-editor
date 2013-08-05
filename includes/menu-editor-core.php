@@ -215,7 +215,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    * @return void
    */
 	function enqueue_styles(){
-		wp_enqueue_style('menu-editor-style', plugins_url('css/menu-editor.css', $this->plugin_file), array(), '20130221');
+		wp_enqueue_style('menu-editor-style', plugins_url('css/menu-editor.css', $this->plugin_file), array(), '20130805');
 	}
 
   /**
@@ -1014,6 +1014,19 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 	$plugin_url = $this->plugin_dir_url;
 	$images_url = plugins_url('images', $this->plugin_file);
+
+	$icons = array(
+		'cut' => '/gnome-icon-theme/edit-cut-blue.png',
+		'copy' => '/gion/edit-copy.png',
+		'paste' => '/gnome-icon-theme/edit-paste.png',
+		'hide'  => '/icon-extension-grey.png',
+		'new' => '/page-add.png',
+		'delete' => '/page-delete.png',
+		'new-separator' => '/separator-add.png',
+	);
+	foreach($icons as $name => $url) {
+		$icons[$name] = $images_url . $url;
+	}
 	
 	//Create a list of all known capabilities and roles. Used for the dropdown list on the access field.
 	$all_capabilities = $this->get_all_capabilities();
@@ -1038,20 +1051,20 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 <div id='ws_menu_editor'>
 	<div class='ws_main_container'>
 		<div class='ws_toolbar'>
-			<div class="ws_button_container">		
-				<a id='ws_cut_menu' class='ws_button' href='javascript:void(0)' title='Cut'><img src='<?php echo $images_url; ?>/cut.png' alt="Cut" /></a>
-				<a id='ws_copy_menu' class='ws_button' href='javascript:void(0)' title='Copy'><img src='<?php echo $images_url; ?>/page_white_copy.png' alt="Copy" /></a>
-				<a id='ws_paste_menu' class='ws_button' href='javascript:void(0)' title='Paste'><img src='<?php echo $images_url; ?>/page_white_paste.png' alt="Paste" /></a>
+			<div class="ws_button_container">
+				<a id='ws_cut_menu' class='ws_button' href='javascript:void(0)' title='Cut'><img src='<?php echo $icons['cut']; ?>' alt="Cut" /></a>
+				<a id='ws_copy_menu' class='ws_button' href='javascript:void(0)' title='Copy'><img src='<?php echo $icons['copy']; ?>' alt="Copy" /></a>
+				<a id='ws_paste_menu' class='ws_button' href='javascript:void(0)' title='Paste'><img src='<?php echo $icons['paste']; ?>' alt="Paste" /></a>
 				
 				<div class="ws_separator">&nbsp;</div>
-				
-				<a id='ws_new_menu' class='ws_button' href='javascript:void(0)' title='New menu'><img src='<?php echo $images_url; ?>/page_white_add.png' alt="New menu" /></a>
-				<a id='ws_hide_menu' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $images_url; ?>/plugin_disabled.png' alt="Show/Hide" /></a>
-				<a id='ws_delete_menu' class='ws_button' href='javascript:void(0)' title='Delete menu'><img src='<?php echo $images_url; ?>/page_white_delete.png' alt="Delete menu" /></a>
+
+				<a id='ws_new_menu' class='ws_button' href='javascript:void(0)' title='New menu'><img src='<?php echo $icons['new']; ?>' alt="New menu" /></a>
+				<a id='ws_hide_menu' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $icons['hide']; ?>' alt="Show/Hide" /></a>
+				<a id='ws_delete_menu' class='ws_button' href='javascript:void(0)' title='Delete menu'><img src='<?php echo $icons['delete']; ?>' alt="Delete menu" /></a>
 				
 				<div class="ws_separator">&nbsp;</div>
-				
-				<a id='ws_new_separator' class='ws_button' href='javascript:void(0)' title='New separator'><img src='<?php echo $images_url; ?>/separator_add.png' alt="New separator" /></a>
+
+				<a id='ws_new_separator' class='ws_button' href='javascript:void(0)' title='New separator'><img src='<?php echo $icons['new-separator']; ?>' alt="New separator" /></a>
 			</div>
 		</div>
 		
@@ -1061,15 +1074,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	<div class='ws_main_container'>
 		<div class='ws_toolbar'>
 			<div class="ws_button_container">
-				<a id='ws_cut_item' class='ws_button' href='javascript:void(0)' title='Cut'><img src='<?php echo $images_url; ?>/cut.png' alt="Cut" /></a>
-				<a id='ws_copy_item' class='ws_button' href='javascript:void(0)' title='Copy'><img src='<?php echo $images_url; ?>/page_white_copy.png' alt="Copy" /></a>
-				<a id='ws_paste_item' class='ws_button' href='javascript:void(0)' title='Paste'><img src='<?php echo $images_url; ?>/page_white_paste.png' alt="Paste" /></a>
+				<a id='ws_cut_item' class='ws_button' href='javascript:void(0)' title='Cut'><img src='<?php echo $icons['cut']; ?>' alt="Cut" /></a>
+				<a id='ws_copy_item' class='ws_button' href='javascript:void(0)' title='Copy'><img src='<?php echo $icons['copy']; ?>' alt="Copy" /></a>
+				<a id='ws_paste_item' class='ws_button' href='javascript:void(0)' title='Paste'><img src='<?php echo $icons['paste']; ?>' alt="Paste" /></a>
 				
 				<div class="ws_separator">&nbsp;</div>
-				
-				<a id='ws_new_item' class='ws_button' href='javascript:void(0)' title='New menu item'><img src='<?php echo $images_url; ?>/page_white_add.png' alt="New menu item" /></a>
-				<a id='ws_hide_item' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $images_url; ?>/plugin_disabled.png' alt="Show/Hide" /></a>
-				<a id='ws_delete_item' class='ws_button' href='javascript:void(0)' title='Delete menu item'><img src='<?php echo $images_url; ?>/page_white_delete.png' alt="Delete menu item" /></a>
+
+				<a id='ws_new_item' class='ws_button' href='javascript:void(0)' title='New menu item'><img src='<?php echo $icons['new']; ?>' alt="New menu item" /></a>
+				<a id='ws_hide_item' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $icons['hide']; ?>' alt="Show/Hide" /></a>
+				<a id='ws_delete_item' class='ws_button' href='javascript:void(0)' title='Delete menu item'><img src='<?php echo $icons['delete']; ?>' alt="Delete menu item" /></a>
 				
 				<div class="ws_separator">&nbsp;</div>
 				
