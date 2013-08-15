@@ -43,6 +43,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private $page_access_lookup = array();
 
 	/**
+	 * @var bool Whether to log menu access checks and display the log when access is allowed or denied.
+	 */
+	private $log_access_checks = true;
+	private $access_check_log = array();
+	private $item_access_check_log = array();
+
+	/**
 	 * @var array The current custom menu with defaults merged in.
 	 */
 	private $merged_custom_menu = null;
@@ -111,6 +118,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//User survey
 		add_action('admin_notices', array($this, 'display_survey_notice'));
+
+		if ( $this->log_access_checks ) {
+			add_action('admin_notices', array($this, 'display_access_check_log'));
+		}
 	}
 	
 	function init_finish() {
@@ -174,6 +185,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//The menu editor is only visible to users with the manage_options privilege.
 		//Or, if the plugin is installed in mu-plugins, only to the site administrator(s). 
 		if ( $this->current_user_can_edit_menu() ){
+			$this->access_check_log[] = 'Current user can edit the admin menu.';
+
 			$page = add_options_page(
 				apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'), 
 				apply_filters('admin_menu_editor-self_menu_title', 'Menu Editor'), 
@@ -219,7 +232,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->build_custom_wp_menu($this->merged_custom_menu['tree']);
 
 			if ( !$this->user_can_access_current_page() ) {
+				$this->access_check_log[] = 'DENY access.';
 				wp_die('You do not have sufficient permissions to access this admin page.');
+			} else {
+				$this->access_check_log[] = 'ALLOW access.';
 			}
 
 			//Replace the admin menu just before it is displayed and restore it afterwards.
@@ -689,6 +705,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 						$temp = ameMenuItem::apply_defaults($topmenu);
 						$temp['access_level'] = $this->get_menu_capability($temp);
+						$temp['access_check_log'] = $this->item_access_check_log;
 						$this->add_access_lookup($temp, 'menu', true);
                     }
 				}
@@ -711,6 +728,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 							$temp = ameMenuItem::apply_defaults($item);
 							$temp['access_level'] = $this->get_menu_capability($temp);
+							$temp['access_check_log'] = $this->item_access_check_log;
 							$this->add_access_lookup($temp, 'submenu', true);
                         }
 					}
@@ -997,6 +1015,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$item = ameMenuItem::apply_filters($item, $item_type, $parent); //may cause side-effects
 
 		$item['access_level'] = $this->get_menu_capability($item);
+		$item['access_check_log'] = $this->item_access_check_log;
 		$this->add_access_lookup($item, $item_type);
 
 		//Menus without a custom icon image should have it set to "none" (or "div" in older WP versions).
@@ -1035,25 +1054,59 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return string Required capability, or 'do_not_allow' if the current user can't access this menu.
 	 */
 	private function get_menu_capability($item) {
-		$item['access_level'] = apply_filters(
+		$log = array('Figuring out what capability the user will need to access this item...');
+
+		$filtered_cap = apply_filters(
 			'custom_admin_menu_capability',
 			$item['access_level'],
 			$item
 		);
 
+		if ( is_string($filtered_cap) || empty($filtered_cap) ) {
+			$item['access_level'] = $filtered_cap;
+		} else {
+			$item = $filtered_cap;
+		}
+
+		if ( isset($item['access_check_log']) ) {
+			$log = array_merge($log, $item['access_check_log']);
+		}
+
 		//Check if the current user can access this menu.
 		$user_has_access = true;
 		$cap_to_use = '';
 		if ( !empty($item['access_level']) ) {
-			$user_has_access = $user_has_access && $this->current_user_can($item['access_level']);
+			$user_has_cap = $this->current_user_can($item['access_level']);
+			$user_has_access = $user_has_access && $user_has_cap;
 			$cap_to_use = $item['access_level'];
+
+			$log[] = sprintf(
+				'Required capability: %1$s. User %2$s this capability.',
+				htmlentities($cap_to_use),
+				$user_has_cap ? 'HAS' : 'DOES NOT have'
+			);
+		} else {
+			$log[] = 'No required capability set.';
 		}
+
 		if ( !empty($item['extra_capability']) ) {
-			$user_has_access = $user_has_access && $this->current_user_can($item['extra_capability']);
+			$user_has_cap = $this->current_user_can($item['extra_capability']);
+			$user_has_access = $user_has_access && $user_has_cap;
 			$cap_to_use = $item['extra_capability'];
+
+			$log[] = sprintf(
+				'Extra capability: %1$s. User %2$s this capability.',
+				htmlentities($cap_to_use),
+				$user_has_cap ? 'HAS' : 'DOES NOT have'
+			);
+		} else {
+			$log[] = 'No "extra capability" set.';
 		}
 
 		$capability = $user_has_access ? $cap_to_use : 'do_not_allow';
+		$log[] = 'Final capability setting: ' . $capability;
+
+		$this->item_access_check_log = $log;
 		return $capability;
 	}
 	
@@ -1312,10 +1365,28 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private function user_can_access_current_page() {
 		$current_item = $this->get_current_menu_item();
 		if ( $current_item === null ) {
+			$this->access_check_log[] = 'Could not determine the current menu item. We won\'t do any custom permission checks.';
 			return true; //Let WordPress handle it.
 		}
+
+		$this->access_check_log[] = sprintf(
+			'The current menu item is "%s", template ID: "%s"',
+			htmlentities($current_item['menu_title']),
+			htmlentities(ameMenuItem::get($current_item, 'template_id', 'N/A'))
+		);
+		if ( isset($current_item['access_check_log']) ) {
+			$this->access_check_log = array_merge($this->access_check_log, $current_item['access_check_log']);
+		}
+
 		//Note: Per-role and per-user virtual caps will be applied by has_cap filters.
-		return $this->current_user_can($current_item['access_level']);
+		$allow = $this->current_user_can($current_item['access_level']);
+		$this->access_check_log[] = sprintf(
+			'The current user %1$s the "%2$s" capability.',
+			$allow ? 'has' : 'does not have',
+			htmlentities($current_item['access_level'])
+		);
+
+		return $allow;
 	}
 
 	/**
@@ -1562,6 +1633,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			array(),
 			'20130211'
 		);
+	}
+
+	public function display_access_check_log() {
+		echo '<h3>Admin Menu Editor security log</h3>';
+		echo '<pre>';
+		echo implode("\n", $this->access_check_log);
+		echo '</pre>';
 	}
 
 
