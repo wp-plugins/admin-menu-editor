@@ -45,9 +45,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	/**
 	 * @var bool Whether to log menu access checks and display the log when access is allowed or denied.
 	 */
-	private $log_access_checks = true;
-	private $access_check_log = array();
-	private $item_access_check_log = array();
+	private $security_logging_enabled = false;
+	private $security_log = array();
 
 	/**
 	 * @var array The current custom menu with defaults merged in.
@@ -119,8 +118,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//User survey
 		add_action('admin_notices', array($this, 'display_survey_notice'));
 
-		if ( $this->log_access_checks ) {
-			add_action('admin_notices', array($this, 'display_access_check_log'));
+		if ( $this->security_logging_enabled ) {
+			add_action('admin_notices', array($this, 'display_security_log'));
 		}
 	}
 	
@@ -185,7 +184,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//The menu editor is only visible to users with the manage_options privilege.
 		//Or, if the plugin is installed in mu-plugins, only to the site administrator(s). 
 		if ( $this->current_user_can_edit_menu() ){
-			$this->access_check_log[] = 'Current user can edit the admin menu.';
+			$this->log_security_note('Current user can edit the admin menu.');
 
 			$page = add_options_page(
 				apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'), 
@@ -232,10 +231,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->build_custom_wp_menu($this->merged_custom_menu['tree']);
 
 			if ( !$this->user_can_access_current_page() ) {
-				$this->access_check_log[] = 'DENY access.';
-				wp_die('You do not have sufficient permissions to access this admin page.');
+				$this->log_security_note('DENY access.');
+				$message = 'You do not have sufficient permissions to access this admin page.';
+				if ( $this->security_logging_enabled ) {
+					$message .= '<p><strong>Admin Menu Editor security log</strong></p>';
+					$message .= $this->get_formatted_security_log();
+				}
+				wp_die($message);
 			} else {
-				$this->access_check_log[] = 'ALLOW access.';
+				$this->log_security_note('ALLOW access.');
 			}
 
 			//Replace the admin menu just before it is displayed and restore it afterwards.
@@ -704,8 +708,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 						$topmenu['missing'] = true;
 
 						$temp = ameMenuItem::apply_defaults($topmenu);
-						$temp['access_level'] = $this->get_menu_capability($temp);
-						$temp['access_check_log'] = $this->item_access_check_log;
+						$temp = $this->set_final_menu_capability($temp);
 						$this->add_access_lookup($temp, 'menu', true);
                     }
 				}
@@ -727,8 +730,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 							$item['missing'] = true;
 
 							$temp = ameMenuItem::apply_defaults($item);
-							$temp['access_level'] = $this->get_menu_capability($temp);
-							$temp['access_check_log'] = $this->item_access_check_log;
+							$temp = $this->set_final_menu_capability($temp);
 							$this->add_access_lookup($temp, 'submenu', true);
                         }
 					}
@@ -1014,8 +1016,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$item = ameMenuItem::apply_defaults($item);
 		$item = ameMenuItem::apply_filters($item, $item_type, $parent); //may cause side-effects
 
-		$item['access_level'] = $this->get_menu_capability($item);
-		$item['access_check_log'] = $this->item_access_check_log;
+		$item = $this->set_final_menu_capability($item);
+		if ( !$this->security_logging_enabled ) {
+			unset($item['access_check_log']); //Throw away the log to conserve memory.
+		}
 		$this->add_access_lookup($item, $item_type);
 
 		//Menus without a custom icon image should have it set to "none" (or "div" in older WP versions).
@@ -1047,30 +1051,23 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	/**
 	 * Figure out if the current user can access a menu item and what capability they would need.
 	 *
-	 * This method takes into account both the default capability set by WordPress as well as
-	 * custom role and capability settings specified by the user.
+	 * This method takes into account the default capability set by WordPress as well as any
+	 * custom role and capability settings specified by the user. It will set "access_level"
+	 * to the required capability, or set it to 'do_not_allow' if the current user can't access
+	 * this menu.
 	 *
 	 * @param array $item Menu item (with defaults applied).
-	 * @return string Required capability, or 'do_not_allow' if the current user can't access this menu.
+	 * @return array
 	 */
-	private function get_menu_capability($item) {
-		$log = array('Figuring out what capability the user will need to access this item...');
-
-		$filtered_cap = apply_filters(
-			'custom_admin_menu_capability',
-			$item['access_level'],
-			$item
+	private function set_final_menu_capability($item) {
+		$item['access_check_log'] = array(
+			str_repeat('=', 79),
+			'Figuring out what capability the user will need to access this item...'
 		);
 
-		if ( is_string($filtered_cap) || empty($filtered_cap) ) {
-			$item['access_level'] = $filtered_cap;
-		} else {
-			$item = $filtered_cap;
-		}
+		$item = apply_filters('custom_admin_menu_capability', $item);
 
-		if ( isset($item['access_check_log']) ) {
-			$log = array_merge($log, $item['access_check_log']);
-		}
+		$item['access_check_log'][] = '-----';
 
 		//Check if the current user can access this menu.
 		$user_has_access = true;
@@ -1080,13 +1077,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$user_has_access = $user_has_access && $user_has_cap;
 			$cap_to_use = $item['access_level'];
 
-			$log[] = sprintf(
+			$item['access_check_log'][] = sprintf(
 				'Required capability: %1$s. User %2$s this capability.',
 				htmlentities($cap_to_use),
 				$user_has_cap ? 'HAS' : 'DOES NOT have'
 			);
 		} else {
-			$log[] = 'No required capability set.';
+			$item['access_check_log'][] = '- No required capability set.';
 		}
 
 		if ( !empty($item['extra_capability']) ) {
@@ -1094,20 +1091,21 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$user_has_access = $user_has_access && $user_has_cap;
 			$cap_to_use = $item['extra_capability'];
 
-			$log[] = sprintf(
+			$item['access_check_log'][] = sprintf(
 				'Extra capability: %1$s. User %2$s this capability.',
 				htmlentities($cap_to_use),
 				$user_has_cap ? 'HAS' : 'DOES NOT have'
 			);
 		} else {
-			$log[] = 'No "extra capability" set.';
+			$item['access_check_log'][] = 'No "extra capability" set.';
 		}
 
 		$capability = $user_has_access ? $cap_to_use : 'do_not_allow';
-		$log[] = 'Final capability setting: ' . $capability;
+		$item['access_check_log'][] = 'Final capability setting: ' . $capability;
+		$item['access_check_log'][] = str_repeat('=', 79);
 
-		$this->item_access_check_log = $log;
-		return $capability;
+		$item['access_level'] = $capability;
+		return $item;
 	}
 	
   /**
@@ -1365,26 +1363,26 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private function user_can_access_current_page() {
 		$current_item = $this->get_current_menu_item();
 		if ( $current_item === null ) {
-			$this->access_check_log[] = 'Could not determine the current menu item. We won\'t do any custom permission checks.';
+			$this->log_security_note('Could not determine the current menu item. We won\'t do any custom permission checks.');
 			return true; //Let WordPress handle it.
 		}
 
-		$this->access_check_log[] = sprintf(
+		$this->log_security_note(sprintf(
 			'The current menu item is "%s", template ID: "%s"',
 			htmlentities($current_item['menu_title']),
 			htmlentities(ameMenuItem::get($current_item, 'template_id', 'N/A'))
-		);
+		));
 		if ( isset($current_item['access_check_log']) ) {
-			$this->access_check_log = array_merge($this->access_check_log, $current_item['access_check_log']);
+			$this->log_security_note($current_item['access_check_log']);
 		}
 
 		//Note: Per-role and per-user virtual caps will be applied by has_cap filters.
 		$allow = $this->current_user_can($current_item['access_level']);
-		$this->access_check_log[] = sprintf(
+		$this->log_security_note(sprintf(
 			'The current user %1$s the "%2$s" capability.',
 			$allow ? 'has' : 'does not have',
 			htmlentities($current_item['access_level'])
-		);
+		));
 
 		return $allow;
 	}
@@ -1408,6 +1406,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 */
 	private function get_current_menu_item() {
 		if ( !is_admin() || empty($this->reverse_item_lookup)) {
+			if ( !is_admin() ) {
+				$this->log_security_note('This is not an admin page. is_admin() returns false.');
+			} else if ( empty($this->reverse_item_lookup) ) {
+				$this->log_security_note('Warning: reverse_item_lookup is empty!');
+			}
 			return null;
 		}
 
@@ -1432,6 +1435,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		$current_url = $base_site_url . remove_query_arg('___ame_dummy_param___');
+		$this->log_security_note(sprintf('Current URL: "%s"', htmlentities($current_url)));
+
 		$current_url = $this->parse_url($current_url);
 
 		foreach($this->reverse_item_lookup as $url => $item) {
@@ -1635,11 +1640,44 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		);
 	}
 
-	public function display_access_check_log() {
-		echo '<h3>Admin Menu Editor security log</h3>';
-		echo '<pre>';
-		echo implode("\n", $this->access_check_log);
-		echo '</pre>';
+	/**
+	 * Log a security-related message.
+	 *
+	 * @param string|array $message The message to add tot he log, or an array of messages.
+	 */
+	private function log_security_note($message) {
+		if ( !$this->security_logging_enabled ) {
+			return;
+		}
+		if ( is_array($message) ) {
+			$this->security_log = array_merge($this->security_log, $message);
+		} else {
+			$this->security_log[] = $message;
+		}
+	}
+
+	/**
+	 * Callback for "admin_notices".
+	 */
+	public function display_security_log() {
+		?>
+		<div class="updated">
+			<h3>Admin Menu Editor security log</h3>
+			<?php echo $this->get_formatted_security_log(); ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Get the security log in HTML format.
+	 *
+	 * @return string
+	 */
+	private function get_formatted_security_log() {
+		$log = '<div style="font: 12px/16.8px Consolas, monospace; margin-bottom: 1em;">';
+		$log .= implode("<br>\n", $this->security_log);
+		$log .= '</div>';
+		return $log;
 	}
 
 
