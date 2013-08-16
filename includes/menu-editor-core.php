@@ -16,6 +16,8 @@ require $thisDirectory . '/menu.php';
 require $thisDirectory . '/auto-versioning.php';
 
 class WPMenuEditor extends MenuEd_ShadowPluginFramework {
+	const WPML_CONTEXT = 'admin-menu-editor menu texts';
+
 	private $plugin_db_version = 140;
 
 	/** @var array The default WordPress menu, before display-specific filtering. */
@@ -554,6 +556,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @param array|null $custom_menu
 	 */
 	function set_custom_menu($custom_menu) {
+		$this->update_wpml_strings($this->options['custom_menu'], $custom_menu);
+
 		$this->options['custom_menu'] = $custom_menu;
 		$this->save_options();
 
@@ -1043,6 +1047,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		if ( $shouldMakeAbsolute ) {
 			$item['file'] = admin_url($item['url']);
+		}
+
+		//WPML support: Use translated menu titles where available.
+		if ( !$item['separator'] && function_exists('icl_t') ) {
+			$item['menu_title'] = icl_t(
+				self::WPML_CONTEXT,
+				$this->get_wpml_name_for($item, 'menu_title'),
+				$item['menu_title']
+			);
 		}
 
 		return $item;
@@ -1680,5 +1693,96 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		return $log;
 	}
 
+	/**
+	 * WPML support: Update strings that need translation.
+	 *
+	 * @param array $old_menu The old custom menu, if any.
+	 * @param array $custom_menu The new custom menu.
+	 */
+	private function update_wpml_strings($old_menu, $custom_menu) {
+		if ( !function_exists('icl_register_string') ) {
+			return;
+		}
+
+		$previous_strings = $this->get_wpml_strings($old_menu);
+		$new_strings = $this->get_wpml_strings($custom_menu);
+
+		//Delete strings that are no longer valid.
+		if ( function_exists('icl_unregister_string') ) {
+			$removed_strings = array_diff_key($previous_strings, $new_strings);
+			foreach($removed_strings as $name => $value) {
+				icl_unregister_string(self::WPML_CONTEXT, $name);
+			}
+		}
+
+		//Register/update the new menu strings.
+		foreach($new_strings as $name => $value) {
+			icl_register_string(self::WPML_CONTEXT, $name, $value);
+		}
+	}
+
+	/**
+	 * Prepare WPML translation strings for all menu and page titles
+	 * in the specified menu.
+	 *
+	 * @param array $custom_menu
+	 * @return array Associative array of strings that can be translated, indexed by unique name.
+	 */
+	private function get_wpml_strings($custom_menu) {
+		if ( empty($custom_menu) ) {
+			return array();
+		}
+
+		$strings = array();
+		$translatable_fields = array('menu_title', 'page_title');
+		foreach($custom_menu['tree'] as $top_menu) {
+			if ( $top_menu['separator'] ) {
+				continue;
+			}
+
+			foreach($translatable_fields as $field) {
+				if ( isset($top_menu[$field]) ) {
+					$name = $this->get_wpml_name_for($top_menu, $field);
+					$strings[$name] = ameMenuItem::get($top_menu, $field);
+				}
+			}
+
+			if ( isset($top_menu['items']) && !empty($top_menu['items']) ) {
+				foreach($top_menu['items'] as $item) {
+					if ( $item['separator'] ) {
+						continue;
+					}
+
+					foreach($translatable_fields as $field) {
+						if ( isset($item[$field]) ) {
+							$name = $this->get_wpml_name_for($item, $field);
+							$strings[$name] = ameMenuItem::get($item, $field);
+						}
+					}
+				}
+			}
+		}
+
+		return $strings;
+	}
+
+	/**
+	 * Create a unique name for a specific field of a specific menu item.
+	 * Intended for use with the icl_register_string() function.
+	 *
+	 * @param array $item Admin menu item in the internal format.
+	 * @param string $field Field name.
+	 * @return string
+	 */
+	private function get_wpml_name_for($item, $field = '') {
+		$name = ameMenuItem::get($item, 'template_id');
+		if ( empty($name) ) {
+			$name = 'custom: ' . ameMenuItem::get($item, 'file');
+		}
+		if ( !empty($field) ) {
+			$name = $name . '[' . $field. ']';
+		}
+		return $name;
+	}
 
 } //class
