@@ -466,7 +466,7 @@ a.ws_button:hover {
        Capability selector
 *************************************/
 
-#wpbody select.ws_dropdown {
+select.ws_dropdown {
 	width: 252px;
 	height: 20em;
 	
@@ -478,13 +478,13 @@ a.ws_button:hover {
 	font-size: 12px;
 }
 
-#wpbody select.ws_dropdown option {
+select.ws_dropdown option {
 	font-family : "Lucida Grande",Verdana,Arial,"Bitstream Vera Sans",sans-serif;
 	font-size: 12px;
 	padding: 3px;
 }
 
-#wpbody select.ws_dropdown optgroup option {
+select.ws_dropdown optgroup option {
 	padding-left: 10px;
 }
 
@@ -723,8 +723,7 @@ a.ws_button:hover {
 *************************************/
 
 /* The launch button */
-#ws_menu_editor .ws_edit_field-access_level input.ws_field_value,
-#ws_menu_editor .ws_edit_field-extra_capability input.ws_field_value
+#ws_menu_editor .ws_edit_field-access_level input.ws_field_value
 {
 	width: 190px;
 	margin-right: 5px;

@@ -407,6 +407,10 @@ function buildMenuItem(itemData, isTopLevel) {
 	return item;
 }
 
+function jsTrim(str){
+	return str.replace(/^\s+|\s+$/g, "");
+}
+
 //Editor field spec template.
 var baseField = {
 	caption : '[No caption]',
@@ -535,6 +539,45 @@ var knownMenuFields = {
 		write: function(menuItem) {
 			//The required capability can't be directly edited and always equals the default.
 			menuItem.access_level = null;
+		}
+	}),
+
+	'extra_capability' : $.extend({}, baseField, {
+		caption: 'Required capability',
+		defaultValue: 'read',
+		type: 'text',
+		addDropdown: 'ws_cap_selector',
+
+		display: function(menuItem) {
+			//Permissions display is a little complicated and could use improvement.
+			var requiredCap = getFieldValue(menuItem, 'access_level', '');
+			var extraCap = getFieldValue(menuItem, 'extra_capability', '');
+
+			var displayValue = extraCap;
+			if ((extraCap === '') || (extraCap === null)) {
+				displayValue = requiredCap;
+			}
+
+			return displayValue;
+		},
+
+		write: function(menuItem, value) {
+			value = jsTrim(value);
+
+			//Reset to default if the user clears the input.
+			if (value === '') {
+				menuItem.extra_capability = null;
+				return;
+			}
+
+			//It would be redundant to set an extra_capability that it matches access_level.
+			var requiredCap = getFieldValue(menuItem, 'access_level', '');
+			var extraCap = getFieldValue(menuItem, 'extra_capability', '');
+			if (extraCap === '' && value === requiredCap) {
+				return;
+			}
+
+			menuItem.extra_capability = value;
 		}
 	}),
 
@@ -1449,17 +1492,46 @@ $(document).ready(function(){
 	 ***************************************************************************/
 
 	var capSelectorDropdown = $('#ws_cap_selector');
+	var currentDropdownOwner = null; //The input element that the dropdown is currently associated with.
+	var isDropdownBeingHidden = false;
 
-	//Show/hide the capability drop-down list when the button is clicked
-	$('#ws_trigger_capability_dropdown').bind('click', function(){
-		var inputBox = $('#ws_extra_capability');
+	//Show/hide the capability drop-down list when the trigger button is clicked
+	$('#ws_trigger_capability_dropdown').on('mousedown click', onDropdownTriggerClicked);
+	menuEditorNode.on('mousedown click', '.ws_dropdown_button', onDropdownTriggerClicked);
 
-		if (capSelectorDropdown.is(':visible')) {
-			capSelectorDropdown.hide();
+	function onDropdownTriggerClicked(event){
+		var inputBox = null;
+		var button = $(this);
+
+		//Find the input associated with the button that was clicked.
+		if ( button.attr('id') == 'ws_trigger_capability_dropdown' ) {
+			inputBox = $('#ws_extra_capability');
+		} else {
+			inputBox = button.closest('.ws_edit_field').find('.ws_field_value').first();
+		}
+
+		//If the user clicks the same button again while the dropdown is already visible,
+		//ignore the click. The dropdown will be hidden by its "blur" handler.
+		if (event.type == 'mousedown') {
+			if ( capSelectorDropdown.is(':visible') && inputBox.is(currentDropdownOwner) ) {
+				isDropdownBeingHidden = true;
+			}
+			return;
+		} else if (isDropdownBeingHidden) {
+			isDropdownBeingHidden = false; //Ignore the click event.
 			return;
 		}
 
-		//Pre-select the current capability (will clear selection if there's no match)
+		//A jQuery UI dialog widget will prevent focus from leaving the dialog. So if we want
+		//the dropdown to be properly focused when displaying it in a dialog, we must make it
+		//a child of the dialog's DOM node (and vice versa when it's not in a dialog).
+		var parentContainer = $(this).closest('.ui-dialog, #ws_menu_editor');
+		if ((parentContainer.length > 0) && (capSelectorDropdown.closest(parentContainer).length == 0)) {
+			var oldHeight = capSelectorDropdown.height(); //Height seems to reset when moving to a new parent.
+			capSelectorDropdown.detach().appendTo(parentContainer).height(oldHeight);
+		}
+
+		//Pre-select the current capability (will clear selection if there's no match).
 		capSelectorDropdown.val(inputBox.val()).show();
 
 		//Move the drop-down near the input box.
@@ -1475,8 +1547,9 @@ $(document).ready(function(){
 			}).
 			width(inputBox.outerWidth());
 
+		currentDropdownOwner = inputBox;
 		capSelectorDropdown.focus();
-	});
+	}
 
 	//Also show it when the user presses the down arrow in the input field (doesn't work in Opera).
 	$('#ws_extra_capability').bind('keyup', function(event){
@@ -1489,30 +1562,30 @@ $(document).ready(function(){
 	var dropdownNodes = $('.ws_dropdown');
 
 	// Hide capability drop-down when it loses focus.
-	// The timeout prevents a situation where the list is hidden and immediately displayed
-	// again because the user clicked the trigger button while it was visible.
-	dropdownNodes.blur(function(){
-		setTimeout(function() { capSelectorDropdown.hide(); }, 100);
+	dropdownNodes.blur(function(event){
+		console.log('Hiding dropdown because it lost focus.', event);
+		capSelectorDropdown.hide();
 	});
 
 	dropdownNodes.keydown(function(event){
-		var inputBox = $('#ws_extra_capability');
 
 		//Hide it when the user presses Esc
 		if ( event.which == 27 ){
 			capSelectorDropdown.hide();
-			inputBox.focus();
+			if (currentDropdownOwner) {
+				currentDropdownOwner.focus();
+			}
 
 		//Select an item & hide the list when the user presses Enter or Tab
 		} else if ( (event.which == 13) || (event.which == 9) ){
 			capSelectorDropdown.hide();
 
-			if ( capSelectorDropdown.val() ){
-				inputBox.val(capSelectorDropdown.val());
-				inputBox.change();
+			if (currentDropdownOwner) {
+				if ( capSelectorDropdown.val() ){
+					currentDropdownOwner.val(capSelectorDropdown.val()).change();
+				}
+				currentDropdownOwner.focus();
 			}
-
-			inputBox.focus();
 
 			event.preventDefault();
 		}
@@ -1528,9 +1601,11 @@ $(document).ready(function(){
 
 	//Update the input & hide the list when an option is clicked
 	dropdownNodes.click(function(){
-		if ( capSelectorDropdown.val() ){
+		if (capSelectorDropdown.val()){
 			capSelectorDropdown.hide();
-			$('#ws_extra_capability').val(capSelectorDropdown.val()).change().focus();
+			if (currentDropdownOwner) {
+				currentDropdownOwner.val(capSelectorDropdown.val()).change().focus();
+			}
 		}
 	});
 
@@ -1540,9 +1615,9 @@ $(document).ready(function(){
 			return;
 		}
 
-		var option = $(event.target);
-		if ( !option.attr('selected') && option.attr('value')){
-			option.attr('selected', 'selected');
+		var option = event.target;
+		if ( (typeof option['selected'] !== 'undefined') && !option.selected && option.value ){
+			option.selected = true;
 		}
 	});
 
@@ -2016,10 +2091,6 @@ $(document).ready(function(){
 
 		updateParentAccessUi(menu);
 	});
-
-	function jsTrim(str){
-		return str.replace(/^\s+|\s+$/g, "");
-	}
 
 	function compareMenus(a, b){
 		var aTitle = jsTrim( $(a).find('.ws_item_title').text() );
