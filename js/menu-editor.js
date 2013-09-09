@@ -702,6 +702,7 @@ function buildEditboxField(entry, field_name, field_settings){
 	//Build a form field of the appropriate type
 	var inputBox = null;
 	var basicTextField = '<input type="text" class="ws_field_value">';
+	//noinspection FallthroughInSwitchStatementJS
 	switch(field_settings.type){
 		case 'select':
 			inputBox = $('<select class="ws_field_value">');
@@ -977,7 +978,7 @@ function readMenuTreeState(){
  * Extract the current menu item settings from its editor widget.
  *
  * @param itemDiv DOM node containing the editor widget, usually with the .ws_item or .ws_menu class.
- * @param {Integer} [position] Menu item position among its sibling menu items. Defaults to zero.
+ * @param {Number} [position] Menu item position among its sibling menu items. Defaults to zero.
  * @return {Object} A menu object in the tree format.
  */
 function readItemState(itemDiv, position){
