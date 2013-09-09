@@ -83,7 +83,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		$this->defaults = array(
 			'hide_advanced_settings' => true,
-			'menu_format_version' => 0, //TODO: Remove unused key.
 			'custom_menu' => null,
 			'first_install_time' => null,
 			'display_survey_notice' => true,
