@@ -734,7 +734,7 @@ function buildEditboxField(entry, field_name, field_settings){
                 .add('<button class="button ws_select_icon" title="Select icon"><div class="icon16 icon-settings"></div><img src="" style="display:none;"></button>');
 			break;
 
-		case 'text':
+		case 'text': //Intentional fall-through.
 		default:
 			inputBox = $(basicTextField);
 	}
