@@ -518,6 +518,7 @@ var knownMenuFields = {
 		caption: 'Permissions',
 		defaultValue: 'read',
 		type: 'access_editor',
+		visible: false, //Will be set to visible only in Pro version.
 
 		display: function(menuItem) {
 			//Permissions display is a little complicated and could use improvement.
@@ -1196,8 +1197,11 @@ var menu_in_clipboard = null;
 var ws_paste_count = 0;
 
 $(document).ready(function(){
+	//Some editor elements are only available in the Pro version.
 	if (wsEditorData.wsMenuEditorPro) {
 		knownMenuFields['open_in'].visible = true;
+		knownMenuFields['access_level'].visible = true;
+		knownMenuFields['extra_capability'].visible = false; //Superseded by the "access_level" field.
 		$('.ws_hide_if_pro').hide();
 	}
 
