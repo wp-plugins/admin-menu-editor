@@ -75,11 +75,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private $get = array();
 
 	function init(){
-		//Determine if the plugin is active network-wide (i.e. either installed in
-		//the /mu-plugins/ directory or activated "network wide" by the super admin.
-		if ( $this->is_super_plugin() ){
-			$this->sitewide_options = true;
-		}
+		$this->sitewide_options = true;
 
 		//Set some plugin-specific options
 		if ( empty($this->option_name) ){
@@ -87,11 +83,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		$this->defaults = array(
 			'hide_advanced_settings' => true,
-			'menu_format_version' => 0, //BUG: This key appears to be unused.
+			'menu_format_version' => 0, //TODO: Remove unused key.
 			'custom_menu' => null,
 			'first_install_time' => null,
 			'display_survey_notice' => true,
 			'plugin_db_version' => 0,
+
+			'menu_config_scope' => ($this->is_super_plugin() || !is_multisite()) ? 'global' : 'site',
+			'plugin_access' => $this->is_super_plugin() ? 'super_admin' : 'manage_options',
+			'allowed_user_id' => null,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -411,6 +411,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'jquery-sort', 'jquery-json'
 			)
 		);
+
+		//Add scripts to our editor page, but not the settings sub-section
+		//that shares the same page slug.
+		if ( !$this->is_editor_page() ) {
+			return;
+		}
+
 		wp_enqueue_script('menu-editor');
 
 		//We use WordPress media uploader to let the user upload custom menu icons (WP 3.5+).
@@ -551,35 +558,68 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	}
 
 	/**
-	 * Set and save a new custom menu.
+	 * Set and save a new custom menu for the current site.
 	 *
 	 * @param array|null $custom_menu
 	 */
 	function set_custom_menu($custom_menu) {
-		$this->update_wpml_strings($this->options['custom_menu'], $custom_menu);
+		$previous_custom_menu = $this->load_custom_menu();
+		$this->update_wpml_strings($previous_custom_menu, $custom_menu);
 
-		$this->options['custom_menu'] = $custom_menu;
-		$this->save_options();
+		if ( $this->should_use_site_specific_menu() ) {
+			$site_specific_options = get_option($this->option_name);
+			if ( !is_array($site_specific_options) ) {
+				$site_specific_options = array();
+			}
+			$site_specific_options['custom_menu'] = $custom_menu;
+			update_option($this->option_name, $site_specific_options);
+		} else {
+			$this->options['custom_menu'] = $custom_menu;
+			$this->save_options();
+		}
 
 		$this->cached_custom_menu = null;
 		$this->cached_virtual_caps = null;
 	}
 
 	/**
-	 * Load the current custom menu, if any.
+	 * Load the current custom menu for this site, if any.
 	 *
 	 * @return array|null Either a menu in the internal format, or NULL if there is no custom menu available.
 	 */
 	function load_custom_menu() {
-		if ( empty($this->options['custom_menu']) ) {
-			return null;
+		if ( $this->cached_custom_menu !== null ) {
+			return $this->cached_custom_menu;
 		}
 
-		if ( $this->cached_custom_menu === null ){
+		if ( $this->should_use_site_specific_menu() ) {
+			$site_specific_options = get_option($this->option_name, null);
+			if ( is_array($site_specific_options) && isset($site_specific_options['custom_menu']) ) {
+				$this->cached_custom_menu = ameMenu::load_array($site_specific_options['custom_menu']);
+			}
+		} else {
+			if ( empty($this->options['custom_menu']) ) {
+				return null;
+			}
 			$this->cached_custom_menu = ameMenu::load_array($this->options['custom_menu']);
 		}
 
 		return $this->cached_custom_menu;
+	}
+
+	/**
+	 * Determine if we should use a site-specific admin menu configuration
+	 * for the current site, or fall back to the global config.
+	 *
+	 * @return bool True = use the site-specific config (if any), false = use the global config.
+	 */
+	protected function should_use_site_specific_menu() {
+		if ( !is_multisite() ) {
+			//If this is a single-site WP installation then there's really
+			//no difference between "site-specific" and "global".
+			return false;
+		}
+		return ($this->options['menu_config_scope'] === 'site');
 	}
 
 	/**
@@ -588,10 +628,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return bool
 	 */
 	public function current_user_can_edit_menu(){
-		if ( $this->is_super_plugin() ){
+		$access = $this->options['plugin_access'];
+
+		if ( $access === 'super_admin' ) {
 			return is_super_admin();
+		} else if ( $access === 'specific_user' ) {
+			return get_current_user_id() == $this->options['allowed_user_id'];
 		} else {
-			return current_user_can(apply_filters('admin_menu_editor-capability', 'manage_options'));
+			$capability = apply_filters('admin_menu_editor-capability', $access);
+			return current_user_can($capability);
 		}
 	}
 	
@@ -1128,18 +1173,30 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    */
 	function page_menu_editor(){
 		if ( !$this->current_user_can_edit_menu() ){
-			wp_die("Access denied.");
+			wp_die(sprintf(
+				'You do not have sufficient permissions to use Admin Menu Editor. Required: <code>%s</code>.',
+				htmlentities($this->options['plugin_access'])
+			));
 		}
 
 		$action = isset($this->post['action']) ? $this->post['action'] : (isset($this->get['action']) ? $this->get['action'] : '');
 		do_action('admin_menu_editor_header', $action);
 
-		$this->handle_form_submission($this->post, $action);
-		$this->display_editor_ui();
+		if ( !empty($action) ) {
+			$this->handle_form_submission($this->post, $action);
+		}
+
+		$sub_section = isset($this->get['sub_section']) ? $this->get['sub_section'] : null;
+		if ( $sub_section === 'settings' ) {
+			$this->display_plugin_settings_ui();
+		} else {
+			$this->display_editor_ui();
+		}
 	}
 
 	private function handle_form_submission($post, $action = '') {
 		if ( $action == 'save_menu' ) {
+			//Save the admin menu configuration.
 			if ( isset($post['data']) ){
 				check_admin_referer('menu-editor-form');
 
@@ -1174,6 +1231,32 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				}
 				wp_die($message);
 			}
+
+		} else if ( $action == 'save_settings' ) {
+
+			//Save overall plugin configuration (permissions, etc).
+			check_admin_referer('save_settings');
+
+			//Plugin access setting.
+			$valid_access_settings = array('super_admin', 'manage_options', 'specific_user');
+			if ( isset($this->post['plugin_access']) && in_array($this->post['plugin_access'], $valid_access_settings) ) {
+				$this->options['plugin_access'] = $this->post['plugin_access'];
+
+				if ( $this->options['plugin_access'] === 'specific_user' ) {
+					$this->options['allowed_user_id'] = get_current_user_id();
+				} else {
+					$this->options['allowed_user_id'] = null;
+				}
+			}
+
+			//Configuration scope.
+			$valid_scopes = array('global', 'site');
+			if ( isset($this->post['menu_config_scope']) && in_array($this->post['menu_config_scope'], $valid_scopes) ) {
+				$this->options['menu_config_scope'] = $this->post['menu_config_scope'];
+			}
+
+			$this->save_options();
+			wp_redirect(add_query_arg('updated', 1, $this->get_settings_page_url()));
 		}
 	}
 
@@ -1183,6 +1266,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'message' => isset($this->get['message']) ? intval($this->get['message']) : null,
 			'images_url' => plugins_url('images', $this->plugin_file),
 			'hide_advanced_settings' => $this->options['hide_advanced_settings'],
+			'settings_page_url' => $this->get_settings_page_url(),
 		);
 
 		//Build a tree struct. for the default menu
@@ -1229,6 +1313,44 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$editor_data['show_hints'] = $this->get_hint_visibility();
 
 		require dirname(__FILE__) . '/editor-page.php';
+	}
+
+	/**
+	 * Display the plugin settings page.
+	 */
+	private function display_plugin_settings_ui() {
+		//These variables are used by settings-page.php.
+		$settings = $this->options;
+		$settings_page_url = $this->get_settings_page_url();
+		$editor_page_url = admin_url($this->settings_link);
+
+		require dirname(__FILE__) . '/settings-page.php';
+	}
+
+	private function get_settings_page_url() {
+		return add_query_arg('sub_section', 'settings', admin_url($this->settings_link));
+	}
+
+	/**
+	 * Check if the current page is the "Menu Editor" admin page.
+	 *
+	 * @return bool
+	 */
+	protected function is_editor_page() {
+		return is_admin()
+		&& isset($this->get['page']) && ($this->get['page'] == 'menu_editor')
+		&& ( !isset($this->get['sub_section']) || empty($this->get['sub_section']) );
+	}
+
+	/**
+	 * Check if the current page is the "Settings" sub-section of our admin page.
+	 *
+	 * @return bool
+	 */
+	protected function is_settings_page() {
+		return is_admin()
+		&& isset($this->get['sub_section']) && ($this->get['sub_section'] == 'settings')
+		&& isset($this->get['page']) && ($this->get['page'] == 'menu_editor');
 	}
 	
 	/**
