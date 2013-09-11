@@ -1238,7 +1238,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			check_admin_referer('save_settings');
 
 			//Plugin access setting.
-			$valid_access_settings = array('super_admin', 'manage_options', 'specific_user');
+			$valid_access_settings = array('super_admin', 'manage_options');
+			//On Multisite only Super Admins can choose the "Only the current user" option.
+			if ( !is_multisite() || is_super_admin() ) {
+				$valid_access_settings[] = 'specific_user';
+			}
 			if ( isset($this->post['plugin_access']) && in_array($this->post['plugin_access'], $valid_access_settings) ) {
 				$this->options['plugin_access'] = $this->post['plugin_access'];
 
