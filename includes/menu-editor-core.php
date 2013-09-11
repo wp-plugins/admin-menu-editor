@@ -209,7 +209,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			add_action("admin_print_scripts-$page", array($this, 'remove_ultimate_tinymce_qtags'));
 
 			//Make a placeholder for our screen options (hacky)
-			add_meta_box("ws-ame-screen-options", "You should never see this", '__return_false', $page);
+			add_meta_box("ws-ame-screen-options", "[AME placeholder]", '__return_false', $page);
 		}
 		
 		//Store the "original" menus for later use in the editor
@@ -1257,6 +1257,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 			//Security logging.
 			$this->options['security_logging_enabled'] = isset($this->post['security_logging_enabled']) && !empty($this->post['security_logging_enabled']);
+
+			//Hide some menu options by default.
+			$this->options['hide_advanced_settings'] = isset($this->post['hide_advanced_settings']) && !empty($this->post['hide_advanced_settings']);
 
 			$this->save_options();
 			wp_redirect(add_query_arg('updated', 1, $this->get_settings_page_url()));

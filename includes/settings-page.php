@@ -108,12 +108,23 @@ $formActionUrl = add_query_arg('noheader', 1, $settings_page_url);
 			</tr>
 
 			<tr>
+				<th scope="row">Interface</th>
+				<td>
+					<label>
+						<input type="checkbox" name="hide_advanced_settings"
+							<?php checked($this->options['hide_advanced_settings']); ?>>
+						Hide advanced menu options by default
+					</label>
+				</td>
+			</tr>
+
+			<tr>
 				<th scope="row">Debugging</th>
 				<td>
 					<label>
 						<input type="checkbox" name="security_logging_enabled"
 							<?php checked($this->options['security_logging_enabled']); ?>>
-						Show menu access checks performed by the plugin on every admin page.
+						Show menu access checks performed by the plugin on every admin page
 					</label>
 					<br><span class="description">
 						This can help track down configuration problems and figure out why
