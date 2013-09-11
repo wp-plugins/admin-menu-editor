@@ -412,7 +412,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		);
 
 		//Add scripts to our editor page, but not the settings sub-section
-		//that shares the same page slug.
+		//that shares the same page slug. Some of the scripts would crash otherwise.
 		if ( !$this->is_editor_page() ) {
 			return;
 		}
@@ -1326,6 +1326,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		require dirname(__FILE__) . '/settings-page.php';
 	}
 
+	/**
+	 * Get the fully qualified URL of the "Settings" sub-section of our plugin page.
+	 *
+	 * @return string
+	 */
 	private function get_settings_page_url() {
 		return add_query_arg('sub_section', 'settings', admin_url($this->settings_link));
 	}
@@ -1731,8 +1736,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			printf(
 				'<div class="updated">
 					<p><strong>Help improve Admin Menu Editor - take the user survey!</strong></p>
-					<p><a href="%s" target="_blank" title="Opens in a new window">Take the survey</a></p>
-					<p><a href="%s">Hide this notice</a></p>
+					<p><!--suppress HtmlUnknownTarget --><a href="%s" target="_blank" title="Opens in a new window">Take the survey</a></p>
+					<p><!--suppress HtmlUnknownTarget --><a href="%s">Hide this notice</a></p>
 				</div>',
 				esc_attr($survey_url),
 				esc_attr($hide_url)
