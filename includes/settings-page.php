@@ -106,6 +106,24 @@ $formActionUrl = add_query_arg('noheader', 1, $settings_page_url);
 					</fieldset>
 				</td>
 			</tr>
+
+			<tr>
+				<th scope="row">Debugging</th>
+				<td>
+					<label>
+						<input type="checkbox" name="security_logging_enabled"
+							<?php checked($this->options['security_logging_enabled']); ?>>
+						Show menu access checks performed by the plugin on every admin page.
+					</label>
+					<br><span class="description">
+						This can help track down configuration problems and figure out why
+						your menu permissions don't work the way they should.
+
+						Note: It's not recommended to use this option on a live site as
+						it can reveal information about your menu configuration.
+					</span>
+				</td>
+			</tr>
 			</tbody>
 		</table>
 

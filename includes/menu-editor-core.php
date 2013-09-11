@@ -45,9 +45,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private $page_access_lookup = array();
 
 	/**
-	 * @var bool Whether to log menu access checks and display the log when access is allowed or denied.
+	 * @var array A log of menu access checks.
 	 */
-	private $security_logging_enabled = false;
 	private $security_log = array();
 
 	/**
@@ -87,6 +86,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'first_install_time' => null,
 			'display_survey_notice' => true,
 			'plugin_db_version' => 0,
+			'security_logging_enabled' => false,
 
 			'menu_config_scope' => ($this->is_super_plugin() || !is_multisite()) ? 'global' : 'site',
 			'plugin_access' => $this->is_super_plugin() ? 'super_admin' : 'manage_options',
@@ -118,10 +118,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//User survey
 		add_action('admin_notices', array($this, 'display_survey_notice'));
-
-		if ( $this->security_logging_enabled ) {
-			add_action('admin_notices', array($this, 'display_security_log'));
-		}
 	}
 	
 	function init_finish() {
@@ -150,6 +146,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		if ( $should_save_options ) {
 			$this->save_options();
+		}
+
+		//This is here and not in init() because it relies on $options being initialized.
+		if ( $this->options['security_logging_enabled'] ) {
+			add_action('admin_notices', array($this, 'display_security_log'));
 		}
 	}
 
@@ -234,7 +235,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if ( !$this->user_can_access_current_page() ) {
 				$this->log_security_note('DENY access.');
 				$message = 'You do not have sufficient permissions to access this admin page.';
-				if ( $this->security_logging_enabled ) {
+				if ( $this->options['security_logging_enabled'] ) {
 					$message .= '<p><strong>Admin Menu Editor security log</strong></p>';
 					$message .= $this->get_formatted_security_log();
 				}
@@ -1065,7 +1066,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$item = ameMenuItem::apply_filters($item, $item_type, $parent); //may cause side-effects
 
 		$item = $this->set_final_menu_capability($item);
-		if ( !$this->security_logging_enabled ) {
+		if ( !$this->options['security_logging_enabled'] ) {
 			unset($item['access_check_log']); //Throw away the log to conserve memory.
 		}
 		$this->add_access_lookup($item, $item_type);
@@ -1253,6 +1254,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if ( isset($this->post['menu_config_scope']) && in_array($this->post['menu_config_scope'], $valid_scopes) ) {
 				$this->options['menu_config_scope'] = $this->post['menu_config_scope'];
 			}
+
+			//Security logging.
+			$this->options['security_logging_enabled'] = isset($this->post['security_logging_enabled']) && !empty($this->post['security_logging_enabled']);
 
 			$this->save_options();
 			wp_redirect(add_query_arg('updated', 1, $this->get_settings_page_url()));
@@ -1507,7 +1511,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		$this->log_security_note(sprintf(
-			'The current menu item is "%s", template ID: "%s"',
+			'The current menu item is "%s", menu template ID: "%s"',
 			htmlentities($current_item['menu_title']),
 			htmlentities(ameMenuItem::get($current_item, 'template_id', 'N/A'))
 		));
@@ -1785,7 +1789,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @param string|array $message The message to add tot he log, or an array of messages.
 	 */
 	private function log_security_note($message) {
-		if ( !$this->security_logging_enabled ) {
+		if ( !$this->options['security_logging_enabled'] ) {
 			return;
 		}
 		if ( is_array($message) ) {
