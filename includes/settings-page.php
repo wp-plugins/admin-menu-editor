@@ -11,6 +11,7 @@
 $currentUser = wp_get_current_user();
 $isMultisite = is_multisite();
 $formActionUrl = add_query_arg('noheader', 1, $settings_page_url);
+$isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 ?>
 
 <div class="wrap">
@@ -64,7 +65,7 @@ $formActionUrl = add_query_arg('noheader', 1, $settings_page_url);
 							<label>
 								<input type="radio" name="plugin_access" value="specific_user"
 									<?php checked('specific_user', $settings['plugin_access']); ?>
-									<?php disabled( is_multisite() && !is_super_admin() ); ?>>
+									<?php disabled( $isMultisite && !is_super_admin() ); ?>>
 								Only the current user
 
 								<br>
@@ -75,6 +76,19 @@ $formActionUrl = add_query_arg('noheader', 1, $settings_page_url);
 							</label>
 						</p>
 					</fieldset>
+
+					<p>
+						<label>
+							<input type="checkbox" name="hide_plugin_from_others" value="1"
+								<?php checked( $settings['plugins_page_allowed_user_id'] !== null ); ?>
+								<?php disabled( !$isProVersion || ($isMultisite && !is_super_admin()) ); ?>
+							>
+							Hide the "Admin Menu Editor<?php if ( $isProVersion ) { echo ' Pro'; } ?>" entry on the "Plugins" page from other users
+							<?php if ( !$isProVersion ) {
+								echo '(Pro version only)';
+							} ?>
+						</label>
+					</p>
 				</td>
 			</tr>
 

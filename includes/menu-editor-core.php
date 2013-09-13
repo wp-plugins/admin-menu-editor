@@ -89,8 +89,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'security_logging_enabled' => false,
 
 			'menu_config_scope' => ($this->is_super_plugin() || !is_multisite()) ? 'global' : 'site',
+
+			//super_admin, specific_user, or a capability.
 			'plugin_access' => $this->is_super_plugin() ? 'super_admin' : 'manage_options',
+			//The ID of the user who is allowed to use this plugin. Only used when plugin_access == specific_user.
 			'allowed_user_id' => null,
+			//The user who can see this plugin on the "Plugins" page. By default all admins can see it.
+			'plugins_page_allowed_user_id' => null,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -1253,6 +1258,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				}
 			}
 
+			//Whether to hide the plugin on the "Plugins" admin page.
+			if ( !is_multisite() || is_super_admin() ) {
+				if ( !empty($this->post['hide_plugin_from_others']) ) {
+					$this->options['plugins_page_allowed_user_id'] = get_current_user_id();
+				} else {
+					$this->options['plugins_page_allowed_user_id'] = null;
+				}
+			}
+
 			//Configuration scope.
 			$valid_scopes = array('global', 'site');
 			if ( isset($this->post['menu_config_scope']) && in_array($this->post['menu_config_scope'], $valid_scopes) ) {
@@ -1260,10 +1274,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			}
 
 			//Security logging.
-			$this->options['security_logging_enabled'] = isset($this->post['security_logging_enabled']) && !empty($this->post['security_logging_enabled']);
+			$this->options['security_logging_enabled'] = !empty($this->post['security_logging_enabled']);
 
 			//Hide some menu options by default.
-			$this->options['hide_advanced_settings'] = isset($this->post['hide_advanced_settings']) && !empty($this->post['hide_advanced_settings']);
+			$this->options['hide_advanced_settings'] = !empty($this->post['hide_advanced_settings']);
 
 			$this->save_options();
 			wp_redirect(add_query_arg('updated', 1, $this->get_settings_page_url()));
@@ -1789,6 +1803,20 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'20130211'
 		);
 	}
+
+	/**
+	 * Get one of the plugin configuration values.
+	 *
+	 * @param string $name Option name.
+	 * @return mixed
+	 */
+	public function get_plugin_option($name) {
+		if ( array_key_exists($name, $this->options) ) {
+			return $this->options[$name];
+		}
+		return null;
+	}
+
 
 	/**
 	 * Log a security-related message.
