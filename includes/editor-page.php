@@ -198,6 +198,8 @@ endif;
 						<li>Drag items between menu levels.</li>
 					</ul>
 					<a href="http://w-shadow.com/admin-menu-editor-pro/upgrade-to-pro/?utm_source=Admin%2BMenu%2BEditor%2Bfree&utm_medium=text_link&utm_content=sidebar_link&utm_campaign=Plugins" target="_blank">Learn more</a>
+					|
+					<a href="http://amedemo.com/" target="_blank">Try online demo</a>
 				</div>
 			</div>
 		<?php
