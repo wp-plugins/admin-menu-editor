@@ -891,7 +891,7 @@ select.ws_dropdown optgroup option {
 
 	position: fixed;
 	right: 20px;
-	bottom: 20px;
+	bottom: 40px;
 	z-index: 100;
 }
 
