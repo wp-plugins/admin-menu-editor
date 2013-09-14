@@ -1356,23 +1356,37 @@ $(document).ready(function(){
 		}
 
 		var checked = $(this).is(':checked');
-
 		var containerNode = $(this).closest('.ws_container');
-		setActorAccess(containerNode, selectedActor, checked);
+
+		setActorAccessForTreeAndUpdateUi(containerNode, selectedActor, checked);
+	});
+
+	/**
+	 * This confusingly named function sets actor access for the specified menu item
+	 * and all of its children (if any). It also updates the UI with the new settings.
+	 *
+	 * (And it violates SRP in a particularly egregious manner.)
+	 *
+	 * @param containerNode
+	 * @param {String} actor
+	 * @param {Boolean} allowAccess
+	 */
+	function setActorAccessForTreeAndUpdateUi(containerNode, actor, allowAccess) {
+		setActorAccess(containerNode, actor, allowAccess);
 
 		//Apply the same permissions to sub-menus.
 		var subMenuId = containerNode.data('submenu_id');
 		if (subMenuId && containerNode.hasClass('ws_menu')) {
 			$('.ws_item', '#' + subMenuId).each(function() {
 				var node = $(this);
-				setActorAccess(node, selectedActor, checked);
+				setActorAccess(node, actor, allowAccess);
 				updateItemEditor(node);
 			});
 		}
 
 		updateItemEditor(containerNode);
 		updateParentAccessUi(containerNode);
-	});
+	}
 
 	/*************************************************************************
 	                  Access editor dialog
@@ -1950,6 +1964,23 @@ $(document).ready(function(){
 			//Insert in the currently visible submenu.
 			pasteItem(menu);
 		}
+	});
+
+	//Toggle all menus for the currently selected actor
+	$('#ws_toggle_all_menus').click(function() {
+		if ( selectedActor == null ) {
+			alert("This button enables/disables all menus for the selected role. To use it, click a role and then click this button again.");
+			return;
+		}
+
+		var topMenuNodes = $('.ws_menu', '#ws_menu_box');
+		//Look at the first menu's permissions and set everything to the opposite.
+		var allow = ! actorCanAccessMenu(topMenuNodes.eq(0).data('menu_item'), selectedActor);
+
+		topMenuNodes.each(function() {
+			var containerNode = $(this);
+			setActorAccessForTreeAndUpdateUi(containerNode, selectedActor, allow);
+		});
 	});
 
 	/*************************************************************************

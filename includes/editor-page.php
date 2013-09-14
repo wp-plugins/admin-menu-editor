@@ -12,6 +12,7 @@ $icons = array(
 	'new' => '/page-add.png',
 	'delete' => '/page-delete.png',
 	'new-separator' => '/separator-add.png',
+	'toggle-all' => '/check-all.png',
 );
 foreach($icons as $name => $url) {
 	$icons[$name] = $images_url . $url;
@@ -109,6 +110,13 @@ endif;
 				<div class="ws_separator">&nbsp;</div>
 
 				<a id='ws_new_separator' class='ws_button' href='javascript:void(0)' title='New separator'><img src='<?php echo $icons['new-separator']; ?>' alt="New separator" /></a>
+
+				<?php  if ( apply_filters('admin_menu_editor_is_pro', false) ): ?>
+					<div class="ws_separator">&nbsp;</div>
+
+					<a id='ws_toggle_all_menus' class='ws_button' href='javascript:void(0)'
+					   title='Toggle all menus for the selected role'><img src='<?php echo $icons['toggle-all']; ?>' alt="Toggle all" /></a>
+				<?php endif; ?>
 			</div>
 		</div>
 
