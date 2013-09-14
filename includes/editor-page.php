@@ -184,8 +184,19 @@ endif;
 		<?php
 		$hint_id = 'ws_sidebar_pro_ad';
 		$show_pro_benefits = !apply_filters('admin_menu_editor_is_pro', false) && (!isset($editor_data['show_hints'][$hint_id]) || $editor_data['show_hints'][$hint_id]);
+
 		if ( $show_pro_benefits ):
-		?>
+			$benefit_variations = array(
+				'Simplified, role-based permissions.',
+				'Role-based menu permissions.',
+				'Simpler, role-based permissions.',
+			);
+			//Pseudo-randomly select one phrase based on the site URL.
+			$variation_index = hexdec( substr(md5(get_site_url()), -1) ) % count($benefit_variations);
+			$selected_variation = $benefit_variations[$variation_index];
+
+			$pro_version_link = 'http://adminmenueditor.com/upgrade-to-pro/?utm_source=Admin%2BMenu%2BEditor%2Bfree&utm_medium=text_link&utm_content=sidebar_link_cv' . $variation_index . '&utm_campaign=Plugins';
+			?>
 			<div class="clear"></div>
 
 			<div class="ws_hint" id="<?php echo esc_attr($hint_id); ?>">
@@ -193,11 +204,11 @@ endif;
 				<div class="ws_hint_content">
 					<strong>Upgrade to Pro:</strong>
 					<ul>
-						<li>Menu export & import.</li>
-						<li>Easier role access management.</li>
+						<li><?php echo $selected_variation; ?></li>
 						<li>Drag items between menu levels.</li>
+						<li>Menu export &amp; import.</li>
 					</ul>
-					<a href="http://w-shadow.com/admin-menu-editor-pro/upgrade-to-pro/?utm_source=Admin%2BMenu%2BEditor%2Bfree&utm_medium=text_link&utm_content=sidebar_link&utm_campaign=Plugins" target="_blank">Learn more</a>
+					<a href="<?php echo esc_attr($pro_version_link); ?>" target="_blank">Learn more</a>
 					|
 					<a href="http://amedemo.com/" target="_blank">Try online demo</a>
 				</div>
