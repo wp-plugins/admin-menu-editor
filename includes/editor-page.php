@@ -37,7 +37,7 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 <div class="wrap">
 	<h2>
 		<?php echo apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'); ?>
-		<a href="<?php echo esc_attr($editor_data['settings_page_url']); ?>" class="add-new-h2"
+		<a href="<?php echo esc_attr($editor_data['settings_page_url']); ?>" class="add-new-h2" id="ws_plugin_settings_button"
 		   title="Configure plugin settings">Settings</a>
 	</h2>
 

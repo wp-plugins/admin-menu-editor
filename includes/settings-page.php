@@ -22,7 +22,7 @@ $isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 		   title="Back to Admin Menu Editor">Editor</a>
 	</h2>
 
-	<form method="post" action="<?php echo esc_attr($formActionUrl); ?>">
+	<form method="post" action="<?php echo esc_attr($formActionUrl); ?>" id="ws_plugin_settings_form">
 
 		<table class="form-table">
 			<tbody>
