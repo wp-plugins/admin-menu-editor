@@ -10,6 +10,7 @@
 
 $currentUser = wp_get_current_user();
 $isMultisite = is_multisite();
+$isSuperAdmin = is_super_admin();
 $formActionUrl = add_query_arg('noheader', 1, $settings_page_url);
 $isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 ?>
@@ -36,7 +37,7 @@ $isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 							<label>
 								<input type="radio" name="plugin_access" value="super_admin"
 									<?php checked('super_admin', $settings['plugin_access']); ?>
-									<?php disabled( !is_super_admin() ); ?>>
+									<?php disabled( !$isSuperAdmin ); ?>>
 								Super Admin
 
 								<?php if ( !$isMultisite ) : ?>
@@ -65,7 +66,7 @@ $isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 							<label>
 								<input type="radio" name="plugin_access" value="specific_user"
 									<?php checked('specific_user', $settings['plugin_access']); ?>
-									<?php disabled( $isMultisite && !is_super_admin() ); ?>>
+									<?php disabled( $isMultisite && !$isSuperAdmin ); ?>>
 								Only the current user
 
 								<br>
@@ -103,7 +104,7 @@ $isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 								<input type="radio" name="menu_config_scope" value="global"
 								       id="ame-menu-config-scope-global"
 									<?php checked('global', $settings['menu_config_scope']); ?>
-									<?php disabled(!$isMultisite); ?>>
+									<?php disabled(!$isMultisite || !$isSuperAdmin); ?>>
 								Global &mdash;
 								Use the same admin menu settings for all network sites.
 							</label><br>
@@ -113,7 +114,7 @@ $isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 						<label>
 							<input type="radio" name="menu_config_scope" value="site"
 								<?php checked('site', $settings['menu_config_scope']); ?>
-								<?php disabled(!$isMultisite); ?>>
+								<?php disabled(!$isMultisite || !$isSuperAdmin); ?>>
 							Per-site &mdash;
 							Use different admin menu settings for each site.
 						</label>

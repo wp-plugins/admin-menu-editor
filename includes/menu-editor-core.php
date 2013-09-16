@@ -1267,10 +1267,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				}
 			}
 
-			//Configuration scope.
-			$valid_scopes = array('global', 'site');
-			if ( isset($this->post['menu_config_scope']) && in_array($this->post['menu_config_scope'], $valid_scopes) ) {
-				$this->options['menu_config_scope'] = $this->post['menu_config_scope'];
+			//Configuration scope. The Super Admin is the only one who can change it since it affects all sites.
+			if ( is_multisite() && is_super_admin() ) {
+				$valid_scopes = array('global', 'site');
+				if ( isset($this->post['menu_config_scope']) && in_array($this->post['menu_config_scope'], $valid_scopes) ) {
+					$this->options['menu_config_scope'] = $this->post['menu_config_scope'];
+				}
 			}
 
 			//Security logging.
