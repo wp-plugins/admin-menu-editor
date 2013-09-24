@@ -3,7 +3,7 @@ Contributors: whiteshadow
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A6P9S6CE3SRSW
 Tags: admin, dashboard, menu, security, wpmu
 Requires at least: 3.2
-Tested up to: 3.6
+Tested up to: 3.6.1
 Stable tag: 1.2.2
 
 Lets you edit the WordPress admin menu. You can re-order, hide or rename menus, add custom menus and more. 
@@ -62,6 +62,17 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 3. Re-ordering menu items via drag and drop
 
 == Changelog ==
+
+= 1.3 =
+* Added a new settings page that lets you choose whether admin menu settings are per-site or network-wide, as well as specify who can access the plugin. To access this page, go to "Settings -> Menu Editor Pro" and click the small "Settings" link next to the page title.
+* Added a way to show/hide advanced menu options through the settings page in addition to the "Screen Options" panel.
+* Added a "Show menu access checks" option to make debugging menu permissions easier.
+* Added partial WPML support. Now you can translate custom menu titles with WPML.
+* The plugin will now display an error if you try to activate it when another version of it is already active.
+* Added a "Target page" dropdown as an alternative to the "URL" field. To enter a custom URL, choose "Custom" from the dropdown.
+* Fixed the "window title" setting only working for some menu items and not others.
+* Fixed a number of bugs related to moving plugin menus around.
+* Changed how the plugin stores menu settings. Note: The new format is not backwards-compatible with version 1.2.2.
 
 = 1.2.2 =
 * Replaced a number of icons from the "Silk" set with GPL-compatible alternatives.
