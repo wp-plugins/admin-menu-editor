@@ -125,11 +125,26 @@ $isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 			<tr>
 				<th scope="row">Interface</th>
 				<td>
-					<label>
-						<input type="checkbox" name="hide_advanced_settings"
-							<?php checked($this->options['hide_advanced_settings']); ?>>
-						Hide advanced menu options by default
-					</label>
+					<p>
+						<label>
+							<input type="checkbox" name="hide_advanced_settings"
+								<?php checked($settings['hide_advanced_settings']); ?>>
+							Hide advanced menu options by default
+						</label>
+					</p>
+
+					<?php if ($isProVersion): ?>
+						<p>
+						<label>
+							<input type="checkbox" name="show_deprecated_hide_button"
+								<?php checked($settings['show_deprecated_hide_button']); ?>>
+							Enable the "Show/Hide" toolbar button (not recommended)
+						</label>
+						<br><span class="description">
+							This feature is deprecated and is only kept for backwards compatibility purposes.
+						</span>
+						</p>
+					<?php endif; ?>
 				</td>
 			</tr>
 
@@ -138,7 +153,7 @@ $isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 				<td>
 					<label>
 						<input type="checkbox" name="security_logging_enabled"
-							<?php checked($this->options['security_logging_enabled']); ?>>
+							<?php checked($settings['security_logging_enabled']); ?>>
 						Show menu access checks performed by the plugin on every admin page
 					</label>
 					<br><span class="description">

@@ -96,6 +96,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'allowed_user_id' => null,
 			//The user who can see this plugin on the "Plugins" page. By default all admins can see it.
 			'plugins_page_allowed_user_id' => null,
+
+			'show_deprecated_hide_button' => null,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -1191,6 +1193,18 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$this->handle_form_submission($this->post, $action);
 		}
 
+		//By default, show the "Hide" button only if the user has already hidden something with it,
+		//or if they're using the free version. Pro users should use role permissions instead, but can
+		//explicitly enable the button if they want.
+		if ( !isset($this->options['show_deprecated_hide_button']) ) {
+			if ( $this->is_pro_version() ) {
+				$this->options['show_deprecated_hide_button'] = ameMenu::has_hidden_items($this->merged_custom_menu);
+				$this->save_options();
+			} else {
+				$this->options['show_deprecated_hide_button'] = true;
+			}
+		}
+
 		$sub_section = isset($this->get['sub_section']) ? $this->get['sub_section'] : null;
 		if ( $sub_section === 'settings' ) {
 			$this->display_plugin_settings_ui();
@@ -1281,6 +1295,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Hide some menu options by default.
 			$this->options['hide_advanced_settings'] = !empty($this->post['hide_advanced_settings']);
 
+			//Enable the now-obsolete "Hide" button.
+			if ( $this->is_pro_version() ) {
+				$this->options['show_deprecated_hide_button'] = !empty($this->post['show_deprecated_hide_button']);
+			}
+
 			$this->save_options();
 			wp_redirect(add_query_arg('updated', 1, $this->get_settings_page_url()));
 		}
@@ -1293,6 +1312,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'images_url' => plugins_url('images', $this->plugin_file),
 			'hide_advanced_settings' => $this->options['hide_advanced_settings'],
 			'settings_page_url' => $this->get_settings_page_url(),
+			'show_deprecated_hide_button' => $this->options['show_deprecated_hide_button'],
 		);
 
 		//Build a tree struct. for the default menu
@@ -1753,7 +1773,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$free_survey_url = 'https://docs.google.com/spreadsheet/viewform?formkey=dERyeDk0OWhlbkxYcEY4QTNaMnlTQUE6MQ';
 			$pro_survey_url =  'https://docs.google.com/spreadsheet/viewform?formkey=dHl4MnlHaVI3NE5JdVFDWG01SkRKTWc6MA';
 
-			if ( apply_filters('admin_menu_editor_is_pro', false) ) {
+			if ( $this->is_pro_version() ) {
 				$survey_url = $pro_survey_url;
 			} else {
 				$survey_url = $free_survey_url;
@@ -1950,6 +1970,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$name = $name . '[' . $field. ']';
 		}
 		return $name;
+	}
+
+	private function is_pro_version() {
+		return apply_filters('admin_menu_editor_is_pro', false);
 	}
 
 } //class

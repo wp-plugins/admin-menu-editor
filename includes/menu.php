@@ -149,6 +149,33 @@ abstract class ameMenu {
 
 		return $tree;
 	}
+
+	/**
+	 * Check if a menu contains any items with the "hidden" flag set to true.
+	 *
+	 * @param array $menu
+	 * @return bool
+	 */
+	public static function has_hidden_items($menu) {
+		if ( !is_array($menu) || empty($menu) || empty($menu['tree']) ) {
+			return false;
+		}
+
+		foreach($menu['tree'] as $item) {
+			if ( ameMenuItem::get($item, 'hidden') ) {
+				return true;
+			}
+			if ( !empty($item['items']) ) {
+				foreach($item['items'] as $child) {
+					if ( ameMenuItem::get($child, 'hidden') ) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
 }
 
 

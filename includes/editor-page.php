@@ -104,7 +104,11 @@ endif;
 				<div class="ws_separator">&nbsp;</div>
 
 				<a id='ws_new_menu' class='ws_button' href='javascript:void(0)' title='New menu'><img src='<?php echo $icons['new']; ?>' alt="New menu" /></a>
-				<a id='ws_hide_menu' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $icons['hide']; ?>' alt="Show/Hide" /></a>
+
+				<?php if ( $editor_data['show_deprecated_hide_button'] ): ?>
+					<a id='ws_hide_menu' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $icons['hide']; ?>' alt="Show/Hide" /></a>
+				<?php endif; ?>
+
 				<a id='ws_delete_menu' class='ws_button' href='javascript:void(0)' title='Delete menu'><img src='<?php echo $icons['delete']; ?>' alt="Delete menu" /></a>
 
 				<div class="ws_separator">&nbsp;</div>
@@ -136,7 +140,9 @@ endif;
 				<div class="ws_separator">&nbsp;</div>
 
 				<a id='ws_new_item' class='ws_button' href='javascript:void(0)' title='New menu item'><img src='<?php echo $icons['new']; ?>' alt="New menu item" /></a>
-				<a id='ws_hide_item' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $icons['hide']; ?>' alt="Show/Hide" /></a>
+				<?php if ( $editor_data['show_deprecated_hide_button'] ): ?>
+					<a id='ws_hide_item' class='ws_button' href='javascript:void(0)' title='Show/Hide'><img src='<?php echo $icons['hide']; ?>' alt="Show/Hide" /></a>
+				<?php endif; ?>
 				<a id='ws_delete_item' class='ws_button' href='javascript:void(0)' title='Delete menu item'><img src='<?php echo $icons['delete']; ?>' alt="Delete menu item" /></a>
 
 				<div class="ws_separator">&nbsp;</div>
