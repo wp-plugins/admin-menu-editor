@@ -322,6 +322,41 @@ endif;
 </label>
 </span>
 
+
+<!-- Confirmation dialog when hiding "Dashboard -> Home" -->
+<div id="ws-ame-dashboard-hide-confirmation" style="display: none;">
+	<span>
+		Hiding <em>Dashboard -> Home</em> may prevent users with the selected role from logging in!
+		Are you sure you want to do it?
+	</span>
+
+	<h4>Explanation</h4>
+	<p>
+		WordPress automatically redirects users to the <em>Dashboard -> Home</em> page upon successful login.
+		If you hide this page, users will get an "insufficient permissions" error when they log in
+		due to being redirected to a hidden page. As a result, it will look like their login failed.
+	</p>
+
+	<h4>Recommendations</h4>
+	<p>
+		You can use a plugin like <a href="http://wordpress.org/plugins/peters-login-redirect/">Peter's Login Redirect</a>
+		to redirect specific roles to different pages.
+	</p>
+
+	<div class="ws_dialog_buttons">
+		<?php
+		submit_button('Hide the menu', 'primary', 'ws_confirm_menu_hiding', false);
+		submit_button('Leave it visible', 'secondary', 'ws_cancel_menu_hiding', false);
+		?>
+	</div>
+
+	<label class="ws_dont_show_again">
+		<input type="checkbox" id="ws-ame-disable-dashboard-hide-confirmation">
+		Don't show this message again
+	</label>
+</div>
+
+
 <script type='text/javascript'>
 var defaultMenu = <?php echo $editor_data['default_menu_js']; ?>;
 var customMenu = <?php echo $editor_data['custom_menu_js']; ?>;

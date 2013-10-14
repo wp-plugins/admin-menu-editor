@@ -98,6 +98,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'plugins_page_allowed_user_id' => null,
 
 			'show_deprecated_hide_button' => null,
+			'dashboard_hiding_confirmation_enabled' => true,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -107,10 +108,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$this->magic_hook_priority = 99999;
 		
 		//AJAXify screen options
-		add_action('wp_ajax_ws_ame_save_screen_options', array(&$this,'ajax_save_screen_options'));
+		add_action('wp_ajax_ws_ame_save_screen_options', array($this,'ajax_save_screen_options'));
 
-		//AJAXify hints
+		//AJAXify hints and warnings
 		add_action('wp_ajax_ws_ame_hide_hint', array($this, 'ajax_hide_hint'));
+		add_action(
+			'wp_ajax_ws_ame_disable_dashboard_hiding_confirmation',
+			array($this, 'ajax_disable_dashboard_hiding_confirmation')
+		);
 
 		//Make sure we have access to the original, un-mangled request data.
 		//This is necessary because WordPress will stupidly apply "magic quotes"
@@ -498,6 +503,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
                 'selectedActor' => isset($this->get['selected_actor']) ? strval($this->get['selected_actor']) : null,
 
 				'showHints' => $this->get_hint_visibility(),
+				'dashboardHidingConfirmationEnabled' => $this->options['dashboard_hiding_confirmation_enabled'],
+				'disableDashboardConfirmationNonce' => wp_create_nonce('ws_ame_disable_dashboard_hiding_confirmation'),
 
 			    'isDemoMode' => defined('IS_DEMO_MODE'),
 			    'isMasterMode' => defined('IS_MASTER_MODE'),
@@ -1526,6 +1533,17 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private function set_hint_visibility($show_hints) {
 		$user = wp_get_current_user();
 		update_user_meta($user->ID, 'ame_show_hints', $show_hints);
+	}
+
+	/**
+	 * AJAX callback for permanently hiding the "are you sure you want to hide the Dashboard?" warning.
+	 */
+	public function ajax_disable_dashboard_hiding_confirmation() {
+		if (!check_ajax_referer('ws_ame_disable_dashboard_hiding_confirmation', false, false) || !$this->current_user_can_edit_menu()){
+			die("You don't have sufficient permissions to do that.");
+		}
+		$this->options['dashboard_hiding_confirmation_enabled'] = false;
+		$this->save_options();
 	}
 
 	/**

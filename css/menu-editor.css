@@ -611,12 +611,19 @@ select.ws_dropdown optgroup option {
 
 .ui-widget-overlay {
 	background-color: black;
-	position: absolute;
+	position: fixed;
 	left: 0;
 	top: 0;
 	opacity: 0.70;
 	-moz-opacity: 0.70;
-	filter: alpha(opacity=70); 
+	filter: alpha(opacity=70);
+
+    width: 100%;
+    height: 100%;
+}
+
+.ui-front {
+    z-index: 100;
 }
 
 .ui-dialog {
@@ -689,6 +696,8 @@ select.ws_dropdown optgroup option {
 	height: 23px;
 	text-align: right;
 	margin-top: 20px;
+    margin-bottom: 1px;
+    clear: both;
 }
 
 .ws_dialog_buttons .button-primary {
@@ -716,6 +725,11 @@ select.ws_dropdown optgroup option {
 	text-align: center;
 	font-size: large;
 	padding-top: 25px;
+}
+
+.ws_dont_show_again {
+    display: inline-block;
+    margin-top: 1em;
 }
 
 /************************************
