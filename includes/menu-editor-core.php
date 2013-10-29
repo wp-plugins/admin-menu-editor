@@ -69,6 +69,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private $cached_custom_menu = null; //Cached, non-merged version of the custom menu. Used by load_custom_menu().
 	private $cached_virtual_caps = null;//List of virtual caps. Used by get_virtual_caps().
 
+	private $cached_user_caps = array(); //A cache of the current user's capabilities. Used only in very specific places.
+	private $user_cap_cache_enabled = false;
+
 	//Our personal copy of the request vars, without any "magic quotes".
 	private $post = array();
 	private $get = array();
@@ -242,7 +245,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 			//Convert our custom menu to the $menu + $submenu structure used by WP.
 			//Note: This method sets up multiple internal fields and may cause side-effects.
+			$this->user_cap_cache_enabled = true;
 			$this->build_custom_wp_menu($this->merged_custom_menu['tree']);
+			$this->user_cap_cache_enabled = false;
 
 			if ( !$this->user_can_access_current_page() ) {
 				$this->log_security_note('DENY access.');
@@ -285,7 +290,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		$menu = $this->custom_wp_menu;
 		$submenu = $this->custom_wp_submenu;
+
+		$this->user_cap_cache_enabled = true;
 		list($menu, $submenu) = $this->filter_menu($menu, $submenu);
+		$this->user_cap_cache_enabled = false;
 
 		return $parent_file;
 	}
@@ -594,6 +602,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		$this->cached_custom_menu = null;
 		$this->cached_virtual_caps = null;
+		$this->cached_user_caps = array();
 	}
 
 	/**
@@ -1599,7 +1608,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return bool
 	 */
 	private function current_user_can($capability) {
-		return apply_filters('admin_menu_editor-current_user_can', current_user_can($capability), $capability);
+		if ( $this->user_cap_cache_enabled && isset($this->cached_user_caps[$capability]) ) {
+			return $this->cached_user_caps[$capability];
+		}
+
+		$user_can = apply_filters('admin_menu_editor-current_user_can', current_user_can($capability), $capability);
+		$this->cached_user_caps[$capability] = $user_can;
+		return $user_can;
 	}
 
 	/**
