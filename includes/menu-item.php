@@ -376,11 +376,22 @@ abstract class ameMenuItem {
 		}
 		$pageFile = self::remove_query_from($page_url);
 
-		$hasHook = (get_plugin_page_hook($page_url, $parent_page_url) !== null);
 		$adminFileExists = is_file(ABSPATH . '/wp-admin/' . $pageFile);
-		$pluginFileExists = ($page_url != 'index.php') && is_file(WP_PLUGIN_DIR . '/' . $pageFile);
+		if ( $adminFileExists ) {
+			return false;
+		}
 
-		return !$adminFileExists && ($hasHook || $pluginFileExists);
+		$hasHook = (get_plugin_page_hook($page_url, $parent_page_url) !== null);
+		if ( $hasHook ) {
+			return true;
+		}
+
+		$pluginFileExists = ($page_url != 'index.php') && is_file(WP_PLUGIN_DIR . '/' . $pageFile);
+		if ( $pluginFileExists ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
