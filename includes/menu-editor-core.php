@@ -1653,6 +1653,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$base_site_url = $matches[1];
 		}
 
+		//Calling admin_url() once and then manually appending each page's path is measurably faster than calling it
+		//for each menu, but it means the "admin_url" filter is only called once. If there is a plugin that changes
+		//the admin_url for some pages but not others, this could lead to bugs (no such plugins are known at this time).
+		$base_admin_url = admin_url();
+		$admin_url_is_filtered = has_filter('admin_url');
+
 		$current_url = $base_site_url . remove_query_arg('___ame_dummy_param___');
 		$this->log_security_note(sprintf('Current URL: "%s"', htmlentities($current_url)));
 
@@ -1665,7 +1671,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				if ( substr($item_url, 0, 1) == '/' ) {
 					$item_url = $base_site_url . $item_url;
 				} else {
-					$item_url = admin_url($item_url);
+					if ( $admin_url_is_filtered ) {
+						$item_url = admin_url($item_url);
+					} else {
+						$item_url = $base_admin_url . ltrim( $item_url, '/' );
+					}
 				}
 			}
 			$item_url = $this->parse_url($item_url);
