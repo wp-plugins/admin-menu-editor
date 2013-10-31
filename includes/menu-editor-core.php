@@ -1388,8 +1388,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 */
 	private function display_plugin_settings_ui() {
 		//These variables are used by settings-page.php.
+		/** @noinspection PhpUnusedLocalVariableInspection */
 		$settings = $this->options;
+		/** @noinspection PhpUnusedLocalVariableInspection */
 		$settings_page_url = $this->get_settings_page_url();
+		/** @noinspection PhpUnusedLocalVariableInspection */
 		$editor_page_url = admin_url($this->settings_link);
 
 		require dirname(__FILE__) . '/settings-page.php';
