@@ -102,6 +102,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 			'show_deprecated_hide_button' => null,
 			'dashboard_hiding_confirmation_enabled' => true,
+
+			//Enable/disable the admin notice that tells the user where the plugin settings menu is.
+			'show_plugin_menu_notice' => true,
 		);
 		$this->serialize_with_json = false; //(Don't) store the options in JSON format
 
@@ -133,6 +136,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//User survey
 		add_action('admin_notices', array($this, 'display_survey_notice'));
+
+		//Tell first-time users where they can find the plugin settings page.
+		add_action('all_admin_notices', array($this, 'display_plugin_menu_notice'));
 	}
 	
 	function init_finish() {
@@ -2013,6 +2019,47 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$name = $name . '[' . $field. ']';
 		}
 		return $name;
+	}
+
+	/**
+	 * Tell new users how to access the plugin settings page.
+	 */
+	public function display_plugin_menu_notice() {
+		//Display the notice only if it's enabled, the current user can access our settings page,
+		//and there is no custom menu (if a custom menu already exists, chances are the user knows
+		//where the settings page is).
+		$showNotice = $this->options['show_plugin_menu_notice'] && ($this->load_custom_menu() === null);
+		$showNotice = $showNotice && $this->current_user_can_edit_menu();
+		if ( !$showNotice ) {
+			return;
+		}
+
+		//Disable the notice when the user hides it or visits any of our admin pages.
+		$hideNoticeParameter = 'ame-plugin-menu-notice';
+		if ( !empty($_GET[$hideNoticeParameter]) || $this->is_editor_page() || $this->is_settings_page() ) {
+			$this->options['show_plugin_menu_notice'] = false;
+			$this->save_options();
+			return;
+		}
+
+		$dismissUrl = add_query_arg($hideNoticeParameter, 'hide');
+		$dismissUrl = remove_query_arg(array('message', 'activate'), $dismissUrl);
+
+		if ( is_multisite() && is_network_admin() ) {
+			$message = 'Tip: Go to any subsite to access Admin Menu Editor. It will not show up in the network admin.';
+		} else {
+			$message = 'Tip: Go to <a href="%1$s">Settings -&gt; %2$s</a> to start customizing the admin menu.';
+		}
+		printf(
+			'<div class="updated" id="ame-plugin-menu-notice">
+				<p>' . $message . '</p>
+				<p><a href="%3$s" id="ame-hide-plugin-menu-notice">Hide this message</a></p>
+			 </div>',
+			esc_attr(admin_url($this->settings_link)),
+			apply_filters('admin_menu_editor-self_menu_title', 'Menu Editor'),
+			esc_attr($dismissUrl)
+		);
+
 	}
 
 	private function is_pro_version() {
