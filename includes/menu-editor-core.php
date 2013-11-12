@@ -1453,7 +1453,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		foreach($custom_menu['tree'] as $item) {
-			$caps = array_merge_recursive($caps, $this->get_virtual_caps_for($item));
+			$caps = self::array_replace_recursive($caps, $this->get_virtual_caps_for($item));
 		}
 
 		$this->cached_virtual_caps = $caps;
@@ -1476,10 +1476,23 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		foreach($item['items'] as $sub_item) {
-			$caps = array_merge_recursive($caps, $this->get_virtual_caps_for($sub_item));
+			$caps = self::array_replace_recursive($caps, $this->get_virtual_caps_for($sub_item));
 		}
 
 		return $caps;
+	}
+
+	private static function array_replace_recursive($array1, $array2) {
+		if ( function_exists('array_replace_recursive') ) {
+			return array_replace_recursive($array1, $array2);
+		}
+		foreach($array2 as $key => $value) {
+			if ( is_array($value) && isset($array1[$key]) && is_array($array1[$key]) ) {
+				$value = self::array_replace_recursive($array1[$key], $value);
+			}
+			$array1[$key] = $value;
+		}
+		return $array1;
 	}
 
 	/**
