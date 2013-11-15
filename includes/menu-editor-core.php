@@ -198,7 +198,20 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	function hook_admin_menu(){
 		global $menu, $submenu;
 
-		//Menu reset (for emergencies). Executed by accessing http://example.com/wp-admin/?reset_admin_menu=1 
+		//Compatibility fix for Shopp 1.2.9. This plugin has an "admin_menu" hook (Flow::menu) that adds another
+		//"admin_menu" hook (AdminFlow::taxonomies) when it runs. Basically, it indirectly modifies the global
+		//$wp_filters['admin_menu'] array while WordPress is iterating it (nasty!). Due to how PHP arrays are
+		//implemented and how do_action() works, this second hook is the very last one to run, even after hooks
+		//with a lower priority.
+		//The only way we can see the changes made by the second hook is to do the same thing.
+		static $firstRunSkipped = false;
+		if ( !$firstRunSkipped && class_exists('Flow') ) {
+			add_action('admin_menu', array($this, 'hook_admin_menu'), $this->magic_hook_priority + 1);
+			$firstRunSkipped = true;
+			return;
+		}
+
+		//Menu reset (for emergencies). Executed by accessing http://example.com/wp-admin/?reset_admin_menu=1
 		$reset_requested = isset($this->get['reset_admin_menu']) && $this->get['reset_admin_menu'];
 		if ( $reset_requested && $this->current_user_can_edit_menu() ){
 			$this->set_custom_menu(null);
