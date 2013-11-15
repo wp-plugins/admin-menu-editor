@@ -1542,7 +1542,8 @@ $(document).ready(function(){
 
 	$('#ws_save_access_settings').click(function() {
 		//Save the new settings.
-		accessEditorState.menuItem.extra_capability = $('#ws_extra_capability').val();
+		var extraCapability = jsTrim($('#ws_extra_capability').val());
+		accessEditorState.menuItem.extra_capability = (extraCapability === '') ? null : extraCapability;
 
 		var grantAccess = accessEditorState.menuItem.grant_access;
 		if (!$.isPlainObject(grantAccess)) {
