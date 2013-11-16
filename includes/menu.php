@@ -135,7 +135,7 @@ abstract class ameMenu {
 			$parent = $tree_item['defaults']['file'];
 			if ( isset($submenu[$parent]) ){
 				foreach($submenu[$parent] as $position => $subitem){
-					$tree_item['items'][$subitem[2]] = array_merge(
+					$tree_item['items'][] = array_merge(
 						ameMenuItem::blank_menu(),
 						array('defaults' => ameMenuItem::fromWpItem($subitem, $position, $parent))
 					);
