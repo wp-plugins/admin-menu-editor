@@ -783,6 +783,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
    */
 	function menu_merge($tree){
 		//Iterate over all menus and submenus and look up default values
+		//Also flag used and missing items.
+		$orphans = array();
 		foreach ($tree as &$topmenu){
 
 			if ( !ameMenuItem::get($topmenu, 'custom') ) {
@@ -816,6 +818,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 							//Yes, load defaults from that item
 							$item['defaults'] = $this->item_templates[$template_id]['defaults'];
 							$this->item_templates[$template_id]['used'] = true;
+							//We must move orphaned items elsewhere. Use the default location if possible.
+							if ( isset($topmenu['missing']) && $topmenu['missing'] ) {
+								$orphans[] = $item;
+							}
 						} else if ( empty($item['separator']) ) {
 							//Record as missing, unless it's a menu separator
 							$item['missing'] = true;
@@ -824,6 +830,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 							$temp = $this->set_final_menu_capability($temp);
 							$this->add_access_lookup($temp, 'submenu', true);
                         }
+					} else {
+						//What if the parent of this custom item is missing?
+						//Right now the custom item will just disappear.
 					}
 				}
 			}
@@ -879,6 +888,18 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				}
 			} else {
 				$tree[$template['defaults']['file']] = $entry;
+			}
+		}
+
+		//Move orphaned items back to their original parents.
+		foreach($orphans as $item) {
+			$defaultParent = !empty($item['defaults']['parent']) ? $item['defaults']['parent'] : null;
+			if ( isset($defaultParent) && isset($tree[$defaultParent]) ) {
+				$tree[$defaultParent]['items'][] = $item;
+			} else {
+				//This can happen if the parent has been moved to a submenu.
+				//Just put the orphan at the bottom of the menu.
+				$tree[$item['defaults']['file']] = $item;
 			}
 		}
 
@@ -1013,9 +1034,19 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Convert the prepared tree to the internal WordPress format.
 		foreach($new_tree as $topmenu) {
 			$trueAccess = isset($this->page_access_lookup[$topmenu['url']]) ? $this->page_access_lookup[$topmenu['url']] : null;
-			if ( $trueAccess === 'do_not_allow' ) {
+			if ( ($trueAccess === 'do_not_allow') && ($topmenu['access_level'] !== $trueAccess) ) {
 				$topmenu['access_level'] = $trueAccess;
+				if ( isset($topmenu['access_check_log']) ) {
+					$topmenu['access_check_log'][] = sprintf(
+						'+ Override: There is a hidden menu item with the same URL (%1$s) but a higher priority.' .
+						' Setting the capability to "%2$s".',
+						$topmenu['url'],
+						$trueAccess
+					);
+					$topmenu['access_check_log'][] = str_repeat('=', 79);
+				}
 			}
+
 			if ( !isset($this->reverse_item_lookup[$topmenu['url']]) ) { //Prefer sub-menus.
 				$this->reverse_item_lookup[$topmenu['url']] = $topmenu;
 			}
@@ -1024,9 +1055,19 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 			foreach($topmenu['items'] as $item) {
 				$trueAccess = isset($this->page_access_lookup[$item['url']]) ? $this->page_access_lookup[$item['url']] : null;
-				if ( $trueAccess === 'do_not_allow' ) {
+				if ( ($trueAccess === 'do_not_allow') && ($item['access_level'] !== $trueAccess) ) {
 					$item['access_level'] = $trueAccess;
+					if ( isset($item['access_check_log']) ) {
+						$item['access_check_log'][] = sprintf(
+							'+ Override: There is a hidden menu item with the same URL (%1$s) but a higher priority.' .
+							' Setting the capability to "%2$s".',
+							$item['url'],
+							$trueAccess
+						);
+						$item['access_check_log'][] = str_repeat('=', 79);
+					}
 				}
+
 				$this->reverse_item_lookup[$item['url']] = $item;
 				$new_submenu[$topmenu['file']][] = $this->convert_to_wp_format($item);
 			}
