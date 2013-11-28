@@ -193,6 +193,10 @@ abstract class ameMenuItem {
 			}
 		}
 
+		if ($parent_file === 'profile.php') {
+			$parent_file = 'users.php';
+		}
+
 		return $parent_file . '>' . $item_file;
 	}
 
