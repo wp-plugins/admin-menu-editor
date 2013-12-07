@@ -238,10 +238,7 @@ abstract class ameMenuItem {
   /**
    * Apply custom menu filters to an item of the custom menu.
    *
-   * Calls two types of filters :
-   * 	'custom_admin_$item_type' with the entire $item passed as the argument.
-   * 	'custom_admin_$item_type-$field' with the value of a single field of $item as the argument.
-   *
+   * Calls a 'custom_admin_$item_type' filter with the entire $item passed as the argument.
    * Used when converting the current custom menu to a WP-format menu.
    *
    * @param array $item Associative array representing one menu item (either top-level or submenu).
@@ -250,12 +247,7 @@ abstract class ameMenuItem {
    * @return array Filtered menu item.
    */
 	public static function apply_filters($item, $item_type, $extra = null){
-		$item = apply_filters("custom_admin_{$item_type}", $item, $extra);
-		foreach($item as $field => $value){
-			$item[$field] = apply_filters("custom_admin_{$item_type}-$field", $value, $extra);
-		}
-
-		return $item;
+		return apply_filters("custom_admin_{$item_type}", $item, $extra);
 	}
 
 	/**
