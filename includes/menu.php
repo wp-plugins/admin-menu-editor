@@ -1,7 +1,7 @@
 <?php
 abstract class ameMenu {
 	const format_name = 'Admin Menu Editor menu';
-	const format_version = '5.0';
+	const format_version = '5.1';
 
 	/**
 	 * Load an admin menu from a JSON string.
@@ -32,10 +32,16 @@ abstract class ameMenu {
 	 * @return array
 	 */
 	public static function load_array($arr, $assume_correct_format = false){
+		$is_normalized = false;
 		if ( !$assume_correct_format ) {
 			if ( isset($arr['format']) && ($arr['format']['name'] == self::format_name) ) {
-				if ( !version_compare($arr['format']['version'], self::format_version, '<=') ) {
+				$compared = version_compare($arr['format']['version'], self::format_version);
+				if ( $compared > 0 ) {
 					throw new InvalidMenuException("Can't load a menu created by a newer version of the plugin.");
+				}
+				//We can skip normalization if the version number matches exactly and the menu is already normalized.
+				if ( ($compared === 0) && isset($arr['format']['is_normalized']) ) {
+					$is_normalized = $arr['format']['is_normalized'];
 				}
 			} else {
 				return self::load_menu_40($arr);
@@ -49,8 +55,13 @@ abstract class ameMenu {
 		$menu = array('tree' => array());
 		$menu = self::add_format_header($menu);
 
-		foreach($arr['tree'] as $file => $item) {
-			$menu['tree'][$file] = ameMenuItem::normalize($item);
+		if ( $is_normalized ) {
+			$menu['tree'] = $arr['tree'];
+		} else {
+			foreach($arr['tree'] as $file => $item) {
+				$menu['tree'][$file] = ameMenuItem::normalize($item);
+			}
+			$menu['format']['is_normalized'] = true;
 		}
 
 		return $menu;
