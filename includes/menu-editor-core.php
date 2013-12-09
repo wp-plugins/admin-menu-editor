@@ -1217,15 +1217,30 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$user_has_access = true;
 		$cap_to_use = '';
 		if ( !empty($item['access_level']) ) {
-			$user_has_cap = $this->current_user_can($item['access_level']);
-			$user_has_access = $user_has_access && $user_has_cap;
 			$cap_to_use = $item['access_level'];
 
-			$item['access_check_log'][] = sprintf(
-				'Required capability: %1$s. User %2$s this capability.',
-				htmlentities($cap_to_use),
-				$user_has_cap ? 'HAS' : 'DOES NOT have'
-			);
+			if ( isset($item['user_has_access_level']) ) {
+				//The "custom_admin_menu_capability" filter has already determined whether this user should
+				//have the required capability, so checking it again would be redundant. This usually only
+				//applies to the Pro version which uses that filter in extras.php.
+				$user_has_cap = $item['user_has_access_level'];
+
+				$item['access_check_log'][] = sprintf(
+					'Skipping a "%1$s" capability check because we\'ve already determined that the current user %2$s access.',
+					htmlentities($cap_to_use),
+					$user_has_cap ? 'should have' : 'should not have'
+				);
+			} else {
+				$user_has_cap = $this->current_user_can($cap_to_use);
+				$item['access_check_log'][] = sprintf(
+					'Required capability: %1$s. User %2$s this capability.',
+					htmlentities($cap_to_use),
+					$user_has_cap ? 'HAS' : 'DOES NOT have'
+				);
+			}
+
+			$user_has_access = $user_has_access && $user_has_cap;
+
 		} else {
 			$item['access_check_log'][] = '- No required capability set.';
 		}
@@ -1687,6 +1702,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return bool
 	 */
 	private function current_user_can($capability) {
+		//WP core uses a special "do_not_allow" capability in a dozen or so places to explicitly deny access.
+		//Even multisite super admins do not have this cap. We can return early here.
+		if ( $capability === 'do_not_allow' ) {
+			return false;
+		}
+
 		if ( $this->user_cap_cache_enabled && isset($this->cached_user_caps[$capability]) ) {
 			return $this->cached_user_caps[$capability];
 		}
