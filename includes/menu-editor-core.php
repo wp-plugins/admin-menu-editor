@@ -1161,7 +1161,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		//Used later to determine the current page based on URL.
-		$item['url'] = ameMenuItem::generate_url($item['file'], $parent);
+		if ( empty($item['url']) ) {
+			$original_parent = !empty($item['defaults']['parent']) ? $item['defaults']['parent'] : $parent;
+			$item['url'] = ameMenuItem::generate_url($item['file'], $original_parent);
+		}
 
 		//Convert relative URls to fully qualified ones. This prevents problems with WordPress
 		//incorrectly converting "index.php?page=xyz" to, say, "tools.php?page=index.php?page=xyz"
