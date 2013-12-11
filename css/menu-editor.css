@@ -561,6 +561,9 @@ select.ws_dropdown optgroup option {
 	margin: 0;
 	padding: 0;
 	position: relative;
+
+    box-sizing: border-box;
+    height: 25px;
 }
 
 /* Current icon node (CSS class version, for the built-in WP icon sprites) */
@@ -900,7 +903,7 @@ select.ws_dropdown optgroup option {
 }
 
 #ws_sidebar_pro_ad {
-    width: 225px;
+    min-width: 225px;
 
 	margin-top: 5px;
 	margin-left: 3px;
