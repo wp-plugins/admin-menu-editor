@@ -7,31 +7,33 @@ abstract class ameMenu {
 	 * Load an admin menu from a JSON string.
 	 *
 	 * @static
-	 * @throws InvalidMenuException when the supplied input is not a valid menu.
 	 *
 	 * @param string $json A JSON-encoded menu structure.
 	 * @param bool $assume_correct_format Skip the format header check and assume everything is fine. Defaults to false.
+	 * @param bool $always_normalize Always normalize the menu structure, even if format.is_normalized is true.
+	 * @throws InvalidMenuException
 	 * @return array
 	 */
-	public static function load_json($json, $assume_correct_format = false) {
+	public static function load_json($json, $assume_correct_format = false, $always_normalize = false) {
 		$arr = json_decode($json, true);
 		if ( !is_array($arr) ) {
 			throw new InvalidMenuException('The input is not a valid JSON-encoded admin menu.');
 		}
-		return self::load_array($arr, $assume_correct_format);
+		return self::load_array($arr, $assume_correct_format, $always_normalize);
 	}
 
 	/**
 	 * Load an admin menu structure from an associative array.
 	 *
 	 * @static
-	 * @throws InvalidMenuException when the supplied input is not a valid menu.
 	 *
 	 * @param array $arr
 	 * @param bool $assume_correct_format
+	 * @param bool $always_normalize
+	 * @throws InvalidMenuException
 	 * @return array
 	 */
-	public static function load_array($arr, $assume_correct_format = false){
+	public static function load_array($arr, $assume_correct_format = false, $always_normalize = false){
 		$is_normalized = false;
 		if ( !$assume_correct_format ) {
 			if ( isset($arr['format']) && ($arr['format']['name'] == self::format_name) ) {
@@ -55,7 +57,7 @@ abstract class ameMenu {
 		$menu = array('tree' => array());
 		$menu = self::add_format_header($menu);
 
-		if ( $is_normalized ) {
+		if ( $is_normalized && !$always_normalize ) {
 			$menu['tree'] = $arr['tree'];
 		} else {
 			foreach($arr['tree'] as $file => $item) {
