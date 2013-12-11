@@ -1909,7 +1909,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		$display_notice = $this->options['display_survey_notice'] && $this->current_user_can_edit_menu();
 		if ( isset($this->options['first_install_time']) ) {
-			$minimum_usage_period = 3*24*3600;
+			$minimum_usage_period = 7*24*3600;
 			$display_notice = $display_notice && ((time() - $this->options['first_install_time']) > $minimum_usage_period);
 		}
 
