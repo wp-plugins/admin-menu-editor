@@ -595,6 +595,17 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			array('menu-editor-base-style')
 		);
 
+		//WordPress introduced a new screen meta button style in WP 3.8.
+		//We have two different stylesheets - one for 3.8+ and one for backwards compatibility.
+		wp_register_auto_versioned_style('menu-editor-screen-meta', plugins_url('css/screen-meta.css', $this->plugin_file));
+		wp_register_auto_versioned_style('menu-editor-screen-meta-old', plugins_url('css/screen-meta-old-wp.css', $this->plugin_file));
+
+		if ( isset($GLOBALS['wp_version']) && version_compare($GLOBALS['wp_version'], '3.8-RC1', '<') ) {
+			wp_enqueue_style('menu-editor-screen-meta-old');
+		} else {
+			wp_enqueue_style('menu-editor-screen-meta');
+		}
+
 		wp_enqueue_style('menu-editor-colours-classic');
 	}
 

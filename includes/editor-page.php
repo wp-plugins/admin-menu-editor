@@ -24,8 +24,8 @@ if ( !apply_filters('admin_menu_editor_is_pro', false) ){
 	<script type="text/javascript">
 	(function($){
 		$('#screen-meta-links').append(
-			'<div id="ws-pro-version-notice">' +
-				'<a href="http://adminmenueditor.com/upgrade-to-pro/?utm_source=Admin%2BMenu%2BEditor%2Bfree&utm_medium=text_link&utm_content=top_upgrade_link&utm_campaign=Plugins" id="ws-pro-version-notice-link" class="show-settings" target="_blank" title="View Pro version details">Upgrade to Pro</a>' +
+			'<div id="ws-pro-version-notice" class="custom-screen-meta-link-wrap">' +
+				'<a href="http://adminmenueditor.com/upgrade-to-pro/?utm_source=Admin%2BMenu%2BEditor%2Bfree&utm_medium=text_link&utm_content=top_upgrade_link&utm_campaign=Plugins" id="ws-pro-version-notice-link" class="show-settings custom-screen-meta-link" target="_blank" title="View Pro version details">Upgrade to Pro</a>' +
 			'</div>'
 		);
 	})(jQuery);
