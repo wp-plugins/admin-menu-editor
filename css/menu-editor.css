@@ -900,6 +900,8 @@ select.ws_dropdown optgroup option {
 }
 
 #ws_sidebar_pro_ad {
+    width: 225px;
+
 	margin-top: 5px;
 	margin-left: 3px;
 
