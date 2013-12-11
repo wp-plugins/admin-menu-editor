@@ -884,7 +884,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					$tree[$template['defaults']['parent']]['items'][] = $entry;
 				} else {
 					//This can happen if the original parent menu has been moved to a submenu.
-					//Todo: Handle this unusual situation.
+					$tree[$template['defaults']['file']] = $entry;
 				}
 			} else {
 				$tree[$template['defaults']['file']] = $entry;
