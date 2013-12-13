@@ -1523,7 +1523,7 @@ $(document).ready(function(){
 		accessEditorState.menuItem = menuItem;
 
 		//Show/hide the hint about sub menus overriding menu permissions.
-		var itemHasSubmenus = containerNode.data('submenu_id') &&
+		var itemHasSubmenus = !!(containerNode.data('submenu_id')) &&
 			$('#' + containerNode.data('submenu_id')).find('.ws_item').length > 0;
 		var hintIsEnabled = !wsEditorData.showHints.hasOwnProperty('ws_hint_menu_permissions') || wsEditorData.showHints['ws_hint_menu_permissions'];
 		$('#ws_hint_menu_permissions').toggle(hintIsEnabled && itemHasSubmenus);
