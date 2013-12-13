@@ -2,8 +2,8 @@
 Contributors: whiteshadow
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=A6P9S6CE3SRSW
 Tags: admin, dashboard, menu, security, wpmu
-Requires at least: 3.2
-Tested up to: 3.6.1
+Requires at least: 3.3
+Tested up to: 3.8
 Stable tag: 1.3
 
 Lets you edit the WordPress admin menu. You can re-order, hide or rename menus, add custom menus and more. 
@@ -62,6 +62,17 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 3. Re-ordering menu items via drag and drop
 
 == Changelog ==
+
+= 1.3.1 =
+* Tested with WordPress 3.8.
+* Fixed several minor UI/layout issues related to the new 3.8 admin style.
+* Fixed a bug where moving an item to a plugin menu and then deactivating that plugin would cause the moved item to disappear.
+* Fixed deleted submenus not being restored if their original parent menu is no longer available.
+* Fixed a rare glitch where submenu separators added by certain other plugins would sometimes disappear.
+* Fixed a conflict with Shopp 1.2.9.
+* Made the plugin treat "users.php" and "profile.php" as the same parent menu. This fixes situations where it would be impossible to hide a "Users" submenu item from roles that don't have access to the "Users" menu and instead get a "Profile" menu.
+* Added extra logging for situations where a menu item is hidden because a higher-priority item with the same URL is also hidden. 
+* Minor performance improvements.
 
 = 1.3 =
 * Added a new settings page that lets you choose whether admin menu settings are per-site or network-wide, as well as specify who can access the plugin. To access this page, go to "Settings -> Menu Editor Pro" and click the small "Settings" link next to the page title.
