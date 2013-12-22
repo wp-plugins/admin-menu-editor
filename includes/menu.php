@@ -39,7 +39,11 @@ abstract class ameMenu {
 			if ( isset($arr['format']) && ($arr['format']['name'] == self::format_name) ) {
 				$compared = version_compare($arr['format']['version'], self::format_version);
 				if ( $compared > 0 ) {
-					throw new InvalidMenuException("Can't load a menu created by a newer version of the plugin.");
+					throw new InvalidMenuException(sprintf(
+						"Can't load a menu created by a newer version of the plugin. Menu format: '%s', newest supported format: '%s'.",
+						$arr['format']['version'],
+						self::format_version
+					));
 				}
 				//We can skip normalization if the version number matches exactly and the menu is already normalized.
 				if ( ($compared === 0) && isset($arr['format']['is_normalized']) ) {
