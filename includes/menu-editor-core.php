@@ -166,7 +166,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		if ( $should_save_options ) {
-			$this->save_options();
+			//Skip saving options if the plugin hasn't been fully activated yet.
+			if ( $this->is_plugin_active($this->plugin_basename) ) {
+				$this->save_options();
+			} else {
+				//Yes, this method can actually run before WP updates the list of active plugins. That means functions
+				//like is_plugin_active_for_network() will return false. As as result, we can't determine whether
+				//the plugin has been network-activated yet, so lets skip setting up the default config until
+				//the next page load.
+			}
 		}
 
 		//This is here and not in init() because it relies on $options being initialized.

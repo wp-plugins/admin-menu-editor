@@ -234,12 +234,12 @@ class MenuEd_ShadowPluginFramework {
 
   /**
    * ShadowPluginFramework::activate()
-   * Stub function for the activation hook. Simply stores the default configuration.
+   * Stub function for the activation hook.
    *
    * @return void
    */
 	function activate(){
-		$this->save_options();
+
 	}
 	
   /**
@@ -338,7 +338,20 @@ class MenuEd_ShadowPluginFramework {
 	
 		return false;
 	}
+
+	/**
+	 * Check whether the plugin is active.
+	 *
+	 * @see self::is_plugin_active_for_network
+	 *
+	 * @param string $plugin
+	 * @return bool
+	 */
+	function is_plugin_active($plugin) {
+		if ( function_exists('is_plugin_active') ) {
+			return is_plugin_active($plugin);
+		}
+		return in_array( $plugin, (array) get_option('active_plugins', array()) ) || $this->is_plugin_active_for_network($plugin);
+	}
 	
 }
-
-?>
