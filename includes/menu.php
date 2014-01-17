@@ -10,7 +10,7 @@ abstract class ameMenu {
 	 *
 	 * @param string $json A JSON-encoded menu structure.
 	 * @param bool $assume_correct_format Skip the format header check and assume everything is fine. Defaults to false.
-	 * @param bool $always_normalize Always normalize the menu structure, even if format.is_normalized is true.
+	 * @param bool $always_normalize Always normalize the menu structure, even if format[is_normalized] is true.
 	 * @throws InvalidMenuException
 	 * @return array
 	 */
