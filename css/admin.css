@@ -42,11 +42,3 @@ hr.ws-submenu-separator {
 #adminmenu li.ws-submenu-separator-wrap a {
 	cursor: default;
 }
-
-/* Override the bluish highlight used by WP */
-#adminmenu li.ws-submenu-separator-wrap a:hover,
-#adminmenu li.ws-submenu-separator-wrap a:focus
-{
-    background-color: white;
-}
-
