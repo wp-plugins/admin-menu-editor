@@ -1,6 +1,6 @@
 <?php
 /**
- * This utility script generates menu icons based on the Dashicons icon font included in WordPress.
+ * This utility script generates menu icons metadata based on the Dashicons icon font included in WordPress.
  */
 
 if ( !defined('ABSPATH') ) {
@@ -76,7 +76,6 @@ foreach($blocks as $block) {
 <?php
 
 ksort($icons);
-$css = '';
 $arrayDefinition = "array(\n";
 $currentLine = "\t";
 
@@ -85,14 +84,6 @@ foreach($icons as $name => $character) {
 	printf(
 		'<div class="ame-debug-dashicon"><div class="dashicons dashicons-%1$s"></div> %1$s</div>',
 		$name
-	);
-
-	$css .= sprintf(
-		'.icon16.ame-icon-%1$s:before,' . "\n" . '#adminmenu .ame-menu-icon-%1$s div.wp-menu-image:before {' .
-		"\n\t" .'content: "%2$s";' . "\n" .
-		'}' . "\n\n",
-		$name,
-		$character
 	);
 
 	//Wrap the array definition at about 80 characters for legibility.
@@ -110,15 +101,7 @@ if (strlen($currentLine) > 1) {
 }
 $arrayDefinition .= ')';
 
-$css = sprintf(
-	"/*\n" .
-	" Dashicons as menu icons. These styles are auto-generated.\n" .
-	" Run the generator: %s\n*/",
-	remove_query_arg('__dummy') //Current relative URL.
-) . "\n" . $css;
-
 echo '<div class="clear"></div><br>';
 echo '<textarea cols="100" rows="20">', esc_textarea($arrayDefinition), '</textarea>';
-echo '<textarea cols="100" rows="20">', esc_textarea($css), '</textarea>';
 
 echo '</div>';

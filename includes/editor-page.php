@@ -329,14 +329,16 @@ endif;
 		'wordpress', 'wordpress-alt', 'yes'
 	);
 
-	foreach($dashicons as $icon) {
-		printf(
-			'<div class="ws_icon_option ws_icon_dashicon" title="%1$s" data-icon-class="ame-menu-icon-%2$s">
-				<div class="ws_icon_image icon16 ame-icon-%2$s"><br></div>
-			</div>',
-			esc_attr(ucwords(str_replace('-', ' ', $icon))),
-			$icon
-		);
+	if ($editor_data['dashicons_available']) {
+		foreach($dashicons as $icon) {
+			printf(
+				'<div class="ws_icon_option ws_icon_dashicon" title="%1$s" data-icon-url="dashicons-%2$s">
+					<div class="ws_icon_image icon16 dashicons dashicons-%2$s"><br></div>
+				</div>',
+				esc_attr(ucwords(str_replace('-', ' ', $icon))),
+				$icon
+			);
+		}
 	}
 
 	?>
@@ -345,10 +347,13 @@ endif;
 	</div>
 
 
-	<input type="button" class="button"
+	<?php if ($editor_data['dashicons_available']): ?>
+		<!-- Only show this button on recent WP versions where Dashicons are included. -->
+		<input type="button" class="button"
 		   id="ws_show_more_icons"
 		   title="Toggle additional icons"
 		   value="<?php echo esc_attr($editor_data['show_extra_icons'] ? 'Less &#x25B2;' : 'More &#x25BC;'); ?>">
+	<?php endif; ?>
 
 	<div class="clear"></div>
 </div>

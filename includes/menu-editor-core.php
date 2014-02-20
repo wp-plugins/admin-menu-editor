@@ -520,6 +520,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'hideAdvancedSettings' => (boolean)$this->options['hide_advanced_settings'],
 				'showExtraIcons' => (boolean)$this->options['show_extra_icons'],
 				'hideAdvancedSettingsNonce' => wp_create_nonce('ws_ame_save_screen_options'),
+				'dashiconsAvailable' => wp_style_is('dashicons', 'registered'),
 				'captionShowAdvanced' => 'Show advanced options',
 				'captionHideAdvanced' => 'Hide advanced options',
 				'wsMenuEditorPro' => false, //Will be overwritten if extras are loaded
@@ -1431,6 +1432,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'show_extra_icons' => $this->options['show_extra_icons'],
 			'settings_page_url' => $this->get_settings_page_url(),
 			'show_deprecated_hide_button' => $this->options['show_deprecated_hide_button'],
+			'dashicons_available' => wp_style_is('dashicons', 'done'),
 		);
 
 		//Build a tree struct. for the default menu
@@ -1990,7 +1992,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'ame-helper-style',
 			plugins_url('css/admin.css', $this->plugin_file),
 			array(),
-			'20140220'
+			'20140220-2'
 		);
 	}
 

@@ -624,11 +624,18 @@ var knownMenuFields = {
 			var imageIcon = selectButton.find('img');
 
 			var matches = cssClass.match(/\b(ame-)?menu-icon-([^\s]+)\b/);
+			var dashiconMatches = iconUrl && iconUrl.match('^\s*(dashicons-[a-z0-9\-]+)');
+
 			//Icon URL take precedence over icon class.
-			if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' ) {
+			if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' && !dashiconMatches ) {
 				cssIcon.hide();
 				imageIcon.prop('src', iconUrl).show();
+			} else if ( dashiconMatches ) {
+				//Dashicon.
+				imageIcon.hide();
+				cssIcon.removeClass().addClass('icon16 dashicons ' + dashiconMatches[1]).show();
 			} else if ( matches ) {
+				//Other CSS-based icon.
 				imageIcon.hide();
 				var iconClass = (matches[1] ? matches[1] : '') + 'icon-' + matches[2];
 				cssIcon.removeClass().addClass('icon16 ' + iconClass).show();
@@ -1762,9 +1769,13 @@ $(document).ready(function(){
 
 		//Highlight the currently selected icon.
 		iconSelector.find('.ws_selected_icon').removeClass('ws_selected_icon');
+
 		var expandSelector = false;
-		var matches = cssClass.match(/\b(ame-)?menu-icon-([^\s]+)\b/);
-		if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' ) {
+		var classMatches = cssClass.match(/\b(ame-)?menu-icon-([^\s]+)\b/);
+		//Dashicons are set via the icon URL field, but they are actually CSS-based.
+		var dashiconMatches = iconUrl && iconUrl.match('^\s*(dashicons-[a-z0-9\-]+)\s*$');
+
+		if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' && !dashiconMatches ) {
 			var currentIcon = iconSelector.find('.ws_icon_option img[src="' + iconUrl + '"]').first().closest('.ws_icon_option');
 			if ( currentIcon.length > 0 ) {
 				currentIcon.addClass('ws_selected_icon').show();
@@ -1773,9 +1784,9 @@ $(document).ready(function(){
 				customImageOption.find('img').prop('src', iconUrl);
 				customImageOption.addClass('ws_selected_icon').show().data('icon-url', iconUrl);
 			}
-		} else if ( matches ) {
-			//Highlight the icon that corresponds to the current CSS class.
-			var iconClass = (matches[1] ? matches[1] : '') + 'icon-' + matches[2];
+		} else if ( classMatches || dashiconMatches ) {
+			//Highlight the icon that corresponds to the current CSS class or Dashicon name.
+			var iconClass = dashiconMatches ? dashiconMatches[1] : ((classMatches[1] ? classMatches[1] : '') + 'icon-' + classMatches[2]);
 			var selectedIcon = iconSelector.find('.' + iconClass).closest('.ws_icon_option').addClass('ws_selected_icon');
 			//If the icon is one of those hidden by default, automatically expand the selector so it becomes visible.
 			if (selectedIcon.hasClass('ws_icon_dashicon')) {
