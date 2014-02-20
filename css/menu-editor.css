@@ -496,10 +496,23 @@ select.ws_dropdown optgroup option {
 	border: 1px solid silver;
 	border-radius: 3px;
 	background-color: white;
-	width: 144px;
+	width: 216px;
 	padding: 2px;
     position: absolute;
 }
+
+#ws_icon_selector.ws_with_more_icons {
+    width: 504px;
+}
+
+#ws_icon_selector .ws_icon_dashicon {
+    display: none;
+}
+
+#ws_icon_selector.ws_with_more_icons .ws_icon_dashicon {
+    display: inline-block;
+}
+
 
 #ws_icon_selector .ws_icon_option {
 	float: left;
@@ -602,6 +615,12 @@ select.ws_dropdown optgroup option {
 
 #ws_choose_icon_from_media {
 	margin: 2px;
+}
+
+#ws_show_more_icons {
+    margin: 2px;
+    height: 30px;
+    width: 68px;
 }
 
 /************************************

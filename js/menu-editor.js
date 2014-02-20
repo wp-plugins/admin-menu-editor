@@ -623,14 +623,15 @@ var knownMenuFields = {
 			var cssIcon = selectButton.find('.icon16');
 			var imageIcon = selectButton.find('img');
 
-			var matches = cssClass.match(/\bmenu-icon-([^\s]+)\b/);
+			var matches = cssClass.match(/\b(ame-)?menu-icon-([^\s]+)\b/);
 			//Icon URL take precedence over icon class.
 			if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' ) {
 				cssIcon.hide();
 				imageIcon.prop('src', iconUrl).show();
 			} else if ( matches ) {
 				imageIcon.hide();
-				cssIcon.removeClass().addClass('icon16 icon-' + matches[1]).show();
+				var iconClass = (matches[1] ? matches[1] : '') + 'icon-' + matches[2];
+				cssIcon.removeClass().addClass('icon16 ' + iconClass).show();
 			} else {
 				//This menu has no icon at all. This is actually a valid state
 				//and WordPress will display a menu like that correctly.
@@ -1722,7 +1723,7 @@ $(document).ready(function(){
 
 			//Remove the existing icon class, if any.
 			var cssClass = getFieldValue(item, 'css_class', '');
-			cssClass = jsTrim( cssClass.replace(/\bmenu-icon-[^\s]+\b/, '') );
+			cssClass = jsTrim( cssClass.replace(/\b(ame-)?menu-icon-[^\s]+\b/, '') );
 
 			if (selectedIcon.data('icon-class')) {
 				//Add the new class.
@@ -1761,7 +1762,8 @@ $(document).ready(function(){
 
 		//Highlight the currently selected icon.
 		iconSelector.find('.ws_selected_icon').removeClass('ws_selected_icon');
-		var matches = cssClass.match(/\bmenu-icon-([^\s]+)\b/);
+		var expandSelector = false;
+		var matches = cssClass.match(/\b(ame-)?menu-icon-([^\s]+)\b/);
 		if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' ) {
 			var currentIcon = iconSelector.find('.ws_icon_option img[src="' + iconUrl + '"]').first().closest('.ws_icon_option');
 			if ( currentIcon.length > 0 ) {
@@ -1773,13 +1775,22 @@ $(document).ready(function(){
 			}
 		} else if ( matches ) {
 			//Highlight the icon that corresponds to the current CSS class.
-			iconSelector.find('.icon-' + matches[1]).closest('.ws_icon_option').addClass('ws_selected_icon');
+			var iconClass = (matches[1] ? matches[1] : '') + 'icon-' + matches[2];
+			var selectedIcon = iconSelector.find('.' + iconClass).closest('.ws_icon_option').addClass('ws_selected_icon');
+			//If the icon is one of those hidden by default, automatically expand the selector so it becomes visible.
+			if (selectedIcon.hasClass('ws_icon_dashicon')) {
+				expandSelector = true;
+			}
 		}
+
+		expandSelector = expandSelector || (!!wsEditorData.showExtraIcons); //Second argument to toggleClass() must be a boolean, not just truthy/falsy.
+		iconSelector.toggleClass('ws_with_more_icons', expandSelector);
+		$('#ws_show_more_icons').val(expandSelector ? 'Less \u25B2' : 'More \u25BC');
 
 		iconSelector.show();
 		iconSelector.position({ //Requires jQuery UI.
-			my: 'right top',
-			at: 'right bottom',
+			my: 'left top',
+			at: 'left bottom',
 			of: button
 		});
 	});
@@ -1832,7 +1843,7 @@ $(document).ready(function(){
 
                 //Remove the existing icon class, if any.
                 var cssClass = getFieldValue(item, 'css_class', '');
-	            item.css_class = jsTrim( cssClass.replace(/\bmenu-icon-[^\s]+\b/, '') );
+	            item.css_class = jsTrim( cssClass.replace(/\b(ame-)?menu-icon-[^\s]+\b/, '') );
 
 	            //Set the new icon URL.
 	            item.icon_url = attachment.attributes.url;
@@ -1850,6 +1861,13 @@ $(document).ready(function(){
 
         frame.open();
 		iconSelector.hide();
+	});
+
+	//Show/hide additional icons.
+	$('#ws_show_more_icons').click(function() {
+		iconSelector.toggleClass('ws_with_more_icons');
+		wsEditorData.showExtraIcons = iconSelector.hasClass('ws_with_more_icons');
+		$(this).val(wsEditorData.showExtraIcons ? 'Less \u25B2' : 'More \u25BC');
 	});
 
 	//Hide the icon selector if the user clicks outside of it.
@@ -2542,24 +2560,27 @@ $(document).ready(function(){
 
 jQuery(function($){
 	var screenOptions = $('#ws-ame-screen-meta-contents');
-	var checkbox = screenOptions.find('#ws-hide-advanced-settings');
+	var hideSettingsCheckbox = screenOptions.find('#ws-hide-advanced-settings');
+	var extraIconsCheckbox = screenOptions.find('#ws-show-extra-icons');
 
-	if ( wsEditorData.hideAdvancedSettings ){
-		checkbox.attr('checked', 'checked');
-	} else {
-		checkbox.removeAttr('checked');
-	}
+	hideSettingsCheckbox.prop('checked', wsEditorData.hideAdvancedSettings);
+	extraIconsCheckbox.prop('checked', wsEditorData.showExtraIcons);
 
 	//Update editor state when settings change
-	checkbox.click(function(){
-		wsEditorData.hideAdvancedSettings = $(this).attr('checked'); //Using '$(this)' instead of 'checkbox' due to jQuery bugs
-		var menuEditorNode = $('#ws_menu_editor');
-		if ( wsEditorData.hideAdvancedSettings ){
-			menuEditorNode.find('div.ws_advanced').hide();
-			menuEditorNode.find('a.ws_toggle_advanced_fields').text(wsEditorData.captionShowAdvanced).show();
-		} else {
-			menuEditorNode.find('div.ws_advanced').show();
-			menuEditorNode.find('a.ws_toggle_advanced_fields').text(wsEditorData.captionHideAdvanced).hide();
+	$('#ws-hide-advanced-settings, #ws-show-extra-icons').click(function(){
+		wsEditorData.hideAdvancedSettings = hideSettingsCheckbox.prop('checked');
+		wsEditorData.showExtraIcons = extraIconsCheckbox.prop('checked');
+
+		//Show/hide advanced settings dynamically as the user changes the setting.
+		if ($(this).is(hideSettingsCheckbox)) {
+			var menuEditorNode = $('#ws_menu_editor');
+			if ( wsEditorData.hideAdvancedSettings ){
+				menuEditorNode.find('div.ws_advanced').hide();
+				menuEditorNode.find('a.ws_toggle_advanced_fields').text(wsEditorData.captionShowAdvanced).show();
+			} else {
+				menuEditorNode.find('div.ws_advanced').show();
+				menuEditorNode.find('a.ws_toggle_advanced_fields').text(wsEditorData.captionHideAdvanced).hide();
+			}
 		}
 
 		$.post(
@@ -2567,6 +2588,7 @@ jQuery(function($){
 			{
 				'action' : 'ws_ame_save_screen_options',
 				'hide_advanced_settings' : wsEditorData.hideAdvancedSettings ? 1 : 0,
+				'show_extra_icons' : wsEditorData.showExtraIcons ? 1 : 0,
 				'_ajax_nonce' : wsEditorData.hideAdvancedSettingsNonce
 			}
 		);

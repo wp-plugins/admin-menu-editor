@@ -85,6 +85,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		$this->defaults = array(
 			'hide_advanced_settings' => true,
+			'show_extra_icons' => false,
 			'custom_menu' => null,
 			'first_install_time' => null,
 			'display_survey_notice' => true,
@@ -517,6 +518,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'imagesUrl' => plugins_url('images', $this->plugin_file),
 				'adminAjaxUrl' => admin_url('admin-ajax.php'),
 				'hideAdvancedSettings' => (boolean)$this->options['hide_advanced_settings'],
+				'showExtraIcons' => (boolean)$this->options['show_extra_icons'],
 				'hideAdvancedSettingsNonce' => wp_create_nonce('ws_ame_save_screen_options'),
 				'captionShowAdvanced' => 'Show advanced options',
 				'captionHideAdvanced' => 'Hide advanced options',
@@ -1321,6 +1323,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$sub_section = isset($this->get['sub_section']) ? $this->get['sub_section'] : null;
 		if ( $sub_section === 'settings' ) {
 			$this->display_plugin_settings_ui();
+		} else if ($sub_section == 'generate-menu-dashicons') {
+			require dirname(__FILE__) . '/generate-menu-dashicons.php';
 		} else {
 			$this->display_editor_ui();
 		}
@@ -1424,6 +1428,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'message' => isset($this->get['message']) ? intval($this->get['message']) : null,
 			'images_url' => plugins_url('images', $this->plugin_file),
 			'hide_advanced_settings' => $this->options['hide_advanced_settings'],
+			'show_extra_icons' => $this->options['show_extra_icons'],
 			'settings_page_url' => $this->get_settings_page_url(),
 			'show_deprecated_hide_button' => $this->options['show_deprecated_hide_button'],
 		);
@@ -1620,6 +1625,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 		
 		$this->options['hide_advanced_settings'] = !empty($this->post['hide_advanced_settings']);
+		$this->options['show_extra_icons'] = !empty($this->post['show_extra_icons']);
 		$this->save_options();
 		die('1');
 	}
@@ -1984,7 +1990,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'ame-helper-style',
 			plugins_url('css/admin.css', $this->plugin_file),
 			array(),
-			'20130211'
+			'20140220'
 		);
 	}
 

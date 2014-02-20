@@ -264,7 +264,8 @@ endif;
 ?>
 
 <!-- Menu icon selector widget -->
-<div id="ws_icon_selector" style="display: none;">
+<?php $iconSelectorClass = $editor_data['show_extra_icons'] ? 'ws_with_more_icons' : ''; ?>
+<div id="ws_icon_selector" class="<?php echo $iconSelectorClass; ?>" style="display: none;">
 	<?php
 	//Let the user select a custom icon via the media uploader.
 	//We only support the new WP 3.5+ media API. Hence the function_exists() check.
@@ -305,21 +306,69 @@ endif;
 			esc_attr($icon)
 		);
 	}
+
+	$dashicons = array(
+		'align-center', 'align-left', 'align-none', 'align-right', 'analytics', 'art', 'awards', 'backup',
+		'book', 'book-alt', 'businessman', 'calendar', 'camera', 'cart', 'category', 'chart-area', 'chart-bar',
+		'chart-line', 'chart-pie', 'clock', 'cloud', 'desktop', 'dismiss', 'download', 'edit', 'editor-customchar',
+		'editor-distractionfree', 'editor-help', 'editor-insertmore',
+		'editor-justify', 'editor-kitchensink', 'editor-ol', 'editor-paste-text',
+		'editor-paste-word', 'editor-quote', 'editor-removeformatting', 'editor-rtl', 'editor-spellcheck',
+		'editor-ul', 'editor-unlink', 'editor-video',
+		'email', 'email-alt', 'exerpt-view', 'facebook', 'facebook-alt', 'feedback', 'flag', 'format-aside',
+		'format-audio', 'format-chat', 'format-gallery', 'format-image', 'format-quote', 'format-status',
+		'format-video', 'forms', 'googleplus', 'groups', 'hammer', 'id', 'id-alt', 'image-crop',
+		'image-flip-horizontal', 'image-flip-vertical', 'image-rotate-left', 'image-rotate-right', 'images-alt',
+		'images-alt2', 'info', 'leftright', 'lightbulb', 'list-view', 'location', 'location-alt', 'lock', 'marker',
+		'menu', 'migrate', 'minus', 'networking', 'no', 'no-alt', 'performance', 'plus', 'portfolio', 'post-status',
+		'post-trash', 'pressthis', 'products', 'redo', 'rss', 'screenoptions', 'search', 'share', 'share-alt',
+		'share-alt2', 'share1', 'shield', 'shield-alt', 'slides', 'smartphone', 'smiley', 'sort', 'sos', 'star-empty',
+		'star-filled', 'star-half', 'tablet', 'tag', 'testimonial', 'translation', 'twitter', 'undo',
+		'update', 'upload', 'vault', 'video-alt', 'video-alt2', 'video-alt3', 'visibility', 'welcome-add-page',
+		'welcome-comments', 'welcome-learn-more', 'welcome-view-site', 'welcome-widgets-menus', 'welcome-write-blog',
+		'wordpress', 'wordpress-alt', 'yes'
+	);
+
+	foreach($dashicons as $icon) {
+		printf(
+			'<div class="ws_icon_option ws_icon_dashicon" title="%1$s" data-icon-class="ame-menu-icon-%2$s">
+				<div class="ws_icon_image icon16 ame-icon-%2$s"><br></div>
+			</div>',
+			esc_attr(ucwords(str_replace('-', ' ', $icon))),
+			$icon
+		);
+	}
+
 	?>
 	<div class="ws_icon_option ws_custom_image_icon" title="Custom image" style="display: none;">
 		<img src="<?php echo esc_attr(admin_url('images/loading.gif')); ?>">
 	</div>
+
+
+	<input type="button" class="button"
+		   id="ws_show_more_icons"
+		   title="Toggle additional icons"
+		   value="<?php echo esc_attr($editor_data['show_extra_icons'] ? 'Less &#x25B2;' : 'More &#x25BC;'); ?>">
+
 	<div class="clear"></div>
 </div>
 
 <span id="ws-ame-screen-meta-contents" style="display:none;">
-<label for="ws-hide-advanced-settings">
-	<input type="checkbox" id="ws-hide-advanced-settings"<?php
-		if ( $this->options['hide_advanced_settings'] ){
+	<label for="ws-hide-advanced-settings">
+		<input type="checkbox" id="ws-hide-advanced-settings"<?php
+			if ( $this->options['hide_advanced_settings'] ){
+				echo ' checked="checked"';
+			}
+		?> /> Hide advanced options
+	</label><br>
+
+	<label for="ws-show-extra-icons">
+		<input type="checkbox" id="ws-show-extra-icons"<?php
+		if ( $this->options['show_extra_icons'] ){
 			echo ' checked="checked"';
 		}
-	?> /> Hide advanced options
-</label>
+		?> /> Show extra menu icons
+	</label>
 </span>
 
 
