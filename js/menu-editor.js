@@ -1879,6 +1879,9 @@ $(document).ready(function(){
 		iconSelector.toggleClass('ws_with_more_icons');
 		wsEditorData.showExtraIcons = iconSelector.hasClass('ws_with_more_icons');
 		$(this).val(wsEditorData.showExtraIcons ? 'Less \u25B2' : 'More \u25BC');
+
+		//Remember the user's choice.
+		$.cookie('ame-show-extra-icons', wsEditorData.showExtraIcons ? '1' : '0', {expires: 90});
 	});
 
 	//Hide the icon selector if the user clicks outside of it.
@@ -2603,6 +2606,9 @@ jQuery(function($){
 				'_ajax_nonce' : wsEditorData.hideAdvancedSettingsNonce
 			}
 		);
+
+		//We also have a cookie for the current user.
+		$.cookie('ame-show-extra-icons', wsEditorData.showExtraIcons ? '1' : '0', {expires: 90});
 	});
 
 	//Move our options into the screen meta panel

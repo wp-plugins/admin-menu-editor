@@ -448,6 +448,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		wp_register_auto_versioned_script('jquery-qtip', plugins_url('js/jquery.qtip.min.js', $this->plugin_file), array('jquery'));
 		//jQuery Form plugin. This is a more recent version than the one included with WP.
 		wp_register_auto_versioned_script('ame-jquery-form', plugins_url('js/jquery.form.js', $this->plugin_file), array('jquery'));
+		//jQuery cookie plugin
+		wp_register_auto_versioned_script('jquery-cookie', plugins_url('js/jquery.cookie.js', $this->plugin_file), array('jquery'));
 
 		//Editor's scripts
 		wp_register_auto_versioned_script(
@@ -456,7 +458,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			array(
 				'jquery', 'jquery-ui-sortable', 'jquery-ui-dialog',
 				'ame-jquery-form', 'jquery-ui-droppable', 'jquery-qtip',
-				'jquery-sort', 'jquery-json'
+				'jquery-sort', 'jquery-json', 'jquery-cookie'
 			)
 		);
 
@@ -510,6 +512,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Note: Users do NOT get added to the actor list because that feature
 		//is not fully implemented.
 
+		$showExtraIcons = (boolean)$this->options['show_extra_icons'];
+		if ( isset($_COOKIE['ame-show-extra-icons']) && is_numeric($_COOKIE['ame-show-extra-icons']) ) {
+			$showExtraIcons = intval($_COOKIE['ame-show-extra-icons']) > 0;
+		}
+
 		//The editor will need access to some of the plugin data and WP data.
 		wp_localize_script(
 			'menu-editor',
@@ -518,7 +525,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'imagesUrl' => plugins_url('images', $this->plugin_file),
 				'adminAjaxUrl' => admin_url('admin-ajax.php'),
 				'hideAdvancedSettings' => (boolean)$this->options['hide_advanced_settings'],
-				'showExtraIcons' => (boolean)$this->options['show_extra_icons'],
+				'showExtraIcons' => $showExtraIcons,
 				'hideAdvancedSettingsNonce' => wp_create_nonce('ws_ame_save_screen_options'),
 				'dashiconsAvailable' => wp_style_is('dashicons', 'registered'),
 				'captionShowAdvanced' => 'Show advanced options',
