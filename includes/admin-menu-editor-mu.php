@@ -49,3 +49,13 @@ function ws_ame_installation_error(){
 </div>
 <?php
 }
+
+//Add the license management link(s) to our must-use module.
+function ws_ame_add_mu_license_link($actions) {
+	global $ameLicensingUi;
+	if ( isset($ameLicensingUi) && is_callable(array($ameLicensingUi, 'addLicenseActionLink')) ) {
+		$actions = $ameLicensingUi->addLicenseActionLink($actions);
+	}
+	return $actions;
+}
+add_filter('network_admin_plugin_action_links_' . basename(__FILE__), 'ws_ame_add_mu_license_link');
