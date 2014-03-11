@@ -1798,6 +1798,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		$current_url = $this->parse_url($current_url);
 
+		//Hook-based submenu pages can be accessed via both "parent-page.php?page=foo" and "admin.php?page=foo".
+		//WP has a private API function for determining the canonical parent page for the current request.
+		if ( $this->endsWith($current_url['path'], '/admin.php') && is_callable('get_admin_page_parent') ) {
+			$real_parent = get_admin_page_parent('admin.php');
+			if ( !empty($real_parent) && ($real_parent !== 'admin.php') ) {
+				$current_url['alt_path'] = str_replace('/admin.php', '/' . $real_parent, $current_url['path']);
+			}
+		}
+
 		foreach($this->reverse_item_lookup as $url => $item) {
 			$item_url = $url;
 			//Convert to absolute URL. Caution: directory traversal (../, etc) is not handled.
@@ -1814,9 +1823,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			}
 			$item_url = $this->parse_url($item_url);
 
-			//Must match scheme, host, port, user, pass and path.
+			//Must match scheme, host, port, user, pass and path or alt_path.
 			$components = array('scheme', 'host', 'port', 'user', 'pass');
 			$is_close_match = $this->urlPathsMatch($current_url['path'], $item_url['path']);
+			if ( !$is_close_match && isset($current_url['alt_path']) ) {
+				$is_close_match = $this->urlPathsMatch($current_url['alt_path'], $item_url['path']);
+				//Technically, we should also compare current[path] vs item[alt_path],
+				//but generating the alt_path for each menu item would be complicated.
+			}
 			foreach($components as $component) {
 				$is_close_match = $is_close_match && ($current_url[$component] == $item_url[$component]);
 				if ( !$is_close_match ) {
