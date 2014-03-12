@@ -87,6 +87,7 @@ abstract class ameMenuItem {
 			'access_level' => 'read',
 			'extra_capability' => '',
 			'file' => '',
+			'page_heading' => '',
 	        'position' => 0,
 	        'parent' => '',
 
@@ -140,6 +141,7 @@ abstract class ameMenuItem {
 			'icon_url' => 'images/generic.png',
 			'open_in' => 'same_window',
 			'is_plugin_page' => false,
+			'page_heading' => '',
 		);
 	}
 

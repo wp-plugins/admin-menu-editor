@@ -650,6 +650,13 @@ var knownMenuFields = {
 		}
 	}),
 
+	'page_heading' : $.extend({}, baseField, {
+		caption: 'Page heading',
+		advanced : true,
+		onlyForTopMenus: false,
+		visible: false
+	}),
+
 	'hookname' : $.extend({}, baseField, {
 		caption: 'Hook name',
 		advanced : true,
@@ -1210,6 +1217,7 @@ $(document).ready(function(){
 	if (wsEditorData.wsMenuEditorPro) {
 		knownMenuFields['open_in'].visible = true;
 		knownMenuFields['access_level'].visible = true;
+		knownMenuFields['page_heading'].visible = true;
 		knownMenuFields['extra_capability'].visible = false; //Superseded by the "access_level" field.
 		$('.ws_hide_if_pro').hide();
 	}

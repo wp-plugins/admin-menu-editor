@@ -1,7 +1,7 @@
 <?php
 abstract class ameMenu {
 	const format_name = 'Admin Menu Editor menu';
-	const format_version = '5.1';
+	const format_version = '5.2';
 
 	/**
 	 * Load an admin menu from a JSON string.

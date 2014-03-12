@@ -2004,8 +2004,20 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'ame-helper-script',
 			plugins_url('js/admin-helpers.js', $this->plugin_file),
 			array('jquery'),
-			'20121121'
+			'20140312'
 		);
+
+		//The helper script needs to know the custom page heading (if any) to apply it.
+		$currentItem = $this->get_current_menu_item();
+		if ( $currentItem && !empty($currentItem['page_heading']) ) {
+			wp_localize_script(
+				'ame-helper-script',
+				'wsAmeCurrentMenuItem',
+				array(
+					'customPageHeading' => $currentItem['page_heading']
+				)
+			);
+		}
 	}
 
 	public function enqueue_helper_styles() {
