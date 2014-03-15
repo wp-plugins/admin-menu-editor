@@ -281,33 +281,37 @@ endif;
 	?>
 
 	<?php
-	$defaultWpIcons = array(
-		'generic', 'dashboard', 'post', 'media', 'links', 'page', 'comments',
-		'appearance', 'plugins', 'users', 'tools', 'settings', 'site',
-	);
-	foreach($defaultWpIcons as $icon) {
-		printf(
-			'<div class="ws_icon_option" title="%1$s" data-icon-class="menu-icon-%2$s">
-				<div class="ws_icon_image icon16 icon-%2$s"><br></div>
-			</div>',
-			esc_attr(ucwords($icon)),
-			$icon
+	//The old "menu-icon-something" icons are only available in WP 3.8.x and below. Newer versions use Dashicons.
+	//Plugins can change $wp_version to something useless for security, so lets check if Dashicons are available
+	//before we throw away the old icons.
+	$oldMenuIconsAvailable = ( !$editor_data['dashicons_available'] )
+		|| version_compare($GLOBALS['wp_version'], '3.9-beta', '<');
+
+	if ($oldMenuIconsAvailable) {
+		$defaultWpIcons = array(
+			'generic', 'dashboard', 'post', 'media', 'links', 'page', 'comments',
+			'appearance', 'plugins', 'users', 'tools', 'settings', 'site',
 		);
+		foreach($defaultWpIcons as $icon) {
+			printf(
+				'<div class="ws_icon_option" title="%1$s" data-icon-class="menu-icon-%2$s">
+					<div class="ws_icon_image icon16 icon-%2$s"><br></div>
+				</div>',
+				esc_attr(ucwords($icon)),
+				$icon
+			);
+		}
 	}
 
-	$defaultIconImages = array(
-		'images/generic.png',
+	//These dashicons are used in the default admin menu.
+	$defaultDashicons = array(
+		'admin-generic', 'dashboard', 'admin-post', 'admin-media', 'admin-links', 'admin-page', 'admin-comments',
+		'admin-appearance', 'admin-plugins', 'admin-users', 'admin-tools', 'admin-settings', 'admin-network',
 	);
-	foreach($defaultIconImages as $icon) {
-		printf(
-			'<div class="ws_icon_option" data-icon-url="%1$s">
-				<img src="%1$s">
-			</div>',
-			esc_attr($icon)
-		);
-	}
 
+	//The rest of Dashicons. Some icons were manually removed as they wouldn't look good as menu icons.
 	$dashicons = array(
+		'admin-site', 'admin-home',
 		'align-center', 'align-left', 'align-none', 'align-right', 'analytics', 'art', 'awards', 'backup',
 		'book', 'book-alt', 'businessman', 'calendar', 'camera', 'cart', 'category', 'chart-area', 'chart-bar',
 		'chart-line', 'chart-pie', 'clock', 'cloud', 'desktop', 'dismiss', 'download', 'edit', 'editor-customchar',
@@ -321,7 +325,7 @@ endif;
 		'image-flip-horizontal', 'image-flip-vertical', 'image-rotate-left', 'image-rotate-right', 'images-alt',
 		'images-alt2', 'info', 'leftright', 'lightbulb', 'list-view', 'location', 'location-alt', 'lock', 'marker',
 		'menu', 'migrate', 'minus', 'networking', 'no', 'no-alt', 'performance', 'plus', 'portfolio', 'post-status',
-		'post-trash', 'pressthis', 'products', 'redo', 'rss', 'screenoptions', 'search', 'share', 'share-alt',
+		'pressthis', 'products', 'redo', 'rss', 'screenoptions', 'search', 'share', 'share-alt',
 		'share-alt2', 'share1', 'shield', 'shield-alt', 'slides', 'smartphone', 'smiley', 'sort', 'sos', 'star-empty',
 		'star-filled', 'star-half', 'tablet', 'tag', 'testimonial', 'translation', 'twitter', 'undo',
 		'update', 'upload', 'vault', 'video-alt', 'video-alt2', 'video-alt3', 'visibility', 'welcome-add-page',
@@ -330,15 +334,37 @@ endif;
 	);
 
 	if ($editor_data['dashicons_available']) {
-		foreach($dashicons as $icon) {
+		function ws_ame_print_dashicon_option($icon, $isExtraIcon = false) {
 			printf(
-				'<div class="ws_icon_option ws_icon_dashicon" title="%1$s" data-icon-url="dashicons-%2$s">
+				'<div class="ws_icon_option%3$s" title="%1$s" data-icon-url="dashicons-%2$s">
 					<div class="ws_icon_image icon16 dashicons dashicons-%2$s"><br></div>
 				</div>',
 				esc_attr(ucwords(str_replace('-', ' ', $icon))),
-				$icon
+				$icon,
+				$isExtraIcon ? ' ws_icon_extra' : ''
 			);
 		}
+
+		if ( !$oldMenuIconsAvailable ) {
+			foreach($defaultDashicons as $icon) {
+				ws_ame_print_dashicon_option($icon);
+			}
+		}
+		foreach($dashicons as $icon) {
+			ws_ame_print_dashicon_option($icon, true);
+		}
+	}
+
+	$defaultIconImages = array(
+		'images/generic.png',
+	);
+	foreach($defaultIconImages as $icon) {
+		printf(
+			'<div class="ws_icon_option" data-icon-url="%1$s">
+				<img src="%1$s">
+			</div>',
+			esc_attr($icon)
+		);
 	}
 
 	?>

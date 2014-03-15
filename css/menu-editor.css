@@ -505,11 +505,11 @@ select.ws_dropdown optgroup option {
     width: 504px;
 }
 
-#ws_icon_selector .ws_icon_dashicon {
+#ws_icon_selector .ws_icon_extra {
     display: none;
 }
 
-#ws_icon_selector.ws_with_more_icons .ws_icon_dashicon {
+#ws_icon_selector.ws_with_more_icons .ws_icon_extra {
     display: inline-block;
 }
 

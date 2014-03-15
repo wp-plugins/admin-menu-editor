@@ -1797,7 +1797,7 @@ $(document).ready(function(){
 			var iconClass = dashiconMatches ? dashiconMatches[1] : ((classMatches[1] ? classMatches[1] : '') + 'icon-' + classMatches[2]);
 			var selectedIcon = iconSelector.find('.' + iconClass).closest('.ws_icon_option').addClass('ws_selected_icon');
 			//If the icon is one of those hidden by default, automatically expand the selector so it becomes visible.
-			if (selectedIcon.hasClass('ws_icon_dashicon')) {
+			if (selectedIcon.hasClass('ws_icon_extra')) {
 				expandSelector = true;
 			}
 		}
