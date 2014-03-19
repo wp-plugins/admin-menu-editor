@@ -55,9 +55,9 @@ jQuery(function($) {
 	adminMenu.find('li > a').each(function(index, link) {
 		var $link = $(link);
 
-		//Skip links that contain nothing but an "#anchor". Both AME and some
+		//Skip links that have no href or contain nothing but an "#anchor". Both AME and some
 		//other plugins (e.g. S2Member 120703) use them as separators.
-		if ($link.attr('href').substring(0, 1) == '#') {
+		if ( !$link.is('[href]') || ($link.attr('href').substring(0, 1) == '#') ) {
 			return;
 		}
 
