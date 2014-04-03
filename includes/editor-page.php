@@ -82,7 +82,12 @@ if ( $show_whats_new ):
 endif;
 ?>
 
-<?php include dirname(__FILE__) . '/access-editor-dialog.php'; ?>
+<?php
+include dirname(__FILE__) . '/access-editor-dialog.php';
+if ( apply_filters('admin_menu_editor_is_pro', false) ) {
+	include dirname(__FILE__) . '/../extras/menu-color-dialog.php';
+}
+?>
 
 <div id='ws_menu_editor'>
     <div id="ws_actor_selector_container">

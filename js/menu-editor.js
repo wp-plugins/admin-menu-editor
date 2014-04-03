@@ -650,6 +650,44 @@ var knownMenuFields = {
 		}
 	}),
 
+	'colors' : $.extend({}, baseField, {
+		caption: 'Color scheme',
+		defaultValue: 'Default',
+		type: 'color_scheme_editor',
+		onlyForTopMenus: true,
+		visible: false,
+		advanced : true,
+
+		display: function(menuItem, displayValue, input, containerNode) {
+			var colors = getFieldValue(menuItem, 'colors', {});
+			var colorList = containerNode.find('.ws_color_scheme_display');
+
+			colorList.empty();
+			var count = 0, maxColorsToShow = 7;
+
+			$.each(colors, function(name, value) {
+				if ( !value || (count >= maxColorsToShow) ) {
+					return;
+				}
+
+				colorList.append(
+					$('<span></span>').addClass('ws_color_display_item').css('background-color', value)
+				);
+				count++;
+			});
+
+			if (count === 0) {
+				colorList.append('Default');
+			}
+
+			return 'Placeholder. You should never see this.';
+		},
+
+		write: function(menuItem) {
+			//Menu colors can't be directly edited.
+		}
+	}),
+
 	'page_heading' : $.extend({}, baseField, {
 		caption: 'Page heading',
 		advanced : true,
@@ -747,6 +785,11 @@ function buildEditboxField(entry, field_name, field_settings){
 		case 'icon_selector':
 			inputBox = $(basicTextField)
                 .add('<button class="button ws_select_icon" title="Select icon"><div class="icon16 icon-settings"></div><img src="" style="display:none;"></button>');
+			break;
+
+		case 'color_scheme_editor':
+			inputBox = $('<span class="ws_color_scheme_display">Placeholder</span>')
+				.add('<input type="button" class="button ws_open_color_editor" value="Edit...">');
 			break;
 
 		case 'text': //Intentional fall-through.
@@ -891,6 +934,7 @@ function updateItemEditor(containerNode) {
 			displayValue = knownMenuFields[fieldName].display(menuItem, displayValue, input, containerNode);
 		}
 
+		//TODO: Get rid of this exception. Generate a custom value via display().
 		if (fieldName == 'access_level') {
 			//Permissions display is a little complicated and could use improvement.
 			var requiredCap = getFieldValue(menuItem, 'access_level', '');
@@ -1218,6 +1262,7 @@ $(document).ready(function(){
 		knownMenuFields['open_in'].visible = true;
 		knownMenuFields['access_level'].visible = true;
 		knownMenuFields['page_heading'].visible = true;
+		knownMenuFields['colors'].visible = true;
 		knownMenuFields['extra_capability'].visible = false; //Superseded by the "access_level" field.
 		$('.ws_hide_if_pro').hide();
 	}
@@ -1280,10 +1325,8 @@ $(document).ready(function(){
         //Find the field div (it holds the field name)
         var field = $(this).parents('.ws_edit_field');
 	    var fieldName = field.data('field_name');
-    	//Find the related input field
-		var input = field.find('.ws_field_value');
 
-		if ( (input.length > 0) && (field.length > 0) && fieldName ) {
+		if ( (field.length > 0) && fieldName ) {
 			//Extract the default value from the menu item.
             var containerNode = field.closest('.ws_container');
 			var menuItem = containerNode.data('menu_item');
@@ -1910,6 +1953,123 @@ $(document).ready(function(){
 	});
 
 
+	/*************************************************************************
+	                             Color picker
+	 *************************************************************************/
+
+	var menuColorDialog = $('#ws-ame-menu-color-settings');
+	if (menuColorDialog.length > 0) {
+		menuColorDialog.dialog({
+			autoOpen: false,
+			closeText: ' ',
+			draggable: false,
+			modal: true,
+			minHeight: 400,
+			minWidth: 520
+		});
+	}
+
+	var colorDialogState = {
+		menuItem: null
+	};
+
+	var menuColorVariables = [
+		'base-color',
+		'text-color',
+		'highlight-color',
+		'icon-color',
+
+		'menu-highlight-text',
+		'menu-highlight-icon',
+		'menu-highlight-background',
+
+		'menu-current-text',
+		'menu-current-icon',
+		'menu-current-background',
+
+		'menu-submenu-text',
+		'menu-submenu-background',
+		'menu-submenu-focus-text',
+		'menu-submenu-current-text',
+
+		'menu-bubble-text',
+		'menu-bubble-background',
+		'menu-bubble-current-text',
+		'menu-bubble-current-background'
+	];
+
+	//Show only the primary color settings by default.
+	var showAdvancedColors = false;
+	$('#ws-ame-show-advanced-colors').click(function() {
+		showAdvancedColors = !showAdvancedColors;
+		$('#ws-ame-menu-color-settings').find('.ame-advanced-menu-color').toggle(showAdvancedColors);
+		$(this).text(showAdvancedColors ? 'Hide advanced options' : 'Show advanced options');
+	});
+
+	//"Edit.." color schemes.
+	var colorPickersInitialized = false;
+	menuEditorNode.on('click', '.ws_open_color_editor, .ws_color_scheme_display', function() {
+		//Initializing the color pickers takes a while, so we only do it when needed instead of on document ready.
+		if ( !colorPickersInitialized ) {
+			menuColorDialog.find('.ame-color-picker').wpColorPicker();
+			colorPickersInitialized = true;
+		}
+
+		var containerNode = $(this).parents('.ws_container').first();
+		var menuItem = containerNode.data('menu_item');
+
+		colorDialogState.containerNode = containerNode;
+		colorDialogState.menuItem = menuItem;
+
+		var colors = getFieldValue(menuItem, 'colors', {});
+		var customColorCount = 0;
+		for (var i = 0; i < menuColorVariables.length; i++) {
+			var name = menuColorVariables[i];
+			var value = colors.hasOwnProperty(name) ? colors[name] : false;
+
+			if ( value ) {
+				$('#ame-color-' + name).wpColorPicker('color', value);
+				customColorCount++;
+			} else {
+				$('#ame-color-' + name).closest('.wp-picker-container').find('.wp-picker-clear').click();
+			}
+		}
+
+		if ( customColorCount > 0 ) {
+			menuItem.colors = colors;
+		} else {
+			menuItem.colors = null;
+		}
+
+		//TODO: Add menu title to the dialog caption (as text, no HTML).
+		menuColorDialog.dialog('open');
+	});
+
+	//The "Save Changes" button in the color dialog.
+	$('#ws-ame-save-menu-colors').click(function() {
+		menuColorDialog.dialog('close');
+		if ( !colorDialogState.menuItem ) {
+			return;
+		}
+		var menuItem = colorDialogState.menuItem;
+		var colors = {}, colorCount = 0;
+
+		for (var i = 0; i < menuColorVariables.length; i++) {
+			var name = menuColorVariables[i];
+			var value = $('#ame-color-' + name).val();
+			if (value) {
+				colors[name] = value;
+				colorCount++;
+			}
+		}
+
+		menuItem.colors = colorCount > 0 ? colors : null;
+		updateItemEditor(colorDialogState.containerNode);
+
+		colorDialogState.containerNode = null;
+		colorDialogState.menuItem = null;
+	});
+
     /*************************************************************************
 	                           Menu toolbar buttons
 	 *************************************************************************/
@@ -2307,6 +2467,8 @@ $(document).ready(function(){
             }
         }
 
+		console.log(tree);
+		//return;
 		var data = encodeMenuAsJSON(tree);
 		$('#ws_data').val(data);
 		$('#ws_data_length').val(data.length);

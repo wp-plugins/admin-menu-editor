@@ -458,7 +458,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			array(
 				'jquery', 'jquery-ui-sortable', 'jquery-ui-dialog',
 				'ame-jquery-form', 'jquery-ui-droppable', 'jquery-qtip',
-				'jquery-sort', 'jquery-json', 'jquery-cookie'
+				'jquery-sort', 'jquery-json', 'jquery-cookie',
+				'wp-color-picker'
 			)
 		);
 
@@ -625,6 +626,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		wp_enqueue_style('menu-editor-colours-classic');
+		wp_enqueue_style('wp-color-picker');
 	}
 
 	/**
@@ -633,6 +635,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @param array|null $custom_menu
 	 */
 	function set_custom_menu($custom_menu) {
+		$custom_menu = apply_filters('ame_pre_set_custom_menu', $custom_menu);
+
 		$previous_custom_menu = $this->load_custom_menu();
 		$this->update_wpml_strings($previous_custom_menu, $custom_menu);
 
@@ -1453,6 +1457,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Start out with the default menu if there is no user-created one
 			$custom_menu = $default_menu;
 		}
+
+		//The editor doesn't use the color CSS. Including it would just make the page bigger and waste bandwidth.
+		unset($custom_menu['color_css']);
+		unset($custom_menu['color_css_modified']);
 
 		//Encode both menus as JSON
 		$editor_data['default_menu_js'] = ameMenu::to_json($default_menu);

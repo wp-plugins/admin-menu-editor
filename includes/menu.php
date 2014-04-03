@@ -1,7 +1,7 @@
 <?php
 abstract class ameMenu {
 	const format_name = 'Admin Menu Editor menu';
-	const format_version = '5.2';
+	const format_version = '5.41';
 
 	/**
 	 * Load an admin menu from a JSON string.
@@ -68,6 +68,11 @@ abstract class ameMenu {
 				$menu['tree'][$file] = ameMenuItem::normalize($item);
 			}
 			$menu['format']['is_normalized'] = true;
+		}
+
+		if ( isset($arr['color_css']) && is_string($arr['color_css']) ) {
+			$menu['color_css'] = $arr['color_css'];
+			$menu['color_css_modified'] = isset($arr['color_css_modified']) ? intval($arr['color_css_modified']) : 0;
 		}
 
 		return $menu;
