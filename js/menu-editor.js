@@ -934,22 +934,6 @@ function updateItemEditor(containerNode) {
 			displayValue = knownMenuFields[fieldName].display(menuItem, displayValue, input, containerNode);
 		}
 
-		//TODO: Get rid of this exception. Generate a custom value via display().
-		if (fieldName == 'access_level') {
-			//Permissions display is a little complicated and could use improvement.
-			var requiredCap = getFieldValue(menuItem, 'access_level', '');
-			var extraCap = getFieldValue(menuItem, 'extra_capability', '');
-
-			displayValue = (menuItem.template_id === '') ? '< Custom >' : requiredCap;
-			if (extraCap !== '') {
-				if (menuItem.template_id === '') {
-					displayValue = extraCap;
-				} else {
-					displayValue = displayValue + '+' + extraCap;
-				}
-			}
-		}
-
         setInputValue(input, displayValue);
     });
 }
