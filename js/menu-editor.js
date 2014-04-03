@@ -2041,7 +2041,13 @@ $(document).ready(function(){
 			menuItem.colors = null;
 		}
 
-		//TODO: Add menu title to the dialog caption (as text, no HTML).
+		//Add menu title to the dialog caption.
+		var title = getFieldValue(menuItem, 'menu_title', null);
+		menuColorDialog.dialog(
+			'option',
+			'title',
+			title ? ('Colors: ' + title.substring(0, 30)) : 'Colors'
+		);
 		menuColorDialog.dialog('open');
 	});
 
