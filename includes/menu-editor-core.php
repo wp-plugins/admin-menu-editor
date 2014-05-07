@@ -258,7 +258,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Store the "original" menus for later use in the editor
 		$this->default_wp_menu = $menu;
 		$this->default_wp_submenu = $submenu;
-		
+
+		//Compatibility fix for bbPress.
+		$this->apply_bbpress_compat_fix();
+
 		//Generate item templates from the default menu.
 		$this->item_templates = $this->build_templates($this->default_wp_menu, $this->default_wp_submenu);
 
@@ -2181,6 +2184,38 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$name = $name . '[' . $field. ']';
 		}
 		return $name;
+	}
+
+	/**
+	 * Compatibility fix for bbPress 2.5.3.
+	 *
+	 * bbPress creates a bunch of "hidden" menu items in the admin_menu action only to remove them
+	 * later in an admin_head hook. This results in apparently duplicated menus showing up when AME is
+	 * active because AME processes the items before they get removed.
+	 *
+	 * This method works around the issue by explicitly removing those bbPress menus.
+	 *
+	 * @uses $this->default_wp_submenu
+	 */
+	private function apply_bbpress_compat_fix() {
+		if ( !isset($this->default_wp_submenu, $this->default_wp_submenu['index.php']) ) {
+			return;
+		}
+
+		//Note to self: This would be easier if we could rely on anonymous function support being available.
+		//Then we could just array_filter() the submenu with a closure as the callback.
+		$items_to_remove = array('bbp-about' => null, 'bbp-credits' => null);
+		foreach($this->default_wp_submenu['index.php'] as $index => $menu) {
+			if ( array_key_exists($menu[2], $items_to_remove) ) {
+				$items_to_remove[$menu[2]] = $index;
+			}
+		}
+
+		foreach($items_to_remove as $index) {
+			if ( isset($index, $this->default_wp_submenu['index.php'][$index]) ) {
+				unset($this->default_wp_submenu['index.php'][$index]);
+			}
+		}
 	}
 
 	/**
