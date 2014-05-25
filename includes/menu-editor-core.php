@@ -1368,7 +1368,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				//Also, automatically select the last selected actor (convenience feature).
 				$query = array('message' => 1);
 				if ( isset($post['selected_actor']) && !empty($post['selected_actor']) ) {
-					$query['selected_actor'] = strval($post['selected_actor']);
+					$query['selected_actor'] = rawurlencode(strval($post['selected_actor']));
 				}
 				wp_redirect( add_query_arg($query, $url) );
 				die();
