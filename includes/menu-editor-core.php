@@ -1620,11 +1620,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @param array $args The capability passed to current_user_can, the current user's ID, and other args.
 	 * @return array Filtered version of $allcaps
 	 */
-	function hook_user_has_cap($allcaps, $required_caps, $args){
+	function hook_user_has_cap($allcaps, /** @noinspection PhpUnusedParameterInspection */ $required_caps, $args){
 		//Be careful not to overwrite a super_admin cap added by other plugins 
 		//For example, Advanced Access Manager also adds this capability. 
-		if ( in_array('super_admin', $required_caps) && !isset($allcaps['super_admin']) ){
-			$allcaps['super_admin'] = is_multisite() && is_super_admin($args[1]);
+		if ( is_array($allcaps) && !isset($allcaps['super_admin']) ){
+			$user_id = intval($args[1]);
+			if ( $user_id != 0 ) {
+				$allcaps['super_admin'] = is_multisite() && is_super_admin($user_id);
+			}
 		}
 		return $allcaps;
 	}
