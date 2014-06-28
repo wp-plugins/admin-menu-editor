@@ -557,6 +557,12 @@ select.ws_dropdown optgroup option {
 	margin: 0;
 }
 
+#ws_icon_selector .ws_icon_option .ws_icon_image.dashicons {
+    width: 20px;
+    height: 20px;
+    padding: 5px;
+}
+
 #ws_icon_selector .ws_icon_option img {
 	display: inline-block;
 	margin: 0;

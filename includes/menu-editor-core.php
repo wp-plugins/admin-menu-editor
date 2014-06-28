@@ -104,6 +104,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'show_deprecated_hide_button' => null,
 			'dashboard_hiding_confirmation_enabled' => true,
 
+			//When to show submenu icons.
+			'submenu_icons_enabled' => 'if_custom', //"never", "if_custom" or "always".
+
 			//Enable/disable the admin notice that tells the user where the plugin settings menu is.
 			'show_plugin_menu_notice' => true,
 		);
@@ -234,7 +237,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$page = add_options_page(
 				apply_filters('admin_menu_editor-self_page_title', 'Menu Editor'), 
 				apply_filters('admin_menu_editor-self_menu_title', 'Menu Editor'), 
-				apply_filters('admin_menu_editor_capability', 'manage_options'),
+				apply_filters('admin_menu_editor-capability', 'manage_options'),
 				'menu_editor', 
 				array(&$this, 'page_menu_editor')
 			);
@@ -530,6 +533,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'adminAjaxUrl' => admin_url('admin-ajax.php'),
 				'hideAdvancedSettings' => (boolean)$this->options['hide_advanced_settings'],
 				'showExtraIcons' => $showExtraIcons,
+				'submenuIconsEnabled' => $this->options['submenu_icons_enabled'],
+
 				'hideAdvancedSettingsNonce' => wp_create_nonce('ws_ame_save_screen_options'),
 				'dashiconsAvailable' => wp_style_is('dashicons', 'registered'),
 				'captionShowAdvanced' => 'Show advanced options',
@@ -1038,6 +1043,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				
 			//Prepare the submenu of this menu
 			$new_items = array();
+			$has_submenu_icons = false;
 			if( !empty($topmenu['items']) ){
 				$items = $topmenu['items'];
 				//Sort by position
@@ -1054,7 +1060,16 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 					//Make a note of the page's correct title so we can fix it later if necessary.
 					$this->title_lookups[$item['file']] = !empty($item['page_title']) ? $item['page_title'] : $item['menu_title'];
+
+					//Keep track of which menus have items with icons.
+					$has_submenu_icons = $has_submenu_icons || !empty($item['has_submenu_icon']);
 				}
+			}
+
+			//The ame-has-submenu-icons class lets us change the appearance of all submenu items at once,
+			//without having to add classes/styles to each item individually.
+			if ( $has_submenu_icons && (strpos($topmenu['css_class'], 'ame-has-submenu-icons') === false) )  {
+				$topmenu['css_class'] .= ' ame-has-submenu-icons';
 			}
 
 			$topmenu['items'] = $new_items;
@@ -1087,8 +1102,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				$this->reverse_item_lookup[$topmenu['url']] = $topmenu;
 			}
 
-			$new_menu[] = $this->convert_to_wp_format($topmenu);
-
 			foreach($topmenu['items'] as $item) {
 				$trueAccess = isset($this->page_access_lookup[$item['url']]) ? $this->page_access_lookup[$item['url']] : null;
 				if ( ($trueAccess === 'do_not_allow') && ($item['access_level'] !== $trueAccess) ) {
@@ -1107,6 +1120,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				$this->reverse_item_lookup[$item['url']] = $item;
 				$new_submenu[$topmenu['file']][] = $this->convert_to_wp_format($item);
 			}
+
+			$new_menu[] = $this->convert_to_wp_format($topmenu);
 		}
 
 		$this->custom_wp_menu = $new_menu;
@@ -1169,10 +1184,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Menus that have both a custom icon URL and a "menu-icon-*" class will get two overlapping icons.
 		//Fix this by automatically removing the class. The user can set a custom class attr. to override.
+		$hasCustomIconUrl = !ameMenuItem::is_default($item, 'icon_url');
+		$hasIcon = !in_array(ameMenuItem::get($item, 'icon_url'), array('', 'none', 'div'));
 		if (
 			ameMenuItem::is_default($item, 'css_class')
-			&& !ameMenuItem::is_default($item, 'icon_url')
-			&& !in_array($item['icon_url'], array('', 'none', 'div')) //Skip "no custom icon" icons.
+			&& $hasCustomIconUrl
+			&& $hasIcon //Skip "no icon" settings.
 		) {
 			$new_classes = preg_replace('@\bmenu-icon-[^\s]+\b@', '', $item['defaults']['css_class']);
 			if ( $new_classes !== $item['defaults']['css_class'] ) {
@@ -1194,6 +1211,11 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//See /wp-admin/menu-header.php for details on how this works.
 		if ( $item['icon_url'] === '' ) {
 			$item['icon_url'] = 'none';
+		}
+
+		//Add submenu icons if necessary.
+		if ( ($item_type === 'submenu') && $hasIcon ) {
+			$item = apply_filters('admin_menu_editor-submenu_with_icon', $item, $hasCustomIconUrl);
 		}
 
 		//Used later to determine the current page based on URL.
@@ -1317,7 +1339,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		$action = isset($this->post['action']) ? $this->post['action'] : (isset($this->get['action']) ? $this->get['action'] : '');
-		do_action('admin_menu_editor_header', $action);
+		do_action('admin_menu_editor-header', $action);
 
 		if ( !empty($action) ) {
 			$this->handle_form_submission($this->post, $action);
@@ -1430,6 +1452,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Enable the now-obsolete "Hide" button.
 			if ( $this->is_pro_version() ) {
 				$this->options['show_deprecated_hide_button'] = !empty($this->post['show_deprecated_hide_button']);
+			}
+
+			//Enable submenu icons.
+			if ( !empty($this->post['submenu_icons_enabled']) ) {
+				$submenu_icons_enabled = strval($this->post['submenu_icons_enabled']);
+				$valid_icon_settings = array('never', 'if_custom', 'always');
+				if ( in_array($submenu_icons_enabled, $valid_icon_settings, true) ) {
+					$this->options['submenu_icons_enabled'] = $submenu_icons_enabled;
+				}
 			}
 
 			$this->save_options();
@@ -2039,7 +2070,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'ame-helper-style',
 			plugins_url('css/admin.css', $this->plugin_file),
 			array(),
-			'20140220-2'
+			'20140628'
 		);
 	}
 

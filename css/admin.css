@@ -42,3 +42,35 @@ hr.ws-submenu-separator {
 #adminmenu li.ws-submenu-separator-wrap a {
 	cursor: default;
 }
+
+.ame-submenu-icon {
+    display: inline-block;
+    padding-right: 6px;
+    min-width: 20px;
+
+    /*
+    Dashicons are 20x20 by default and some of them look pretty bad at smaller sizes. Submenu item titles are 16px high
+    by default. So lets hack some negative margins to make a 20px icon fit in 16px. With the current admin UI styles
+    it looks okay - submenu items are ~28px high when including padding/margins, so there's no visual overlap.
+     */
+    height: 20px;
+    margin-top: -2px;
+    margin-bottom: -2px;
+
+    vertical-align: top;
+
+    margin-left: -26px;
+    float: left;
+
+    /* Center images-based icons. Doesn't matter for dashicons. */
+    text-align: center;
+}
+
+#adminmenu .ame-has-submenu-icons ul.wp-submenu li a {
+    /* Push all submenus to the right to ensure that items with and without icons line up nicely. */
+    margin-left: 26px;
+}
+
+#adminmenu .ame-submenu-icon img {
+    padding-top: 2px;
+}

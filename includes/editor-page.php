@@ -132,7 +132,7 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 		<div id='ws_menu_box' class="ws_box">
 		</div>
 
-		<?php do_action('admin_menu_editor_container', 'menu'); ?>
+		<?php do_action('admin_menu_editor-container', 'menu'); ?>
 	</div>
 
 	<div class='ws_main_container'>
@@ -169,7 +169,7 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 		<div id='ws_submenu_box' class="ws_box">
 		</div>
 
-		<?php do_action('admin_menu_editor_container', 'submenu'); ?>
+		<?php do_action('admin_menu_editor-container', 'submenu'); ?>
 	</div>
 
 	<div class="ws_basic_container">
@@ -188,7 +188,7 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 			<input type="button" id='ws_load_menu' value="Load default menu" class="button ws_main_button" />
 
 			<?php
-				do_action('admin_menu_editor_sidebar');
+				do_action('admin_menu_editor-sidebar');
 			?>
 		</div>
 
@@ -342,7 +342,7 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 		function ws_ame_print_dashicon_option($icon, $isExtraIcon = false) {
 			printf(
 				'<div class="ws_icon_option%3$s" title="%1$s" data-icon-url="dashicons-%2$s">
-					<div class="ws_icon_image icon16 dashicons dashicons-%2$s"><br></div>
+					<div class="ws_icon_image icon16 dashicons dashicons-%2$s"></div>
 				</div>',
 				esc_attr(ucwords(str_replace('-', ' ', $icon))),
 				$icon,
@@ -450,4 +450,4 @@ var customMenu = <?php echo $editor_data['custom_menu_js']; ?>;
 <?php
 
 //Let the Pro version script output it's extra HTML & scripts.
-do_action('admin_menu_editor_footer');
+do_action('admin_menu_editor-footer');

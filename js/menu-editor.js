@@ -355,12 +355,13 @@ function buildMenuItem(itemData, isTopLevel) {
 	//the editors themselves are created later, when the user tries to access them
 	//for the first time).
 	var contents = [];
+	var menuTitle = ((itemData.menu_title != null) ? itemData.menu_title : itemData.defaults.menu_title);
 	contents.push(
 		'<div class="ws_item_head">',
 			itemData.separator ? '' : '<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
 			'<input type="checkbox" class="ws_actor_access_checkbox">',
 			'<span class="ws_item_title">',
-				((itemData.menu_title != null) ? itemData.menu_title : itemData.defaults.menu_title),
+				menuTitle,
 			'&nbsp;</span>',
 
 		'</div>',
@@ -1248,6 +1249,10 @@ $(document).ready(function(){
 		knownMenuFields['page_heading'].visible = true;
 		knownMenuFields['colors'].visible = true;
 		knownMenuFields['extra_capability'].visible = false; //Superseded by the "access_level" field.
+
+		//The Pro version supports submenu icons, but they can be disabled by the user.
+		knownMenuFields['icon_url'].onlyForTopMenus = (wsEditorData.submenuIconsEnabled == 'never');
+
 		$('.ws_hide_if_pro').hide();
 	}
 
@@ -2137,7 +2142,7 @@ $(document).ready(function(){
 			menu.css_class = 'menu-top';
 		}
 		if (getFieldValue(menu, 'icon_url', '') == '') {
-			menu.icon_url = 'images/generic.png';
+			menu.icon_url = 'dashicons-admin-generic';
 		}
 		if (getFieldValue(menu, 'hookname', '') == '') {
 			menu.hookname = randomMenuId();
