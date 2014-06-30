@@ -41,11 +41,22 @@ hr.ws-submenu-separator {
 /* No pointer/hand on separators. */
 #adminmenu li.ws-submenu-separator-wrap a {
 	cursor: default;
+ }
+
+/* No extra margin in submenus with icons. The selector uses the URL prefix because we can't control the link class.
+ * li.ws-submenu-separator-wrap would also work, but it's added via JS so there's an undesirable delay (FOUC).
+ */
+#adminmenu .ame-has-submenu-icons ul.wp-submenu li a[href^="#submenu-separator-"] {
+    margin-left: 0;
 }
 
+
+/*
+ * Submenu icons.
+ */
 .ame-submenu-icon {
     display: inline-block;
-    padding-right: 6px;
+    padding-right: 8px;
     min-width: 20px;
 
     /*
@@ -59,18 +70,27 @@ hr.ws-submenu-separator {
 
     vertical-align: top;
 
-    margin-left: -26px;
+    margin-left: -28px;
     float: left;
 
-    /* Center images-based icons. Doesn't matter for dashicons. */
+    /* Center image-based icons. Doesn't matter for dashicons. */
     text-align: center;
 }
 
 #adminmenu .ame-has-submenu-icons ul.wp-submenu li a {
     /* Push all submenus to the right to ensure that items with and without icons line up nicely. */
-    margin-left: 26px;
+    margin-left: 24px;
 }
 
 #adminmenu .ame-submenu-icon img {
     padding-top: 2px;
+
+    opacity: 0.6;
+    filter: alpha(opacity=60);
+}
+
+#adminmenu .wp-submenu li:hover .ame-submenu-icon img,
+#adminmenu .wp-submenu li.current .ame-submenu-icon img {
+    opacity: 1;
+    filter: alpha(opacity=100);
 }

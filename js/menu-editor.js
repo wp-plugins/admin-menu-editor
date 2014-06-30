@@ -615,20 +615,29 @@ var knownMenuFields = {
 		defaultValue: 'div',
 		onlyForTopMenus: true,
 
-		display: function(menuItem, displayValue, input) {
+		display: function(menuItem, displayValue, input, containerNode) {
 			//Display the current icon in the selector.
 			var cssClass = getFieldValue(menuItem, 'css_class', '');
 			var iconUrl = getFieldValue(menuItem, 'icon_url', '');
+
+			//When submenu icon visibility is set to "only if manually selected",
+			//don't show the default submenu icons.
+			var isDefault = (typeof menuItem['icon_url'] === 'undefined') || (menuItem['icon_url'] === null);
+			if (isDefault && (wsEditorData.submenuIconsEnabled === 'if_custom') && containerNode.hasClass('ws_item')) {
+				iconUrl = 'none';
+				cssClass = '';
+			}
 
 			var selectButton = input.closest('.ws_edit_field').find('.ws_select_icon');
 			var cssIcon = selectButton.find('.icon16');
 			var imageIcon = selectButton.find('img');
 
 			var matches = cssClass.match(/\b(ame-)?menu-icon-([^\s]+)\b/);
-			var dashiconMatches = iconUrl && iconUrl.match('^\s*(dashicons-[a-z0-9\-]+)');
+			var dashiconMatches = iconUrl && iconUrl.match(/^\s*(dashicons-[a-z0-9\-]+)/);
 
-			//Icon URL take precedence over icon class.
+			//Icon URL takes precedence over icon class.
 			if ( iconUrl && iconUrl !== 'none' && iconUrl !== 'div' && !dashiconMatches ) {
+				//Regular image icon.
 				cssIcon.hide();
 				imageIcon.prop('src', iconUrl).show();
 			} else if ( dashiconMatches ) {
