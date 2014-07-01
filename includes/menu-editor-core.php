@@ -268,6 +268,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//Generate item templates from the default menu.
 		$this->item_templates = $this->build_templates($this->default_wp_menu, $this->default_wp_submenu);
 
+		//Add extra templates that are not part of the normal menu.
+		$this->item_templates = $this->add_special_templates($this->item_templates);
+
 		//Is there a custom menu to use?
 		$custom_menu = $this->load_custom_menu();
 		if ( $custom_menu !== null ){
@@ -550,6 +553,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					'defaults' => ameMenuItem::custom_item_defaults(),
 				),
 
+				'unclickableTemplateId' => ameMenuItem::unclickableTemplateId,
+				'unclickableTemplateClass' => ameMenuItem::unclickableTemplateClass,
+
 				'actors' => $actors,
 				'roles' => $roles,
 				'users' => $users,
@@ -813,6 +819,32 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		return strip_tags( preg_replace('@<span[^>]*>.*</span>@i', '', $title) );
 	}
 
+	/**
+	 * Generate special menu templates and add them to the input template list.
+	 *
+	 * @param array $templates Template list.
+	 * @return array Modified template list.
+	 */
+	private function add_special_templates($templates) {
+		//Add a special template for unclickable menu items. These can be used as headers and such.
+		$itemDefaults = ameMenuItem::custom_item_defaults();
+		$unclickableDefaults = array_merge(
+			$itemDefaults,
+			array(
+				'file' => '#' . ameMenuItem::unclickableTemplateClass,
+				'url'  => '#' . ameMenuItem::unclickableTemplateClass,
+				'css_class' => $itemDefaults['css_class'] . ' ' . ameMenuItem::unclickableTemplateClass,
+			)
+		);
+		$templates[ameMenuItem::unclickableTemplateId] = array(
+			'name' => '< None >',
+			'used' => true,
+			'defaults' => $unclickableDefaults,
+		);
+
+		return $templates;
+	}
+
   /**
    * Merge a custom menu with the current default WordPress menu. Adds/replaces defaults,
    * inserts new items and removes missing items.
@@ -885,25 +917,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Now we have some items marked as missing, and some items in lookup arrays
 		//that are not marked as used. Lets remove the missing items from the tree.
-		$filteredTree = array();
-		foreach($tree as $file => $topmenu) {
-			if ( $topmenu['missing'] ) {
-				continue;
-			}
-			$filteredSubmenu = array();
-			if (is_array($topmenu['items'])) {
-				foreach($topmenu['items'] as $index => $item) {
-					if ( !$item['missing'] ) {
-						$filteredSubmenu[$index] = $item;
-					}
-				}
-
-			}
-			$topmenu['items'] = $filteredSubmenu;
-			$filteredTree[$file] = $topmenu;
-		}
-
-		$tree = $filteredTree;
+		$tree = ameMenu::remove_missing_items($tree);
 
 		//Lets merge in the unused items.
 		foreach ($this->item_templates as $template_id => $template){
@@ -1180,6 +1194,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					$item['file'] = $template['defaults']['url'];
 				}
 			}
+		}
+
+		//Give each unclickable item a unique URL.
+		if ( $item['template_id'] === ameMenuItem::unclickableTemplateId ) {
+			static $unclickableCounter = 0;
+			$unclickableCounter++;
+			$unclickableUrl = '#' . ameMenuItem::unclickableTemplateClass . '-' . $unclickableCounter;
+			$item['file'] = $item['url'] = $unclickableUrl;
 		}
 
 		//Menus that have both a custom icon URL and a "menu-icon-*" class will get two overlapping icons.

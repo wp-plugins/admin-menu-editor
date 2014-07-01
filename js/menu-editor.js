@@ -1022,8 +1022,15 @@ function readMenuTreeState(){
 	$('#ws_menu_box').find('.ws_menu').each(function() {
 		var menu = readItemState(this, menu_position++);
 
-		//Attach the current menu to the main struct
-		var filename = (menu.file !== null)?menu.file:menu.defaults.file;
+		//Attach the current menu to the main structure.
+		var filename = (menu.file !== null) ? menu.file : menu.defaults.file;
+
+		//Give unclickable items unique keys.
+		if (menu.template_id === wsEditorData.unclickableTemplateId) {
+			ws_paste_count++;
+			filename = '#' + wsEditorData.unclickableTemplateClass + '-' + ws_paste_count;
+		}
+
 		tree[filename] = menu;
 	});
 
@@ -2476,8 +2483,6 @@ $(document).ready(function(){
             }
         }
 
-		console.log(tree);
-		//return;
 		var data = encodeMenuAsJSON(tree);
 		$('#ws_data').val(data);
 		$('#ws_data_length').val(data.length);

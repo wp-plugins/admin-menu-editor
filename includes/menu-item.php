@@ -8,6 +8,9 @@
  * currently registered hooks and the presence of specific files in admin/plugin folders.
  */
 abstract class ameMenuItem {
+	const unclickableTemplateId = '>special:none';
+	const unclickableTemplateClass = 'ame-unclickable-menu-item';
+
 	/**
 	 * @var array A partial list of files in /wp-admin/. Correct as of WP 3.8-RC1, 2013.12.04.
 	 * When trying to determine if a menu links to one of the default WP admin pages, it's faster
@@ -137,6 +140,7 @@ abstract class ameMenuItem {
 		return array(
 			'menu_title' => 'Custom Menu',
 			'access_level' => 'read',
+			'extra_capability' => '',
 			'page_title' => '',
 			'css_class' => 'menu-top',
 			'hookname' => '',

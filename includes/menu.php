@@ -198,6 +198,28 @@ abstract class ameMenu {
 
 		return false;
 	}
+
+	/**
+	 * Recursively filter a list of menu items and remove items flagged as missing.
+	 *
+	 * @param array $items An array of menu items to filter.
+	 * @return array
+	 */
+	public static function remove_missing_items($items) {
+		$items = array_filter($items, array(__CLASS__, 'is_not_missing'));
+
+		foreach($items as &$item) {
+			if ( !empty($item['items']) ) {
+				$item['items'] = self::remove_missing_items($item['items']);
+			}
+		}
+
+		return $items;
+	}
+
+	protected static function is_not_missing($item) {
+		return empty($item['missing']);
+	}
 }
 
 

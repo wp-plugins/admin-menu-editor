@@ -14,13 +14,24 @@
 	}
 
 	jQuery(function($) {
+		var adminMenu = $('#adminmenu');
+
 		//Menu separators shouldn't be clickable and should have a custom class.
-		$('#adminmenu')
+		adminMenu
 				.find('.ws-submenu-separator')
 				.closest('a').click(function() {
 					return false;
 				})
 				.closest('li').addClass('ws-submenu-separator-wrap');
+
+		//Menus with the target "< None >"  also shouldn't be clickable.
+		adminMenu
+			.find(
+				'a.menu-top.ame-unclickable-menu-item, ul.wp-submenu > li > a[href^="#ame-unclickable-menu-item"]'
+			)
+			.click(function() {
+				return false;
+			});
 
 		//Replace the original page heading with the custom heading.
 		if ( customPageHeading ) {
