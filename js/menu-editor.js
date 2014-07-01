@@ -449,13 +449,43 @@ var knownMenuFields = {
 		type : 'select',
 		options : (function(){
 			//Generate name => id mappings for all item templates + the special "Custom" template.
-			var itemTemplateIds = {};
-			itemTemplateIds[wsEditorData.customItemTemplate.name] = '';
+			var itemTemplateIds = [];
+			itemTemplateIds.push([wsEditorData.customItemTemplate.name, '']);
+
 			for (var template_id in wsEditorData.itemTemplates) {
 				if (wsEditorData.itemTemplates.hasOwnProperty(template_id)) {
-					itemTemplateIds[wsEditorData.itemTemplates[template_id].name] = template_id;
+					itemTemplateIds.push([wsEditorData.itemTemplates[template_id].name, template_id]);
 				}
 			}
+
+			itemTemplateIds.sort(function(a, b) {
+				if (a[1] === b[1]) {
+					return 0;
+				}
+
+				//The "Custom" item is always first.
+				if (a[1] === '') {
+					return -1;
+				} else if (b[1] === '') {
+					return 1;
+				}
+
+				//Top-level items go before submenus.
+				var aIsTop = (a[1].charAt(0) === '>') ? 1 : 0;
+				var bIsTop = (b[1].charAt(0) === '>') ? 1 : 0;
+				if (aIsTop !== bIsTop) {
+					return bIsTop - aIsTop;
+				}
+
+				//Everything else is sorted by name, in alphabetical order.
+				if (a[0] > b[0]) {
+					return 1;
+				} else if (a[0] < b[0]) {
+					return -1;
+				}
+				return 0;
+			});
+
 			return itemTemplateIds;
 		})(),
 
@@ -598,11 +628,11 @@ var knownMenuFields = {
 		caption: 'Open in',
 		advanced : true,
 		type : 'select',
-		options : {
-			'Same window or tab' : 'same_window',
-			'New window' : 'new_window',
-			'Frame' : 'iframe'
-		},
+		options : [
+			['Same window or tab', 'same_window'],
+			['New window', 'new_window'],
+			['Frame', 'iframe']
+		],
 		defaultValue: 'same_window',
 		visible: false
 	}),
@@ -775,12 +805,12 @@ function buildEditboxField(entry, field_name, field_settings){
 		case 'select':
 			inputBox = $('<select class="ws_field_value">');
 			var option = null;
-			for( var optionTitle in field_settings.options ){
-				if (!field_settings.options.hasOwnProperty(optionTitle)) {
-					continue;
-				}
+			for( var index = 0; index < field_settings.options.length; index++ ){
+				var optionTitle = field_settings.options[index][0];
+				var optionValue = field_settings.options[index][1];
+
 				option = $('<option>')
-					.val(field_settings.options[optionTitle])
+					.val(optionValue)
 					.text(optionTitle);
 				option.appendTo(inputBox);
 			}
