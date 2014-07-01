@@ -843,6 +843,25 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			'defaults' => $unclickableDefaults,
 		);
 
+		if ( $this->is_pro_version() ) {
+			//The Pro version has a [wp-logout-url] shortcode. Lets make it easier o use
+			//by adding it to the "Target page" dropdown.
+			$logoutDefaults = array_merge(
+				ameMenuItem::basic_defaults(),
+				array(
+					'menu_title' => 'Logout',
+					'file' => '[wp-logout-url]',
+					'url'  => '[wp-logout-url]',
+					'icon_url' => 'dashicons-migrate',
+				)
+			);
+			$templates['>logout'] = array(
+				'name' => 'Logout',
+				'used' => true,
+				'defaults' => $logoutDefaults,
+			);
+		}
+
 		return $templates;
 	}
 
