@@ -460,6 +460,8 @@ var knownMenuFields = {
 		})(),
 
 		write: function(menuItem, value, input, containerNode) {
+			var oldTemplateId = menuItem.template_id;
+
 			menuItem.template_id = value;
 			menuItem.defaults = itemTemplates.getDefaults(menuItem.template_id);
 		    menuItem.custom = (menuItem.template_id == '');
@@ -480,7 +482,10 @@ var knownMenuFields = {
 			    var hasDefaultValue = itemTemplates.hasDefaultValue(menuItem.template_id, fieldName);
 
 			    if (isSetToDefault && !hasDefaultValue) {
-				    menuItem[fieldName] = getInputValue(field.find('.ws_field_value'));
+					var oldDefaultValue = itemTemplates.getDefaultValue(oldTemplateId, fieldName);
+					if (oldDefaultValue !== null) {
+						menuItem[fieldName] = oldDefaultValue;
+					}
 			    }
 		    });
 		}
