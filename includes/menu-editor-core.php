@@ -834,6 +834,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				'file' => '#' . ameMenuItem::unclickableTemplateClass,
 				'url'  => '#' . ameMenuItem::unclickableTemplateClass,
 				'css_class' => $itemDefaults['css_class'] . ' ' . ameMenuItem::unclickableTemplateClass,
+				'menu_title' => 'Unclickable Menu',
 			)
 		);
 		$templates[ameMenuItem::unclickableTemplateId] = array(
