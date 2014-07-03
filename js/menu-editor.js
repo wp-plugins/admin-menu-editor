@@ -1276,11 +1276,14 @@ function denyAccessForAllExcept(menuItem, actor) {
 
 	$.each(wsEditorData.actors, function(otherActor) {
 		//If the input actor is more or equally specific...
-		if (AmeCapabilityManager.compareActorSpecificity(actor, otherActor) >= 0) {
+		if ((actor === null) || (AmeCapabilityManager.compareActorSpecificity(actor, otherActor) >= 0)) {
 			menuItem.grant_access[otherActor] = false;
 		}
 	});
-	menuItem.grant_access[actor] = true;
+
+	if (actor !== null) {
+		menuItem.grant_access[actor] = true;
+	}
 	return menuItem;
 }
 
@@ -2142,18 +2145,117 @@ $(document).ready(function(){
 		});
 	});
 
+	//Delete error dialog. It shows up when the user tries to delete one of the default menus.
+	var menuDeletionDialog = $('#ws-ame-menu-deletion-error').dialog({
+		autoOpen: false,
+		modal: true,
+		closeText: ' ',
+		title: 'Error'
+	});
+	var menuDeletionCallback = function(hide) {
+		menuDeletionDialog.dialog('close');
+		var selection = menuDeletionDialog.data('selected_menu');
+
+		function hideRecursively(containerNode, exceptActor) {
+			denyAccessForAllExcept(containerNode.data('menu_item'), exceptActor);
+
+			var subMenuId = containerNode.data('submenu_id');
+			if (subMenuId && containerNode.hasClass('ws_menu')) {
+				$('.ws_item', '#' + subMenuId).each(function() {
+					var node = $(this);
+					denyAccessForAllExcept(node.data('menu_item'), exceptActor);
+					updateItemEditor(node);
+				});
+			}
+
+			updateItemEditor(containerNode);
+			updateParentAccessUi(containerNode);
+		}
+
+		if (hide === 'all') {
+			hideRecursively(selection, null);
+		} else if (hide === 'except_current_user') {
+			hideRecursively(selection, 'user:' + wsEditorData.currentUserLogin);
+		}
+	};
+
+	//Callbacks for each of the dialog buttons.
+	$('#ws_cancel_menu_deletion').click(function() {
+		menuDeletionCallback(false);
+	});
+	$('#ws_hide_menu_from_everyone').click(function() {
+		menuDeletionCallback('all');
+	});
+	$('#ws_hide_menu_except_current_user').click(function() {
+		menuDeletionCallback('except_current_user');
+	});
+
+	/**
+	 * Attempt to delete a menu item. Will check if the item can actually be deleted and ask the user for confirmation.
+	 * UI callback.
+	 *
+	 * @param selection The selected menu item (DOM node).
+	 */
+	function tryDeleteItem(selection) {
+		var menuItem = selection.data('menu_item');
+		var isDefaultItem =
+			( menuItem.template_id !== '')
+				&& ( menuItem.template_id !== wsEditorData.unclickableTemplateId)
+				&& (!menuItem.separator);
+
+		var otherCopiesExist = false;
+		var shouldDelete = false;
+
+		if (isDefaultItem) {
+			//Check if there are any other menus with the same template ID.
+			$('#ws_menu_editor').find('.ws_container').each(function() {
+				var otherItem = $(this).data('menu_item');
+				if ((menuItem != otherItem) && (menuItem.template_id == otherItem.template_id)) {
+					otherCopiesExist = true;
+					return false;
+				}
+				return true;
+			});
+		}
+
+		if (!isDefaultItem || otherCopiesExist || !wsEditorData.wsMenuEditorPro) {
+			//Custom and duplicate items can be deleted normally. The free version doesn't get the dialog
+			//because it doesn't have role-specific permissions.
+			shouldDelete = confirm('Delete this menu?');
+		} else {
+			//Non-custom items can not be deleted, but they can be hidden. Ask the user if they want to do that.
+			menuDeletionDialog.find('#ws-ame-menu-type-desc').text(
+				menuItem.defaults.is_plugin_page ? 'an item added by another plugin' : 'a built-in menu item'
+			);
+			menuDeletionDialog.data('selected_menu', selection);
+			menuDeletionDialog.dialog('open');
+		}
+
+		if (shouldDelete) {
+			//Delete this menu's submenu first, if any.
+			var submenuId = selection.data('submenu_id');
+			if (submenuId) {
+				$('#' + submenuId).remove();
+			}
+			var parentSubmenu = selection.closest('.ws_submenu');
+
+			//Delete the menu.
+			selection.remove();
+
+			if (parentSubmenu) {
+				//Refresh permissions UI for this menu's parent (if any).
+				updateParentAccessUi(parentSubmenu);
+			}
+		}
+	}
+
 	//Delete menu
 	$('#ws_delete_menu').click(function () {
 		//Get the selected menu
 		var selection = getSelectedMenu();
 		if (!selection.length) return;
 
-		if (confirm('Delete this menu?')){
-			//Delete the submenu first
-			$('#' + selection.data('submenu_id')).remove();
-			//Delete the menu
-			selection.remove();
-		}
+		tryDeleteItem(selection);
 	});
 
 	//Copy menu
@@ -2314,16 +2416,10 @@ $(document).ready(function(){
 
 	//Delete item
 	$('#ws_delete_item').click(function () {
-		//Get the selected menu
 		var selection = getSelectedSubmenuItem();
 		if (!selection.length) return;
 
-		if (confirm('Delete this menu item?')){
-			var submenu = selection.parent();
-			//Delete the item
-			selection.remove();
-			updateParentAccessUi(submenu);
-		}
+		tryDeleteItem(selection);
 	});
 
 	//Copy item

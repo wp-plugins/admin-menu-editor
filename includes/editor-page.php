@@ -2,6 +2,7 @@
 /**
  * @var array $editor_data Various pieces of data passed by the plugin.
  */
+$current_user = wp_get_current_user();
 $images_url = $editor_data['images_url'];
 
 $icons = array(
@@ -439,6 +440,28 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 		<input type="checkbox" id="ws-ame-disable-dashboard-hide-confirmation">
 		Don't show this message again
 	</label>
+</div>
+
+<!-- Confirmation dialog when trying to delete a non-custom item. -->
+<div id="ws-ame-menu-deletion-error" title="Error" style="display: none;">
+	<div class="ws_dialog_panel">
+		Sorry, it's not possible to permanently delete
+		<span id="ws-ame-menu-type-desc">{a built-in menu item|an item added by another plugin}</span>.
+		You can only hide it.
+	</div>
+
+	<div class="ws_dialog_buttons ame-vertical-button-list">
+		<?php
+		submit_button('Hide it from all users', 'secondary', 'ws_hide_menu_from_everyone', false);
+		submit_button(
+			sprintf('Hide it from everyone except "%s"', $current_user->get('user_login')),
+			'secondary',
+			'ws_hide_menu_except_current_user',
+			false
+		);
+		submit_button('Cancel', 'secondary', 'ws_cancel_menu_deletion', false);
+		?>
+	</div>
 </div>
 
 

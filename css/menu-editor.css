@@ -728,7 +728,7 @@ select.ws_dropdown optgroup option {
 	background: white;
 	border: 1px solid #c0c0c0;
 	
-	padding: 2px;
+	padding: 0;
 	
 	border-radius: 5px;
 	-moz-border-radius: 5px;
@@ -778,7 +778,7 @@ select.ws_dropdown optgroup option {
 }
 
 .ui-dialog-content {
-	padding: 6px;
+	padding: 6px 8px 8px 8px;
 	font-size: 1.1em;
 }
 
@@ -806,6 +806,24 @@ select.ws_dropdown optgroup option {
 
 .ws_dialog_buttons .button {
 	margin-top: 0;
+}
+
+.ws_dialog_buttons.ame-vertical-button-list {
+    text-align: left;
+}
+
+.ws_dialog_buttons.ame-vertical-button-list .button-primary {
+    float: none;
+}
+
+.ws_dialog_buttons.ame-vertical-button-list .button {
+    width: 100%;
+    text-align: left;
+    margin-bottom: 10px;
+}
+
+.ws_dialog_buttons.ame-vertical-button-list .button:last-child {
+    margin-bottom: 0;
 }
 
 #import_file_selector {
@@ -940,6 +958,18 @@ select.ws_dropdown optgroup option {
 #ws_hardcoded_role_error {
 	display: none;
 }
+
+
+/************************************
+        Menu deletion error
+*************************************/
+
+#ws-ame-menu-deletion-error {
+    max-width: 400px;
+}
+
+
+
 
 /************************************
         Tooltips and hints
