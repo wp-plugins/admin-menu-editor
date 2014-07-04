@@ -264,6 +264,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Compatibility fix for bbPress.
 		$this->apply_bbpress_compat_fix();
+		//Compatibility fix for WordPress Mu Domain Mapping.
+		$this->apply_wpmu_domain_mapping_fix();
 
 		//Generate item templates from the default menu.
 		$this->item_templates = $this->build_templates($this->default_wp_menu, $this->default_wp_submenu);
@@ -2291,6 +2293,23 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if ( isset($index, $this->default_wp_submenu['index.php'][$index]) ) {
 				unset($this->default_wp_submenu['index.php'][$index]);
 			}
+		}
+	}
+
+	/**
+	 * Compatibility fix for WordPress Mu Domain Mapping 0.5.4.3.
+	 *
+	 * The aforementioned domain mapping plugin has a bug that makes the plugins_url() function
+	 * return incorrect URLs for plugins installed in /mu-plugins. Fix by removing the offending
+	 * filter callback.
+	 *
+	 * Note that this won't break domain mapping. Domain Mapping adds two 'plugins_url' filters.
+	 * The buggy one is completely redundant and can be removed with no ill effects.
+	 */
+	private function apply_wpmu_domain_mapping_fix() {
+		$priority = has_filter('plugins_url', 'domain_mapping_plugins_uri');
+		if ( ($priority !== false) && (has_filter('plugins_url', 'domain_mapping_post_content') !== false) ) {
+			remove_filter('plugins_url', 'domain_mapping_plugins_uri', $priority);
 		}
 	}
 
