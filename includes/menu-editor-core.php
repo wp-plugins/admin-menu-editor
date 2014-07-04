@@ -2300,7 +2300,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * Compatibility fix for WordPress Mu Domain Mapping 0.5.4.3.
 	 *
 	 * The aforementioned domain mapping plugin has a bug that makes the plugins_url() function
-	 * return incorrect URLs for plugins installed in /mu-plugins. Fix by removing the offending
+	 * return incorrect URLs for plugins installed in /mu-plugins. Fixed by removing the offending
 	 * filter callback.
 	 *
 	 * Note that this won't break domain mapping. Domain Mapping adds two 'plugins_url' filters.
