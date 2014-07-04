@@ -2150,7 +2150,8 @@ $(document).ready(function(){
 		autoOpen: false,
 		modal: true,
 		closeText: ' ',
-		title: 'Error'
+		title: 'Error',
+		draggable: false
 	});
 	var menuDeletionCallback = function(hide) {
 		menuDeletionDialog.dialog('close');
@@ -2231,7 +2232,6 @@ $(document).ready(function(){
 			menuDeletionDialog.dialog('open');
 
 			//Select "Cancel" as the default button.
-			menuDeletionDialog.find('.button').blur();
 			menuDeletionDialog.find('#ws_cancel_menu_deletion').focus();
 		}
 
