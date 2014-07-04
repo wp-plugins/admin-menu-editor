@@ -2229,6 +2229,10 @@ $(document).ready(function(){
 			);
 			menuDeletionDialog.data('selected_menu', selection);
 			menuDeletionDialog.dialog('open');
+
+			//Select "Cancel" as the default button.
+			menuDeletionDialog.find('.button').blur();
+			menuDeletionDialog.find('#ws_cancel_menu_deletion').focus();
 		}
 
 		if (shouldDelete) {

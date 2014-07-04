@@ -447,7 +447,7 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 	<div class="ws_dialog_panel">
 		Sorry, it's not possible to permanently delete
 		<span id="ws-ame-menu-type-desc">{a built-in menu item|an item added by another plugin}</span>.
-		You can only hide it.
+		Would you like to hide it instead?
 	</div>
 
 	<div class="ws_dialog_buttons ame-vertical-button-list">
