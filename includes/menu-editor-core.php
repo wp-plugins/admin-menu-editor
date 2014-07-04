@@ -242,8 +242,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				array(&$this, 'page_menu_editor')
 			);
 			//Output our JS & CSS on that page only
-			add_action("admin_print_scripts-$page", array(&$this, 'enqueue_scripts'));
-			add_action("admin_print_styles-$page", array(&$this, 'enqueue_styles'));
+			add_action("admin_print_scripts-$page", array($this, 'enqueue_scripts'));
+			add_action("admin_print_styles-$page", array($this, 'enqueue_styles'));
 
 			//Compatibility fix for All In One Event Calendar; see the callback for details.
 			add_action("admin_print_scripts-$page", array($this, 'dequeue_ai1ec_scripts'));
