@@ -885,6 +885,7 @@ function updateActorAccessUi(containerNode) {
 	if (selectedActor != null) {
 		var menuItem = containerNode.data('menu_item');
 		var hasAccess = actorCanAccessMenu(menuItem, selectedActor);
+		var hasCustomPermissions = actorHasCustomPermissions(menuItem, selectedActor);
 
 		var checkbox = containerNode.find('.ws_actor_access_checkbox');
 		checkbox.prop('checked', hasAccess);
@@ -915,8 +916,11 @@ function updateActorAccessUi(containerNode) {
 		}
 
 		containerNode.toggleClass('ws_is_hidden_for_actor', !hasAccess);
+		containerNode.toggleClass('ws_has_custom_permissions_for_actor', hasCustomPermissions);
+		setMenuFlag(containerNode, 'custom_actor_permissions', hasCustomPermissions)
 	} else {
-		containerNode.removeClass('ws_is_hidden_for_actor');
+		containerNode.removeClass('ws_is_hidden_for_actor ws_has_custom_permissions_for_actor');
+		setMenuFlag(containerNode, 'custom_actor_permissions', false);
 	}
 }
 
@@ -1160,8 +1164,9 @@ function readAllFields(container){
 
 var item_flags = {
 	'custom':'This is a custom menu item',
-	'unused':'This item was automatically (re)inserted into your custom menu because it is present in the default WordPress menu',
-	'hidden':'This item is hidden'
+	'unused':'This item was automatically recreated. You cannot delete a non-custom item, but you could hide it.',
+	'hidden':'This item is hidden from ALL roles and users',
+	'custom_actor_permissions' : "The selected role has custom permissions for this item."
 };
 
 function setMenuFlag(item, flag, state) {
@@ -1206,6 +1211,13 @@ function actorCanAccessMenu(menuItem, actor) {
 		actorHasAccess = AmeCapabilityManager.hasCap(actor, requiredCap, menuItem.grant_access);
 	}
 	return actorHasAccess;
+}
+
+function actorHasCustomPermissions(menuItem, actor) {
+	if (menuItem.grant_access && menuItem.grant_access.hasOwnProperty && menuItem.grant_access.hasOwnProperty(actor)) {
+		return (menuItem.grant_access[actor] !== null);
+	}
+	return false;
 }
 
 function setActorAccess(containerNode, actor, allowAccess) {

@@ -79,6 +79,25 @@
     display: inline-block;
 }
 
+/* Default permission checkbox border color (same as the WP default). */
+#ws_menu_editor input.ws_actor_access_checkbox {
+	border-color: #bbb;
+}
+/*noinspection CssInvalidPseudoSelector*/
+#ws_menu_editor input.ws_actor_access_checkbox::-ms-check {
+	border-color: #bbb;
+
+}
+
+/* Make the checkbox border black for items that have custom permissions for the selected actor. */
+#ws_menu_editor .ws_has_custom_permissions_for_actor input.ws_actor_access_checkbox {
+	border-color: black;
+}
+/*noinspection CssInvalidPseudoSelector*/
+#ws_menu_editor .ws_has_custom_permissions_for_actor input.ws_actor_access_checkbox::-ms-check {
+	border-color: black;
+}
+
 /* Gray-out items inaccessible to the currently selected actor */
 
 .ws_is_actor_view .ws_container.ws_is_hidden_for_actor {
@@ -417,6 +436,19 @@ to accommodate the drop-down button.
 /* hidden items */
 .ws_hidden_flag {
 	background-image: url('../images/icon-extension-grey.png');
+}
+
+/* items with custom permissions for the selected actor */
+.ws_custom_actor_permissions_flag {
+	font: 16px/1 'dashicons';
+}
+.ws_custom_actor_permissions_flag::before {
+	/*content: "\f160";*/ /* padlock */
+	content: "\f110"; /* human silhouette */
+	color: black;
+
+	filter: alpha(opacity=25); /*IE 5-7*/
+	opacity: 0.25;
 }
 
 /* These classes could be used to apply different styles to items depending on their flags */
