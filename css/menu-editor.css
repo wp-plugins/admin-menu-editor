@@ -309,14 +309,14 @@
 #ws_menu_editor .ws_dropdown_button,
 #ws_menu_access_editor .ws_dropdown_button
 {
+	box-sizing: border-box;
 	width: 20px;
-	height: 23px;
+	height: 25px;
 	
 	margin: 1px 1px 1px 0;
 	padding: 0;
 	
 	text-align: center;
-	vertical-align: middle;
 	font-size: 9px !important;
 	
 	border-color: #dfdfdf;
@@ -339,8 +339,7 @@
 
 #ws_menu_access_editor .ws_dropdown_button {
 	display: inline-block;
-	height: 22px;
-	margin-bottom: 2px;
+	height: 27px;
 }
 
 #ws_menu_editor .ws_dropdown_button {
@@ -370,6 +369,8 @@ to accommodate the drop-down button.
 
 #ws_menu_access_editor input.ws_has_dropdown {
 	width: 90%;
+	box-sizing: border-box;
+	height: 27px;
 }
 
 #ws_menu_editor .ws_has_dropdown input.ws_field_value {
