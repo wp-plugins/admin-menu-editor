@@ -148,6 +148,29 @@ $isProVersion = apply_filters('admin_menu_editor_is_pro', false);
 				</td>
 			</tr>
 
+			<tr>
+				<th scope="row">Editor colour scheme</th>
+				<td>
+					<fieldset>
+						<p>
+							<label>
+								<input type="radio" name="ui_colour_scheme" value="classic"
+									<?php checked('classic', $settings['ui_colour_scheme']); ?>>
+								Blue and yellow
+							</label>
+						</p>
+
+						<p>
+							<label>
+								<input type="radio" name="ui_colour_scheme" value="wp-grey"
+									<?php checked('wp-grey', $settings['ui_colour_scheme']); ?>>
+								Grey
+							</label>
+						</p>
+					</fieldset>
+				</td>
+			</tr>
+
 			<?php if ($isProVersion): ?>
 			<tr>
 				<th scope="row">Show submenu icons</th>

@@ -107,6 +107,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//When to show submenu icons.
 			'submenu_icons_enabled' => 'if_custom', //"never", "if_custom" or "always".
 
+			//Menu editor UI colour scheme. "Classic" is the old blue/yellow scheme, and "wp-grey" is more WP-like.
+			'ui_colour_scheme' => 'classic',
+
 			//Enable/disable the admin notice that tells the user where the plugin settings menu is.
 			'show_plugin_menu_notice' => true,
 		);
@@ -625,8 +628,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			array('menu-editor-base-style')
 		);
 		wp_register_auto_versioned_style(
-			'menu-editor-colours-wp-gray',
-			plugins_url('css/style-wp-gray.css', $this->plugin_file),
+			'menu-editor-colours-wp-grey',
+			plugins_url('css/style-wp-grey.css', $this->plugin_file),
 			array('menu-editor-base-style')
 		);
 
@@ -641,7 +644,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			wp_enqueue_style('menu-editor-screen-meta');
 		}
 
-		wp_enqueue_style('menu-editor-colours-classic');
+		$scheme = $this->options['ui_colour_scheme'];
+		wp_enqueue_style('menu-editor-colours-' . $scheme);
 		wp_enqueue_style('wp-color-picker');
 	}
 
@@ -1496,6 +1500,15 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			//Enable the now-obsolete "Hide" button.
 			if ( $this->is_pro_version() ) {
 				$this->options['show_deprecated_hide_button'] = !empty($this->post['show_deprecated_hide_button']);
+			}
+
+			//Menu editor colour scheme.
+			if ( !empty($this->post['ui_colour_scheme']) ) {
+				$valid_colour_schemes = array('classic', 'wp-grey');
+				$scheme = strval($this->post['ui_colour_scheme']);
+				if ( in_array($scheme, $valid_colour_schemes) ) {
+					$this->options['ui_colour_scheme'] = $scheme;
+				}
 			}
 
 			//Enable submenu icons.
