@@ -10,8 +10,8 @@
 	-webkit-box-shadow: inset 0 1px 0 #fff;
 	box-shadow: inset 0 1px 0 #fff;
 
-	-webkit-border-radius: 3px;
-	border-radius: 3px;
+	/*-webkit-border-radius: 2px;
+	border-radius: 2px;*/
 }
 
 /**
@@ -19,9 +19,7 @@
  */
 
 .ws_item_head {
-	padding: 0;
-	border-top-left-radius: 3px;
-	border-top-right-radius: 3px;
+	padding: 3px;
 
 	background-color: #d9d9d9;
 	background-image: -o-linear-gradient(top, #efefef, #d9d9d9);
@@ -35,15 +33,8 @@
 }
 
 .ws_item_title {
-	padding: 6px 5px;
-
-	/*font-weight: bold;*/
 	color: #222;
-	text-shadow: #FFFFFF 0px 1px 0px;
-}
-
-.ws_flag_container {
-	padding-top: 6px;
+	text-shadow: #FFFFFF 0 1px 0;
 }
 
 /**
@@ -51,10 +42,7 @@
  */
 
 .ws_edit_link {
-	width: 30px;
-	height: 30px;
-
-	background: transparent url(../images/arrows.png) no-repeat center 5px;
+	background: transparent url(../images/arrows.png) no-repeat center 3px;
 	overflow: hidden;
 	text-indent:-999em;
 }
@@ -64,7 +52,7 @@ a.ws_edit_link:hover {
 }
 
 .ws_edit_link:active {
-	background: transparent url(../images/arrows-dark.png) no-repeat center 5px;
+	background-image: url(../images/arrows-dark.png);
 }
 
 .ws_edit_link_expanded {
@@ -92,13 +80,8 @@ a.ws_edit_link:hover {
 }
 
 .ws_menu_separator .ws_item_head {
-	height: 29px;
-	border-radius: 3px;
+	min-height: 22px;
 	background: #F9F9F9 url("../images/menu-arrows.png") no-repeat 4px 8px;
-}
-
-.ws_menu_separator .ws_item_title {
-	display: none;
 }
 
 .ws_menu_separator.ws_active .ws_item_head {
@@ -190,22 +173,44 @@ a.ws_button:hover {
 .ui-dialog {
 	background: white;
 	border: 1px solid #c0c0c0;
+
+	border-radius: 0;
 }
 
 .ui-dialog-titlebar {
-	background-color: #86A7E3;
+	background-color: #fcfcfc;;
+	border-bottom-color: #dfdfdf;
 }
 
 .ui-dialog-title {
-	color: white;
+	color: #444444;
 }
 
 .ui-dialog-titlebar-close {
-	background: #86A7E3 url(../images/x.png) no-repeat center;
-	color: white;
+	background-color: transparent;
+	border-style: none;
+
+	color: #666;
+	cursor: pointer;
+	padding: 0;
+	position: absolute;
+	top: 0;
+	right: 0;
+	width: 36px;
+	height: 30px;
+	text-align: center;
+}
+
+.ui-dialog-titlebar-close::before {
+	font: normal 20px/30px 'dashicons';
+	content: '\f158';
+
+	vertical-align: top;
+	width: 36px;
+	height: 30px;
 }
 
 .ui-dialog-titlebar-close:hover {
-	/*background-image: url(../images/x-light.png);*/
-	background-color: #a6c2f5;
+	background: transparent none;
+	color: #2ea2cc;
 }
