@@ -109,6 +109,33 @@ a.ws_edit_link:hover {
 }
 
 /**
+ * Hidden items.
+ */
+.ws_is_actor_view .ws_container.ws_is_hidden_for_actor .ws_item_head {
+	background: #F9F9F9 linear-gradient(to top, #F3F3F3, #FFFFFF);
+}
+
+/* selected hidden items */
+.ws_is_actor_view .ws_is_hidden_for_actor.ws_active .ws_item_head {
+	background-color : #dedede;
+	background-image: linear-gradient(to top, #8f8f8f, #a2a2a2);
+}
+.ws_is_actor_view .ws_is_hidden_for_actor.ws_active .ws_item_title {
+	color: #fff;
+	/*text-shadow: none;*/
+}
+
+/* hidden separators */
+.ws_is_actor_view .ws_menu_separator.ws_is_hidden_for_actor .ws_item_head {
+	background-image: url("../images/menu-arrows.png");
+}
+/* selected hidden separators */
+.ws_menu_separator.ws_is_hidden_for_actor.ws_active .ws_item_head {
+	background: #aaa url("../images/menu-arrows.png");
+}
+
+
+/**
  * Dropping menus on other menus.
  */
 
