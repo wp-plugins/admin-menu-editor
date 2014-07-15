@@ -356,6 +356,10 @@ function buildMenuItem(itemData, isTopLevel) {
 	//for the first time).
 	var contents = [];
 	var menuTitle = ((itemData.menu_title != null) ? itemData.menu_title : itemData.defaults.menu_title);
+	if (menuTitle === '') {
+		menuTitle = '&nbsp;';
+	}
+
 	contents.push(
 		'<div class="ws_item_head">',
 			itemData.separator ? '' : '<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
@@ -435,6 +439,9 @@ var knownMenuFields = {
 		caption : 'Menu title',
 		display: function(menuItem, displayValue, input, containerNode) {
 			//Update the header as well.
+			if (displayValue === '') {
+				displayValue = '&nbsp;';
+			}
 			containerNode.find('.ws_item_title').html(displayValue);
 			return displayValue;
 		},
