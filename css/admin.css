@@ -38,10 +38,17 @@ hr.ws-submenu-separator {
 }
 */
 
+/* Override .wp-menu-separator styles as they don't work too well in submenus. */
+#adminmenu .wp-submenu li.ws-submenu-separator-wrap {
+	margin: 0 0 0 0;
+	padding: 0;
+	height: inherit;
+}
+
 /* No pointer/hand on separators. */
 #adminmenu li.ws-submenu-separator-wrap a {
 	cursor: default;
- }
+}
 
 /* No extra margin in submenus with icons. The selector uses the URL prefix because we can't control the link class.
  * li.ws-submenu-separator-wrap would also work, but it's added via JS so there's an undesirable delay (FOUC).
