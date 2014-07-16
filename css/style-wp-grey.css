@@ -117,16 +117,16 @@ a.ws_edit_link:hover {
 
 /* selected hidden items */
 .ws_is_actor_view .ws_is_hidden_for_actor.ws_active .ws_item_head {
-	background-color : #dedede;
-	background-image: linear-gradient(to top, #8f8f8f, #a2a2a2);
+	background: #dedede linear-gradient(to top, #8f8f8f, #a2a2a2);
 }
 .ws_is_actor_view .ws_is_hidden_for_actor.ws_active .ws_item_title {
 	color: #fff;
-	/*text-shadow: none;*/
+	text-shadow: none;
 }
 
 /* hidden separators */
 .ws_is_actor_view .ws_menu_separator.ws_is_hidden_for_actor .ws_item_head {
+	/* Override gradient with the separator image. */
 	background-image: url("../images/menu-arrows.png");
 }
 /* selected hidden separators */
