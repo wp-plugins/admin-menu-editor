@@ -439,10 +439,11 @@ var knownMenuFields = {
 		caption : 'Menu title',
 		display: function(menuItem, displayValue, input, containerNode) {
 			//Update the header as well.
-			if (displayValue === '') {
-				displayValue = '&nbsp;';
+			var itemTitle = displayValue;
+			if (itemTitle === '') {
+				itemTitle = '&nbsp;';
 			}
-			containerNode.find('.ws_item_title').html(displayValue);
+			containerNode.find('.ws_item_title').html(itemTitle);
 			return displayValue;
 		},
 		write: function(menuItem, value, input, containerNode) {
