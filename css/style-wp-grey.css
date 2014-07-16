@@ -132,11 +132,11 @@ a.ws_edit_link:hover {
 /* hidden separators */
 .ws_is_actor_view .ws_menu_separator.ws_is_hidden_for_actor .ws_item_head {
 	/* Override gradient with the separator image. */
-	background-image: url("../images/menu-arrows.png");
+	background: url("../images/menu-arrows.png") no-repeat 25px 8px;
 }
 /* selected hidden separators */
 .ws_menu_separator.ws_is_hidden_for_actor.ws_active .ws_item_head {
-	background: #aaa url("../images/menu-arrows.png");
+	background: #aaa url("../images/menu-arrows.png") no-repeat 25px 8px;
 }
 
 
