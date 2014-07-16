@@ -88,6 +88,11 @@ a.ws_edit_link:hover {
 	background: #999 url("../images/menu-arrows.png") no-repeat 4px 8px;
 }
 
+/* Offset the separator image in actor view to prevent it from overlapping the checkbox.  */
+.ws_is_actor_view  .ws_menu_separator .ws_item_head {
+	background-position: 25px 8px;
+}
+
 /**
  * Active item
  */
