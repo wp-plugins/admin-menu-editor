@@ -37,12 +37,13 @@ abstract class ameMenuItem {
 	 */
 	public static function fromWpItem($item, $position = 0, $parent = '') {
 		static $separator_count = 0;
+		$default_css_class = empty($parent) ? 'menu-top' : '';
 		$item = array(
 			'menu_title'   => $item[0],
 			'access_level' => $item[1], //= required capability
 			'file'         => $item[2],
 			'page_title'   => (isset($item[3]) ? $item[3] : ''),
-			'css_class'    => (isset($item[4]) ? $item[4] : 'menu-top'),
+			'css_class'    => (isset($item[4]) ? $item[4] : $default_css_class),
 			'hookname'     => (isset($item[5]) ? $item[5] : ''), //Used as the ID attr. of the generated HTML tag.
 			'icon_url'     => (isset($item[6]) ? $item[6] : 'dashicons-admin-generic'),
 			'position'     => $position,

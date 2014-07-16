@@ -1261,6 +1261,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$item['icon_url'] = 'none';
 		}
 
+		//Submenus must not have the "menu-top" class(-es). In WP versions that support submenu CSS classes,
+		//it can break menu display.
+		if ( !empty($item['css_class']) && ($item_type === 'submenu') ) {
+			$item['css_class'] = preg_replace('@\bmenu-top(?:-[\w\-]+)?\b@', '', $item['css_class']);
+		}
+
 		//Add submenu icons if necessary.
 		if ( ($item_type === 'submenu') && $hasIcon ) {
 			$item = apply_filters('admin_menu_editor-submenu_with_icon', $item, $hasCustomIconUrl);
