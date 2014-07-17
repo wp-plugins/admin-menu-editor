@@ -1058,11 +1058,13 @@ function encodeMenuAsJSON(tree){
 
 function readMenuTreeState(){
 	var tree = {};
-	var menu_position = 0;
+	var menuPosition = 0;
+	var itemsByFilename = {};
 
 	//Gather all menus and their items
 	$('#ws_menu_box').find('.ws_menu').each(function() {
-		var menu = readItemState(this, menu_position++);
+		var containerNode = this;
+		var menu = readItemState(containerNode, menuPosition++);
 
 		//Attach the current menu to the main structure.
 		var filename = (menu.file !== null) ? menu.file : menu.defaults.file;
@@ -1073,7 +1075,19 @@ function readMenuTreeState(){
 			filename = '#' + wsEditorData.unclickableTemplateClass + '-' + ws_paste_count;
 		}
 
+		//Prevent the user from saving top level items with duplicate URLs.
+		//WordPress indexes the submenu array by parent URL and AME uses a {url : menu_data} hashtable internally.
+		//Duplicate URLs would cause problems for both.
+		if (itemsByFilename.hasOwnProperty(filename)) {
+			throw {
+				code: 'duplicate_top_level_url',
+				message: 'Error: Found a duplicate URL! All top level menus must have unique URLs.',
+				duplicates: [itemsByFilename[filename], containerNode]
+			}
+		}
+
 		tree[filename] = menu;
+		itemsByFilename[filename] = containerNode;
 	});
 
 	return {
@@ -2596,7 +2610,23 @@ $(document).ready(function(){
 
 	//Save Changes - encode the current menu as JSON and save
 	$('#ws_save_menu').click(function () {
-		var tree = readMenuTreeState();
+		try {
+			var tree = readMenuTreeState();
+		} catch (error) {
+			//Right now the only known error condition is duplicate top level URLs.
+			if (error.hasOwnProperty('code') && (error.code === 'duplicate_top_level_url')) {
+				var message = 'Error: Duplicate menu URLs. The following top level menus have the same URL:\n\n' ;
+				for (var i = 0; i < error.duplicates.length; i++) {
+					var containerNode = $(error.duplicates[i]);
+					message += (i + 1) + '. ' + containerNode.find('.ws_item_title').first().text() + '\n';
+				}
+				message += '\nPlease change the URLs to be unique or delete the duplicates.';
+				alert(message);
+			} else {
+				alert(error.message);
+			}
+			return;
+		}
 
 		function findItemByTemplateId(items, templateId) {
 			var foundItem = null;
@@ -2664,16 +2694,27 @@ $(document).ready(function(){
 
 	$('#ws_export_menu').click(function(){
 		var button = $(this);
-		button.attr('disabled', 'disabled');
+		button.prop('disabled', true);
 		button.val('Exporting...');
 
 		$('#export_complete_notice, #download_menu_button').hide();
 		$('#export_progress_notice').show();
-		$('#export_dialog').dialog('open');
+		var exportDialog = $('#export_dialog');
+		exportDialog.dialog('open');
 
-		//Encode and store the menu for download
-		var exportData = encodeMenuAsJSON();
+		//Encode the menu.
+		try {
+			var exportData = encodeMenuAsJSON();
+		} catch (error) {
+			exportDialog.dialog('close');
+			alert(error.message);
 
+			button.val('Export');
+			button.prop('disabled', false);
+			return;
+		}
+
+		//Store the menu for download.
 		$.post(
 			wsEditorData.adminAjaxUrl,
 			{
@@ -2683,10 +2724,10 @@ $(document).ready(function(){
 			},
 			function(data){
 				button.val('Export');
-				button.removeAttr('disabled');
+				button.prop('disabled', false);
 
 				if ( typeof data['error'] != 'undefined' ){
-					$('#export_dialog').dialog('close');
+					exportDialog.dialog('close');
 					alert(data.error);
 				}
 
