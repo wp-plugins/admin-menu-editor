@@ -1281,13 +1281,9 @@ function setSelectedActor(actor) {
 	editorNode.toggleClass('ws_is_actor_view', (selectedActor != null));
 
 	//Update the menu item states to indicate whether they're accessible.
-	if (selectedActor != null) {
-		editorNode.find('.ws_container').each(function() {
-			updateActorAccessUi($(this));
-		});
-	} else {
-		editorNode.find('.ws_is_hidden_for_actor').removeClass('ws_is_hidden_for_actor');
-	}
+	editorNode.find('.ws_container').each(function() {
+		updateActorAccessUi($(this));
+	});
 }
 
 /**
