@@ -1265,8 +1265,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		//it can break menu display.
 		if ( !empty($item['css_class']) && ($item_type === 'submenu') ) {
 			$item['css_class'] = preg_replace('@\bmenu-top(?:-[\w\-]+)?\b@', '', $item['css_class']);
+		} elseif ( ($item_type === 'menu') && (!$item['separator']) && (!preg_match('@\bmenu-top\b@', $item['css_class'])) ) {
+			//Top-level menus should always have the "menu-top" class.
+			$item['css_class'] = 'menu-top ' . $item['css_class'];
 		}
-		//TODO: Top-level menus should always have the "menu-top" class.
 
 		//Add submenu icons if necessary.
 		if ( ($item_type === 'submenu') && $hasIcon ) {
