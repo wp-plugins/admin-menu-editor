@@ -1266,6 +1266,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		if ( !empty($item['css_class']) && ($item_type === 'submenu') ) {
 			$item['css_class'] = preg_replace('@\bmenu-top(?:-[\w\-]+)?\b@', '', $item['css_class']);
 		}
+		//TODO: Top-level menus should always have the "menu-top" class.
 
 		//Add submenu icons if necessary.
 		if ( ($item_type === 'submenu') && $hasIcon ) {
