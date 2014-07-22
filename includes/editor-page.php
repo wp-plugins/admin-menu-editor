@@ -127,6 +127,8 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 					<a id='ws_toggle_all_menus' class='ws_button' href='javascript:void(0)'
 					   title='Toggle all menus for the selected role'><img src='<?php echo $icons['toggle-all']; ?>' alt="Toggle all" /></a>
 				<?php endif; ?>
+
+				<div class="clear"></div>
 			</div>
 		</div>
 
@@ -164,6 +166,8 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 				<a id='ws_sort_descending' class='ws_button' href='javascript:void(0)' title='Sort descending'>
 					<img src='<?php echo $images_url; ?>/sort_descending.png' alt="Sort descending" />
 				</a>
+
+				<div class="clear"></div>
 			</div>
 		</div>
 
