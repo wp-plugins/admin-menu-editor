@@ -2188,7 +2188,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return string
 	 */
 	private function get_formatted_security_log() {
-		$log = '<div style="font: 12px/16.8px Consolas, monospace; margin-bottom: 1em;">';
+		$log = '<div style="font: 12px/17px Consolas, monospace; margin-bottom: 1em;">';
 		$log .= implode("<br>\n", $this->security_log);
 		$log .= '</div>';
 		return $log;
