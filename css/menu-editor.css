@@ -9,8 +9,10 @@
 	width: 310px;
 	float: left;
 	display:block;
+
 	border: 1px solid #cdd5d5;
-	
+	background-color: #fafafa;
+
 	border-radius: 3px;
 	-moz-border-radius: 3px;
 	-webkit-border-radius: 3px;
@@ -42,7 +44,7 @@
 }
 
 .ws_dropzone_hover {
-	border: 1px dotted silver;
+	border: 1px dashed silver;
 	background: yellow;
 	height: 30px;
 }
