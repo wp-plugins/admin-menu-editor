@@ -1228,6 +1228,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$unclickableCounter++;
 			$unclickableUrl = '#' . ameMenuItem::unclickableTemplateClass . '-' . $unclickableCounter;
 			$item['file'] = $item['url'] = $unclickableUrl;
+
+			//The item must have the special "unclickable" class even if the user overrides the class.
+			$cssClass = ameMenuItem::get($item, 'css_class', '');
+			if ( strpos($cssClass, ameMenuItem::unclickableTemplateClass) === false ) {
+				$item['css_class'] = ameMenuItem::unclickableTemplateClass . ' ' . $cssClass;
+			}
 		}
 
 		//Menus that have both a custom icon URL and a "menu-icon-*" class will get two overlapping icons.
