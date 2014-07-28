@@ -288,6 +288,10 @@
 	margin-top: 0;
 }
 
+#ws_menu_editor input[type="text"].ws_field_value {
+	min-height: 25px;
+}
+
 /* Dropdown button for combo-box fields */
 #ws_menu_editor .ws_dropdown_button,
 #ws_menu_access_editor .ws_dropdown_button
