@@ -404,7 +404,7 @@ abstract class ameMenuItem {
 			return false;
 		}
 		//Now actually check the filesystem.
-		$adminFileExists = is_file(ABSPATH . '/wp-admin/' . $pageFile);
+		$adminFileExists = is_file(ABSPATH . 'wp-admin/' . $pageFile);
 		if ( $adminFileExists ) {
 			return false;
 		}
