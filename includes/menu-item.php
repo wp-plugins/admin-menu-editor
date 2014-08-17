@@ -398,13 +398,35 @@ abstract class ameMenuItem {
 		}
 		$pageFile = self::remove_query_from($page_url);
 
+		/*
+		 * Special case: Absolute paths.
+		 *
+		 * - add_submenu_page() applies plugin_basename() to the menu slug, so we don't need to worry about plugin
+		 * paths. However, absolute paths that *don't* point point to the plugins directory can be a problem.
+		 *
+		 * - If we blindly append $pageFile to another path, we'll get something like "C:\a\b/wp-admin/C:\c\d.php".
+		 * PHP 5.2.5 has a known bug where calling file_exists() on that kind of an invalid filename will cause
+		 * a timeout and a crash in some configurations. See: https://bugs.php.net/bug.php?id=44412
+		 *
+		 * - WP 3.9.2 and 4.0+ unintentionally break menu URLs like "foo.php?page=c:\a\b.php" because esc_url()
+		 * interprets the part before the colon as an invalid protocol. As a result, such links have an empty URL
+		 * on Windows (but they might still work on other OS).
+		 *
+		 * - Recent versions of WP won't let you load a PHP file from outside the plugins and mu-plugins directories
+		 * with "admin.php?page=filename". See the validate_file() call in /wp-admin/admin.php. However, such filenames
+		 * can still be used as unique slugs for menus with hook callbacks, so we shouldn't reject them outright.
+		 * Related: https://core.trac.wordpress.org/ticket/10011
+		 */
+		$allowPathConcatenation = (substr($pageFile, 1, 1) !== ':'); //Reject "C:\whatever" and similar.
+
 		//Check our hard-coded list of admin pages first. It's measurably faster than
 		//hitting the disk with is_file().
 		if ( isset(self::$known_wp_admin_files[$pageFile]) ) {
 			return false;
 		}
+
 		//Now actually check the filesystem.
-		$adminFileExists = is_file(ABSPATH . 'wp-admin/' . $pageFile);
+		$adminFileExists = $allowPathConcatenation && is_file(ABSPATH . 'wp-admin/' . $pageFile);
 		if ( $adminFileExists ) {
 			return false;
 		}
@@ -414,7 +436,10 @@ abstract class ameMenuItem {
 			return true;
 		}
 
-		$pluginFileExists = ($page_url != 'index.php') && is_file(WP_PLUGIN_DIR . '/' . $pageFile);
+		//Note: We don't need to call plugin_basename() on $pageFile because add_submenu_page() already did that.
+		$pluginFileExists = $allowPathConcatenation
+			&& ($page_url != 'index.php')
+			&& is_file(WP_PLUGIN_DIR . '/' . $pageFile);
 		if ( $pluginFileExists ) {
 			return true;
 		}
