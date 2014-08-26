@@ -379,6 +379,11 @@ abstract class ameMenuItem {
 		$menu_url = is_array($item_slug) ? self::get($item_slug, 'file') : $item_slug;
 		$parent_url = !empty($parent_slug) ? $parent_slug : 'admin.php';
 
+		//Workaround for WooCommerce 2.1.12: For some reason, it uses "&amp;" instead of a plain "&" to separate
+		//query parameters. We need a plain URL, not a HTML-entity-encoded one.
+		//It is theoretically possible that another plugin might want to use a literal "&amp;", but its very unlikely.
+		$menu_url = str_replace('&amp;', '&', $menu_url);
+
 		if ( strpos($menu_url, '://') !== false ) {
 			return $menu_url;
 		}
