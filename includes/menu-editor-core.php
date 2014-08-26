@@ -1982,6 +1982,19 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			}
 		}
 
+		//Special case for CPTs: When the "Add New" menu is disabled by CPT settings (show_ui, etc), and someone goes
+		//to add a new item, WordPress highlights the "$CPT-Name" item as the current one. Lets do the same for
+		//consistency. See also: /wp-admin/post-new.php, lines #20 to #40.
+		if (
+			($best_item === null)
+			&& isset($current_url['params']['post_type'])
+			&& (!empty($current_url['params']['post_type']))
+			&& $this->endsWith($current_url['path'], '/wp-admin/post-new.php')
+			&& isset($this->reverse_item_lookup['edit.php?post_type=' . $current_url['params']['post_type']])
+		) {
+			$best_item = $this->reverse_item_lookup['edit.php?post_type=' . $current_url['params']['post_type']];
+		}
+
 		$cached_item = $best_item;
 		return $best_item;
 	}
