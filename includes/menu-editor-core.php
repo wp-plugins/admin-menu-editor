@@ -1915,6 +1915,14 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		$current_url = $this->parse_url($current_url);
 
+		//Special case: if post_type is not specified for edit.php and post-new.php,
+		//WordPress assumes it is "post". Here we make this explicit.
+		if ( $this->endsWith($current_url['path'], '/wp-admin/edit.php') || $this->endsWith($current_url['path'], '/wp-admin/post-new.php') ) {
+			if ( !isset($current_url['params']['post_type']) ) {
+				$current_url['params']['post_type'] = 'post';
+			}
+		}
+
 		//Hook-based submenu pages can be accessed via both "parent-page.php?page=foo" and "admin.php?page=foo".
 		//WP has a private API function for determining the canonical parent page for the current request.
 		if ( $this->endsWith($current_url['path'], '/admin.php') && is_callable('get_admin_page_parent') ) {
@@ -1952,6 +1960,13 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				$is_close_match = $is_close_match && ($current_url[$component] == $item_url[$component]);
 				if ( !$is_close_match ) {
 					break;
+				}
+			}
+
+			//Same as above - default post type is "post".
+			if ( $this->endsWith($item_url['path'], '/wp-admin/edit.php') || $this->endsWith($item_url['path'], '/wp-admin/post-new.php') ) {
+				if ( !isset($item_url['params']['post_type']) ) {
+					$item_url['params']['post_type'] = 'post';
 				}
 			}
 
