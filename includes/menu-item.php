@@ -223,6 +223,14 @@ abstract class ameMenuItem {
 			$parent_file = 'users.php';
 		}
 
+		//Special case: In WP 4.0+ the URL of the "Appearance -> Customize" item is different on every admin page.
+		//This is because the URL includes a "return" parameter that contains the current page's URL. It also makes
+		//the template ID different on every page, so it's impossible to identify the menu. To fix that, lets remove
+		//the "return" parameter from the ID.
+		if ( ($parent_file === 'themes.php') && (strpos($item_file, 'customize.php?') === 0) ) {
+			$item_file = remove_query_arg('return', $item_file);
+		}
+
 		return $parent_file . '>' . $item_file;
 	}
 
