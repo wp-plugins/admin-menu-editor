@@ -268,6 +268,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 		//Compatibility fix for bbPress.
 		$this->apply_bbpress_compat_fix();
+		//Compatibility fix for WooCommerce (woo).
+		$this->apply_woocommerce_compat_fix();
 		//Compatibility fix for WordPress Mu Domain Mapping.
 		$this->apply_wpmu_domain_mapping_fix();
 
@@ -2383,6 +2385,36 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			if ( isset($index, $this->default_wp_submenu['index.php'][$index]) ) {
 				unset($this->default_wp_submenu['index.php'][$index]);
 			}
+		}
+	}
+
+	/**
+	 * Compatibility fix for WooCommerce 2.2.1+.
+	 * Summary: When AME is active, an unusable WooCommerce -> WooCommerce menu item shows up. Here we remove it.
+	 *
+	 * WooCommerce creates a top level "WooCommerce" menu with no callback. By default, WordPress automatically adds
+	 * a submenu item with the same name. However, since the item doesn't have a callback, it is unusable and clicking
+	 * it just triggers a "Cannot load woocommerce" error. So WooCommerce removes this item in an admin_head hook to
+	 * hide it. With AME active, the item shows up anyway, and users get confused by the error.
+	 *
+	 * Fix it by removing the problematic menu item.
+	 *
+	 * Caution: If the user hides all WooCommerce submenus but not the top level menu, the WooCommerce menu will still
+	 * show up but be inaccessible. This may be slightly counter-intuitive, but seems reasonable.
+	 */
+	private function apply_woocommerce_compat_fix() {
+		if ( !isset($this->default_wp_submenu, $this->default_wp_submenu['woocommerce']) ) {
+			return;
+		}
+
+		$badSubmenuExists = isset($this->default_wp_submenu['woocommerce'][0])
+			&& isset($this->default_wp_submenu['woocommerce'][0][2])
+			&& ($this->default_wp_submenu['woocommerce'][0][2] === 'woocommerce');
+		$anotherSubmenuExists = isset($this->default_wp_submenu['woocommerce'][1]);
+
+		if ( $badSubmenuExists && $anotherSubmenuExists ) {
+			$this->default_wp_submenu['woocommerce'][0] = $this->default_wp_submenu['woocommerce'][1];
+			unset($this->default_wp_submenu['woocommerce'][1]);
 		}
 	}
 
