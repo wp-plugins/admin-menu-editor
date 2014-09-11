@@ -75,6 +75,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	//Our personal copy of the request vars, without any "magic quotes".
 	private $post = array();
 	private $get = array();
+	private $originalPost = array();
 
 	function init(){
 		$this->sitewide_options = true;
@@ -387,6 +388,23 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 
 			if ( empty($submenu[$parent]) ) {
 				unset($submenu[$parent]);
+			}
+		}
+
+		//Remove consecutive submenu separators. This can happen if there are separators around a menu item
+		//that is not accessible to the current user.
+		foreach ($submenu as $parent => $items) {
+			$found_separator = false;
+			foreach ($items as $index => $item) {
+				//Separator have a dummy #anchor as a URL. See wsMenuEditorExtras::create_submenu_separator().
+				if (strpos($item[2], '#submenu-separator-') === 0) {
+					if ( $found_separator ) {
+						unset($submenu[$parent][$index]);
+					}
+					$found_separator = true;
+				} else {
+					$found_separator = false;
+				}
 			}
 		}
 
@@ -1030,6 +1048,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$priority--;
 		}
 
+		//TODO: Include more details like menu title and template ID for debugging purposes (log output).
 		$this->page_access_lookup[$item['url']][$priority] = $item['access_level'];
 	}
 
@@ -1088,7 +1107,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				$items = $topmenu['items'];
 				//Sort by position
 				uasort($items, 'ameMenuItem::compare_position');
-				
+
 				foreach ($items as $item) {
 					//Skip missing and hidden items
 					if ( !empty($item['missing']) || !empty($item['hidden']) ) {
@@ -1441,9 +1460,24 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				try {
 					$menu = ameMenu::load_json($post['data'], true);
 				} catch (InvalidMenuException $ex) {
-					//Or redirect & display the error message
-					wp_redirect( add_query_arg('message', 2, $url) );
-					die();
+					$debugData = '';
+					$debugData .= "Exception:\n"      . $ex->getMessage() . "\n\n";
+					$debugData .= "Used POST data:\n" . print_r($this->post, true) . "\n\n";
+					$debugData .= "Original POST:\n"  . print_r($this->originalPost, true) . "\n\n";
+					$debugData .= "\$_POST global:\n" . print_r($_POST, true);
+
+					$debugData = sprintf(
+						"<textarea rows=\"30\" cols=\"100\">%s</textarea>",
+						htmlentities($debugData)
+					);
+
+					wp_die(
+						"Error: Failed to decode menu data!<br><br>\n"
+						. "Please send this debugging information to the developer: <br>"
+						. $debugData
+					);
+
+					return;
 				}
 
 				//Save the custom menu
@@ -2135,7 +2169,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	 * @return void
 	 */
 	function capture_request_vars(){
-		$this->post = $_POST;
+		$this->post = $this->originalPost = $_POST;
 		$this->get = $_GET;
 
 		if ( function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc() ) {
