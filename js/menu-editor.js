@@ -144,6 +144,8 @@ var AmeCapabilityManager = (function(roles, users) {
 			case 'user':
 				specificity = 10;
 				break;
+			default:
+				specificity = 0;
         }
 		return specificity;
     };
