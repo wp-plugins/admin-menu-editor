@@ -203,11 +203,7 @@ var itemTemplates = {
  */
 function setInputValue(input, value) {
 	if (input.attr('type') == 'checkbox'){
-        if (value){
-            input.attr('checked', 'checked');
-        } else {
-            input.removeAttr('checked');
-        }
+		input.prop('checked', value);
     } else {
         input.val(value);
     }
@@ -1633,7 +1629,7 @@ $(document).ready(function(){
 
 			var actorHasAccess = actorCanAccessMenu(menuItem, actor);
 			if (actorHasAccess) {
-				checkbox.attr('checked', 'checked');
+				checkbox.prop('checked', true);
 			}
 
 			alternate = (alternate == '') ? 'alternate' : '';
@@ -2428,6 +2424,82 @@ $(document).ready(function(){
 			setActorAccessForTreeAndUpdateUi(containerNode, selectedActor, allow);
 		});
 	});
+
+	//Copy all menu permissions from one role to another.
+	var copyPermissionsDialog = $('#ws-ame-copy-permissions-dialog').dialog({
+		autoOpen: false,
+		modal: true,
+		closeText: ' ',
+		draggable: false
+	});
+
+	//Populate source/destination lists.
+	var sourceActorList = $('#ame-copy-source-actor'), destinationActorList = $('#ame-copy-destination-actor');
+	$.each(wsEditorData.actors, function(actor, name) {
+		var option = $('<option>', {val: actor, text: name});
+		sourceActorList.append(option);
+		destinationActorList.append(option.clone());
+	});
+
+	//The "Copy permissions" toolbar button.
+	$('#ws_copy_role_permissions').click(function() {
+		//Pre-select the current actor as the destination.
+		if (selectedActor !== null) {
+			destinationActorList.val(selectedActor);
+		}
+		copyPermissionsDialog.dialog('open');
+	});
+
+	//Actually copy the permissions when the user click the confirmation button.
+	var copyConfirmationButton = $('#ws-ame-confirm-copy-permissions');
+	copyConfirmationButton.click(function() {
+		var sourceActor = sourceActorList.val();
+		var destinationActor = destinationActorList.val();
+
+		if (sourceActor === null || destinationActor === null) {
+			alert('Select a source and a destination first.');
+			return;
+		}
+
+		//Iterate over all menu items and copy the permissions from one actor to the other.
+		var allMenuNodes = $('.ws_menu', '#ws_menu_box').add('.ws_item', '#ws_submenu_box');
+		allMenuNodes.each(function() {
+			var node = $(this);
+			var menuItem = node.data('menu_item');
+
+			//Only change permissions when they don't match. This ensures we won't unnecessarily overwrite default
+			//permissions and bloat the configuration with extra grant_access entries.
+			var sourceAccess      = actorCanAccessMenu(menuItem, sourceActor);
+			var destinationAccess = actorCanAccessMenu(menuItem, destinationActor);
+			if (sourceAccess !== destinationAccess) {
+				setActorAccess(node, destinationActor, sourceAccess);
+				//Note: In theory, we could also look at the default permissions for destinationActor and
+				//revert to default instead of overwriting if that would make the two actors' permissions match.
+			}
+		});
+
+		//If the user is currently looking at the destination actor, force the UI to refresh
+		//so that they can see the new permissions.
+		if (selectedActor === destinationActor) {
+			//This is a bit of a hack, but right now there's no better way to refresh all items at once.
+			setSelectedActor(null);
+			setSelectedActor(destinationActor);
+		}
+
+		//All done.
+		copyPermissionsDialog.dialog('close');
+	});
+
+	//Only enable the copy button when the user selects a valid source and destination.
+	copyConfirmationButton.prop('disabled', true);
+	sourceActorList.add(destinationActorList).click(function() {
+		var sourceActor = sourceActorList.val();
+		var destinationActor = destinationActorList.val();
+
+		var validInputs = (sourceActor !== null) && (destinationActor !== null) && (sourceActor !== destinationActor);
+		copyConfirmationButton.prop('disabled', !validInputs);
+	});
+
 
 	/*************************************************************************
 	                          Item toolbar buttons

@@ -14,6 +14,7 @@ $icons = array(
 	'delete' => '/page-delete.png',
 	'new-separator' => '/separator-add.png',
 	'toggle-all' => '/check-all.png',
+	'copy-permissions' => '/check-all.png', //TODO: Give this button its own icon.
 );
 foreach($icons as $name => $url) {
 	$icons[$name] = $images_url . $url;
@@ -54,6 +55,7 @@ if ( !empty($_GET['message']) ){
 include dirname(__FILE__) . '/access-editor-dialog.php';
 if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 	include dirname(__FILE__) . '/../extras/menu-color-dialog.php';
+	include dirname(__FILE__) . '/../extras/copy-permissions-dialog.php';
 }
 ?>
 
@@ -93,6 +95,9 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 
 					<a id='ws_toggle_all_menus' class='ws_button' href='javascript:void(0)'
 					   title='Toggle all menus for the selected role'><img src='<?php echo $icons['toggle-all']; ?>' alt="Toggle all" /></a>
+
+					<a id='ws_copy_role_permissions' class='ws_button' href='javascript:void(0)'
+					   title='Copy all menu permissions from one role to another'><img src='<?php echo $icons['copy-permissions']; ?>' alt="Copy permissions" /></a>
 				<?php endif; ?>
 
 				<div class="clear"></div>
