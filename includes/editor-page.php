@@ -14,7 +14,7 @@ $icons = array(
 	'delete' => '/page-delete.png',
 	'new-separator' => '/separator-add.png',
 	'toggle-all' => '/check-all.png',
-	'copy-permissions' => '/check-all.png', //TODO: Give this button its own icon.
+	'copy-permissions' => '/copy-permissions.png',
 );
 foreach($icons as $name => $url) {
 	$icons[$name] = $images_url . $url;
