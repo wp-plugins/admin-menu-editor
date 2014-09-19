@@ -1054,6 +1054,16 @@ select.ws_dropdown optgroup option {
 	margin-left: 0.5em;
 }
 
+
+/************************************
+      Copy Permissions dialog
+*************************************/
+#ws-ame-copy-permissions-dialog select {
+	min-width: 280px;
+}
+
+
+
 #ws_sidebar_pro_ad {
     min-width: 225px;
 
