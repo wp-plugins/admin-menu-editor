@@ -182,9 +182,8 @@ jQuery(function($) {
 		                              (otherHighlightedMenus.length > 0);
 
 		if (isWrongMenuHighlighted) {
-			//Account for users who use a plugin to keep all menus expanded. They will tend to have multiple
-			//open menus at once, whereas WordPress usually highlights only one incorrect menu.
-			var shouldCloseOtherMenus = $('li.wp-has-current-submenu', '#adminmenu').not(parentMenu).length == 1;
+			//Account for users who use the Expanded Admin Menus plugin to keep all menus expanded.
+			var shouldCloseOtherMenus = ! $('div.expand-arrow', '#adminmenu').get(0);
 			if (shouldCloseOtherMenus) {
 				otherHighlightedMenus
 					.add('> a', otherHighlightedMenus)
