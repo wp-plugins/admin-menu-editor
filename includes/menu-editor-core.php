@@ -1076,9 +1076,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$new_submenu = array();
 		$this->title_lookups = array();
 		
-		//Sort the menu by position
-		uasort($tree, 'ameMenuItem::compare_position');
-
 		//Prepare the top menu
 		$first_nonseparator_found = false;
 		foreach ($tree as $topmenu){
@@ -1107,8 +1104,6 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$has_submenu_icons = false;
 			if( !empty($topmenu['items']) ){
 				$items = $topmenu['items'];
-				//Sort by position
-				uasort($items, 'ameMenuItem::compare_position');
 
 				foreach ($items as $item) {
 					//Skip missing and hidden items
@@ -1125,6 +1120,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					//Keep track of which menus have items with icons.
 					$has_submenu_icons = $has_submenu_icons || !empty($item['has_submenu_icon']);
 				}
+
+				//Sort by position
+				uasort($new_items, 'ameMenuItem::compare_position');
 			}
 
 			//The ame-has-submenu-icons class lets us change the appearance of all submenu items at once,
@@ -1136,6 +1134,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			$topmenu['items'] = $new_items;
 			$new_tree[] = $topmenu;
 		}
+
+		//Sort the menu by position
+		uasort($new_tree, 'ameMenuItem::compare_position');
 
 		//Use only the highest-priority capability for each URL.
 		foreach($this->page_access_lookup as $url => $capabilities) {
