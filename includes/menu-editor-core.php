@@ -2007,6 +2007,12 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 				}
 			}
 
+			//Special case: In WP 4.0+ the URL of the "Customize" menu changes often due to a "return" query parameter
+			//that contains the current page URL. To reliably recognize this item, we should ignore that parameter.
+			if ( $this->endsWith($item_url['path'], 'customize.php') ) {
+				unset($item_url['params']['return']);
+			}
+
 			//The current URL must match all query parameters of the item URL.
 			$different_params = array_diff_assoc($item_url['params'], $current_url['params']);
 
