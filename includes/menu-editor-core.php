@@ -2014,10 +2014,10 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 			}
 
 			//The current URL must match all query parameters of the item URL.
-			$different_params = array_diff_assoc($item_url['params'], $current_url['params']);
+			$different_params = $this->arrayDiffAssocRecursive($item_url['params'], $current_url['params']);
 
 			//The current URL must have as few extra parameters as possible.
-			$extra_params = array_diff_assoc($current_url['params'], $item_url['params']);
+			$extra_params = $this->arrayDiffAssocRecursive($current_url['params'], $item_url['params']);
 
 			if ( $is_close_match && (count($different_params) == 0) && (count($extra_params) < $best_extra_params) ) {
 				$best_item = $item;
@@ -2069,6 +2069,44 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$parsed['params'] = $params;
 
 		return $parsed;
+	}
+
+	/**
+	 * Get the difference of two arrays.
+	 *
+	 * This methods works like array_diff_assoc(), except it also supports nested arrays by comparing them recursively.
+	 *
+	 * @param array $array1 The base array.
+	 * @param array $array2 The array to compare to.
+	 * @return array An associative array of values from $array1 that are not present in $array2.
+	 */
+	private function arrayDiffAssocRecursive($array1, $array2) {
+		$difference = array();
+
+		foreach($array1 as $key => $value) {
+			if ( !array_key_exists($key, $array2) ) {
+				$difference[$key] = $value;
+				continue;
+			}
+
+			$otherValue = $array2[$key];
+			if ( is_array($value) !== is_array($otherValue) ) {
+				//If only one of the two values is an array then they can't be equal.
+				$difference[$key] = $value;
+			} elseif ( is_array($value) ) {
+				//Compare array values recursively.
+				$subDiff = $this->arrayDiffAssocRecursive($value, $otherValue);
+				if( !empty($subDiff) ) {
+					$difference[$key] = $subDiff;
+				}
+
+			//Like the original array_diff_assoc(), we compare the values as strings.
+			} elseif ( (string)$value !== (string)$array2[$key] ) {
+				$difference[$key] = $value;
+			}
+		}
+
+		return $difference;
 	}
 
 	/**
