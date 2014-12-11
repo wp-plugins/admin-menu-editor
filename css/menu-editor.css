@@ -870,6 +870,10 @@ select.ws_dropdown optgroup option {
 	padding-top: 25px;
 }
 
+#ws_import_error_response {
+	width: 100%;
+}
+
 .ws_dont_show_again {
     display: inline-block;
     margin-top: 1em;

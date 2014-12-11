@@ -2832,7 +2832,8 @@ $(document).ready(function(){
 	});
 
 	$('#ws_import_menu').click(function(){
-		$('#import_progress_notice, #import_progress_notice2, #import_complete_notice').hide();
+		$('#import_progress_notice, #import_progress_notice2, #import_complete_notice, #ws_import_error').hide();
+		$('#ws_import_panel').show();
 		$('#import_menu_form').resetForm();
 		//The "Upload" button is disabled until the user selects a file
 		$('#ws_start_import').attr('disabled', 'disabled');
@@ -2845,6 +2846,21 @@ $(document).ready(function(){
 	$('#import_file_selector').change(function(){
 		$('#ws_start_import').prop('disabled', ! $(this).val() );
 	});
+
+	//This function displays unhandled server side errors. In theory, our upload handler always returns a well-formed
+	//response even if there's an error. In practice, stuff can go wrong in unexpected ways (e.g. plugin conflicts).
+	function handleUnexpectedImportError(xhr, errorMessage) {
+		//The server-side code didn't catch this error, so it's probably something serious
+		//and retrying won't work.
+		$('#import_menu_form').resetForm();
+		$('#ws_import_panel').hide();
+
+		//Display error information.
+		$('#ws_import_error_message').text(errorMessage);
+		$('#ws_import_error_http_code').text(xhr.status);
+		$('#ws_import_error_response').text((xhr.responseText !== '') ? xhr.responseText : '[Empty response]');
+		$('#ws_import_error').show();
+	}
 
 	//AJAXify the upload form
 	$('#import_menu_form').ajaxForm({
@@ -2867,11 +2883,18 @@ $(document).ready(function(){
 			$('#ws_start_import').attr('disabled', 'disabled');
 			return true;
 		},
-		success: function(data){
+		success: function(data, status, xhr) {
+			$('#import_progress_notice').hide();
+
 			var importDialog = $('#import_dialog');
 			if ( !importDialog.dialog('isOpen') ){
 				//Whoops, the user closed the dialog while the upload was in progress.
 				//Discard the response silently.
+				return;
+			}
+
+			if ( data === null ) {
+				handleUnexpectedImportError(xhr, 'Invalid response from server. Please check your PHP error log.');
 				return;
 			}
 
@@ -2881,7 +2904,6 @@ $(document).ready(function(){
 				$('#import_menu_form').resetForm();
 				importDialog.find('.hide-when-uploading').show();
 			}
-			$('#import_progress_notice').hide();
 
 			if ( (typeof data['tree'] != 'undefined') && data.tree ){
 				//Whee, we got back a (seemingly) valid menu. A veritable miracle!
@@ -2897,6 +2919,9 @@ $(document).ready(function(){
 				}), 500);
 			}
 
+		},
+		error: function(xhr, status, errorMessage) {
+			handleUnexpectedImportError(xhr, errorMessage);
 		}
 	});
 
