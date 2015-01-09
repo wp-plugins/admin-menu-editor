@@ -1483,6 +1483,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					return;
 				}
 
+				//Sanitize menu item properties.
+				$menu['tree'] = ameMenu::sanitize($menu['tree']);
+
 				//Save the custom menu
 				$this->set_custom_menu($menu);
 

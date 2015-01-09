@@ -200,6 +200,31 @@ abstract class ameMenu {
 	}
 
 	/**
+	 * Sanitize a list of menu items. Array indexes will be preserved.
+	 *
+	 * @param array $treeItems A list of menu items.
+	 * @param bool $unfiltered_html Whether the current user has the unfiltered_html capability.
+	 * @return array List of sanitized items.
+	 */
+	public static function sanitize($treeItems, $unfiltered_html = null) {
+		if ( $unfiltered_html === null ) {
+			$unfiltered_html = current_user_can('unfiltered_html');
+		}
+
+		$result = array();
+		foreach($treeItems as $key => $item) {
+			$item = ameMenuItem::sanitize($item, $unfiltered_html);
+
+			if ( !empty($item['items']) ) {
+				$item['items'] = self::sanitize($item['items'], $unfiltered_html);
+			}
+			$result[$key] = $item;
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Recursively filter a list of menu items and remove items flagged as missing.
 	 *
 	 * @param array $items An array of menu items to filter.
