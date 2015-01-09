@@ -363,7 +363,7 @@ function buildMenuItem(itemData, isTopLevel) {
 			itemData.separator ? '' : '<a class="ws_edit_link"> </a><div class="ws_flag_container"> </div>',
 			'<input type="checkbox" class="ws_actor_access_checkbox">',
 			'<span class="ws_item_title">',
-				menuTitle,
+				stripAllTags(menuTitle),
 			'&nbsp;</span>',
 
 		'</div>',
@@ -414,6 +414,13 @@ function jsTrim(str){
 	return str.replace(/^\s+|\s+$/g, "");
 }
 
+function stripAllTags(input) {
+	//Based on: http://phpjs.org/functions/strip_tags/
+	var tags = /<\/?([a-z][a-z0-9]*)\b[^>]*>/gi,
+		commentsAndPhpTags = /<!--[\s\S]*?-->|<\?(?:php)?[\s\S]*?\?>/gi;
+	return input.replace(commentsAndPhpTags, '').replace(tags, '');
+}
+
 //Editor field spec template.
 var baseField = {
 	caption : '[No caption]',
@@ -437,16 +444,12 @@ var knownMenuFields = {
 		caption : 'Menu title',
 		display: function(menuItem, displayValue, input, containerNode) {
 			//Update the header as well.
-			var itemTitle = displayValue;
-			if (itemTitle === '') {
-				itemTitle = '&nbsp;';
-			}
-			containerNode.find('.ws_item_title').html(itemTitle);
+			containerNode.find('.ws_item_title').html(stripAllTags(displayValue) + '&nbsp;');
 			return displayValue;
 		},
 		write: function(menuItem, value, input, containerNode) {
 			menuItem.menu_title = value;
-			containerNode.find('.ws_item_title').html(input.val() + '&nbsp;');
+			containerNode.find('.ws_item_title').html(stripAllTags(input.val()) + '&nbsp;');
 		}
 	}),
 
