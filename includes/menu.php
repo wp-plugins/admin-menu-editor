@@ -245,6 +245,36 @@ abstract class ameMenu {
 	protected static function is_not_missing($item) {
 		return empty($item['missing']);
 	}
+
+	/**
+	 * Minify menu configuration.
+	 *
+	 * Reduces data size by removing redundant or temporary menu properties.
+	 * Use load_array() to un-minify.
+	 *
+	 * @param array $menu
+	 * @return array
+	 */
+	public static function minify($menu) {
+		$menu['tree'] = self::recursively_minify_items($menu['tree']);
+
+		if ( isset($menu['format'], $menu['format']['is_normalized']) ) {
+			$menu['format']['is_normalized'] = false;
+		}
+		return $menu;
+	}
+
+	private static function recursively_minify_items($items) {
+		$result = array();
+		foreach($items as $key => $item) {
+			$item = ameMenuItem::minify($item);
+			if ( !empty($item['items']) ) {
+				$item['items'] = self::recursively_minify_items($item['items']);
+			}
+			$result[$key] = $item;
+		}
+		return $result;
+	}
 }
 
 

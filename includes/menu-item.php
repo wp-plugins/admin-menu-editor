@@ -130,6 +130,7 @@ abstract class ameMenuItem {
 			'missing' => false, //True if our template is no longer present in the default admin menu. Note: Stored values will be ignored. Set upon merging.
 			'unused' => false,  //True if this item was generated from an unused default menu. Note: Stored values will be ignored. Set upon merging.
 			'hidden' => false,  //Hide/show the item. Hiding is purely cosmetic, the item remains accessible.
+			'separator' => false,  //True if the item is a menu separator.
 
 			'defaults' => self::basic_defaults(),
 		));
@@ -361,6 +362,67 @@ abstract class ameMenuItem {
 			}
 			$item['defaults'] = $new_defaults;
 		}
+		return $item;
+	}
+
+	/**
+	 * Minify a menu item for storage or export.
+	 *
+	 * Removes known properties that still have the default value and can be easily restored,
+	 * as well as temporary properties like "missing" that are updated on each page load.
+	 *
+	 * @param array $item
+	 * @return array
+	 */
+	public static function minify($item) {
+		//Some properties depend on the current state of the default admin menu, so the plugin
+		//must refresh them on every page load. There's no reason to store them.
+		$always_remove = array('unused', 'missing');
+		foreach($always_remove as $field) {
+			unset($item[$field]);
+		}
+
+		//Known fields that don't have a custom value can be trivially restored by calling normalize(),
+		//so we can get rid of them, too.
+		$common_fields = self::blank_menu();
+		foreach($common_fields as $field => $default_value) {
+			if ( array_key_exists($field, $item) && ($item[$field] === null) ) {
+				unset($item[$field]);
+			}
+		}
+
+		//Defaults that match the basic defaults used for all items also don't need to be stored.
+		//normalize() will restore them. Note, however, that future versions of the plugin might have
+		//a different set of defaults. That only matters for custom items because the default properties
+		//of normal items get reloaded from the actual admin menu (while the items exist).
+		if ( !$item['custom'] && isset($item['defaults']) ) {
+			foreach(self::basic_defaults() as $field => $default_value) {
+				if ( array_key_exists($field, $item['defaults']) && ($item['defaults'][$field] === $default_value) ) {
+					unset($item['defaults'][$field]);
+				}
+			}
+		}
+
+		//These fields default to a known value that's the same for all menu items, so there's no need
+		//to store them unless they've been set to something else for a particular item.
+		$default_flags = array(
+			'separator' => false,
+			'custom' => false,
+			'hidden' => false,
+		);
+		foreach($default_flags as $field => $default_value) {
+			if ( array_key_exists($field, $item) && ($item[$field] === $default_value) ) {
+				unset($item[$field]);
+			}
+		}
+
+		if ( empty($item['grant_access']) ) {
+			unset($item['grant_access']);
+		}
+		if ( empty($item['items']) ) {
+			unset($item['items']);
+		}
+
 		return $item;
 	}
 
