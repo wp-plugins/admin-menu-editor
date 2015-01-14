@@ -124,7 +124,6 @@ abstract class ameMenuItem {
 		$blank_menu = array_merge($blank_menu, array(
 			'items' => array(), //List of sub-menu items.
 			'grant_access' => array(), //Per-role and per-user access. Supersedes role_access.
-			'role_access' => array(), //Per-role access settings.
 			'colors' => null,
 
 			'custom' => false,  //True if item is made-from-scratch and has no template.
@@ -319,7 +318,7 @@ abstract class ameMenuItem {
 			foreach($item['role_access'] as $role_id => $has_access) {
 				$item['grant_access']['role:' . $role_id] = $has_access;
 			}
-			$item['role_access'] = array();
+			unset($item['role_access']);
 		}
 
 		if ( isset($item['items']) ) {
