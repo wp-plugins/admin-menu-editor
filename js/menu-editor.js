@@ -154,6 +154,9 @@ var AmeCapabilityManager = (function(roles, users) {
 	return me;
 })(wsEditorData.roles, wsEditorData.users);
 
+
+var AmeEditorApi = {};
+
 (function ($){
 
 var selectedActor = null;
@@ -1095,6 +1098,8 @@ function readMenuTreeState(){
 		tree: tree
 	};
 }
+
+AmeEditorApi.readMenuTreeState = readMenuTreeState;
 
 /**
  * Extract the current menu item settings from its editor widget.
@@ -2368,7 +2373,7 @@ $(document).ready(function(){
 			menu_title : 'Custom Menu ' + ws_paste_count,
 			file : randomId,
 			items: [],
-			defaults: itemTemplates.getDefaults('')
+			defaults: $.extend({}, itemTemplates.getDefaults(''))
 		});
 
 		//Make it accessible only to the current actor if one is selected.
@@ -2619,7 +2624,7 @@ $(document).ready(function(){
 			menu_title : 'Custom Item ' + ws_paste_count,
 			file : randomMenuId(),
 			items: [],
-			defaults: itemTemplates.getDefaults('')
+			defaults: $.extend({}, itemTemplates.getDefaults(''))
 		});
 
 		//Make it accessible to only the currently selected actor.
@@ -2806,7 +2811,7 @@ $(document).ready(function(){
 
 				if ( (typeof data['download_url'] != 'undefined') && data.download_url ){
 					//window.location = data.download_url;
-					$('#download_menu_button').attr('href', data.download_url);
+					$('#download_menu_button').attr('href', data.download_url).data('filesize', data.filesize);
 					$('#export_progress_notice').hide();
 					$('#export_complete_notice, #download_menu_button').show();
 				}
