@@ -303,6 +303,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 					$message .= '<p><strong>Admin Menu Editor security log</strong></p>';
 					$message .= $this->get_formatted_security_log();
 				}
+				do_action('admin_page_access_denied');
 				wp_die($message);
 			} else {
 				$this->log_security_note('ALLOW access.');
