@@ -119,7 +119,9 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		$this->settings_link = 'options-general.php?page=menu_editor';
 		
 		$this->magic_hooks = true;
-		$this->magic_hook_priority = 99999;
+		//Run our hooks last (almost). Priority is less than PHP_INT_MAX mostly for defensive programming purposes.
+		//Old PHP versions have known bugs related to large array keys, and WP might have undiscovered edge cases.
+		$this->magic_hook_priority = PHP_INT_MAX - 10;
 		
 		//AJAXify screen options
 		add_action('wp_ajax_ws_ame_save_screen_options', array($this,'ajax_save_screen_options'));
