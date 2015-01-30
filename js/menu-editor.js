@@ -804,6 +804,7 @@ function buildEditboxFields(fieldContainer, entry, isTopLevel){
 /*
  * Create an editor for a specified field.
  */
+//noinspection JSUnusedLocalSymbols
 function buildEditboxField(entry, field_name, field_settings){
 	//Build a form field of the appropriate type
 	var inputBox = null;
