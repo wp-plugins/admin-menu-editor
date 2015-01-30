@@ -805,10 +805,6 @@ function buildEditboxFields(fieldContainer, entry, isTopLevel){
  * Create an editor for a specified field.
  */
 function buildEditboxField(entry, field_name, field_settings){
-	if (typeof entry[field_name] === 'undefined') {
-		return null; //skip fields this entry doesn't have
-	}
-
 	//Build a form field of the appropriate type
 	var inputBox = null;
 	var basicTextField = '<input type="text" class="ws_field_value">';
@@ -1345,6 +1341,9 @@ $(document).ready(function(){
 
 		$('.ws_hide_if_pro').hide();
 	}
+
+	//Let other plugins filter knownMenuFields.
+	$(document).trigger('filterMenuFields.adminMenuEditor', [knownMenuFields, baseField]);
 
 	//Make the top menu box sortable (we only need to do this once)
     var mainMenuBox = $('#ws_menu_box');
