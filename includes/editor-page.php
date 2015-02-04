@@ -435,6 +435,12 @@ if ( apply_filters('admin_menu_editor_is_pro', false) ) {
 			'ws_hide_menu_except_current_user',
 			false
 		);
+		submit_button(
+			'Hide it from everyone except Administrator',
+			'secondary',
+			'ws_hide_menu_except_administrator',
+			false
+		);
 		submit_button('Cancel', 'secondary', 'ws_cancel_menu_deletion', false);
 		?>
 	</div>
