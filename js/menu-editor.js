@@ -1239,6 +1239,8 @@ function actorCanAccessMenu(menuItem, actor) {
 	return actorHasAccess;
 }
 
+AmeEditorApi.actorCanAccessMenu = actorCanAccessMenu;
+
 function actorHasCustomPermissions(menuItem, actor) {
 	if (menuItem.grant_access && menuItem.grant_access.hasOwnProperty && menuItem.grant_access.hasOwnProperty(actor)) {
 		return (menuItem.grant_access[actor] !== null);
