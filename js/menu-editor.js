@@ -1960,7 +1960,7 @@ $(document).ready(function(){
         //Create a custom media frame.
         frame = wp.media.frames.customAdminMenuIcon = wp.media({
             //Set the title of the modal.
-            title: 'Choose a Custom Icon (16x16)',
+            title: 'Choose a Custom Icon (20x20)',
 
             //Tell it to show only images.
             library: {
