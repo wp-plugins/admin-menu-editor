@@ -78,7 +78,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	private $originalPost = array();
 
 	/**
-	 * @var array Cache of user role names indexed by user ID. E.g. [123 => array("administrator", "foo")]
+	 * @var array A cache of user role names indexed by user ID. E.g. [123 => array("administrator", "foo")]
 	 */
 	private $cached_user_roles = array();
 
@@ -160,6 +160,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		add_action('set_current_user', array($this, 'update_current_user_cache'), 1, 0); //Run before most plugins.
 		add_action('updated_user_meta', array($this, 'clear_user_role_cache'), 10, 2);
 		add_action('deleted_user_meta', array($this, 'clear_user_role_cache'), 10, 2);
+		//There's also a "set_user_role" hook, but it's only called by WP_User::set_role and not WP_User::add_role.
+		//It's also redundant - WP_User::set_role updates user meta, so the above hooks already cover it.
 	}
 	
 	function init_finish() {
@@ -2530,7 +2532,8 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 		}
 
 		if ( !isset($this->cached_user_roles[$user->ID]) ) {
-			$this->cached_user_roles[$user->ID] = $user->roles;
+			//Note: In rare cases, WP_User::$roles can be false. For AME it's more convenient to have an empty list.
+			$this->cached_user_roles[$user->ID] = !empty($user->roles) ? $user->roles : array();
 		}
 		return $this->cached_user_roles[$user->ID];
 	}
@@ -2550,7 +2553,7 @@ class WPMenuEditor extends MenuEd_ShadowPluginFramework {
 	/**
 	 * User metadata was updated or deleted; invalidate the role cache.
 	 *
-	 * Not all metadata updates are related to role changes, but filtering them is non-trivial (meta keys vary)
+	 * Not all metadata updates are related to role changes, but filtering them is non-trivial (meta keys change)
 	 * and not really necessary for our purposes.
 	 *
 	 * @param int|array $unused_meta_id
