@@ -63,6 +63,14 @@ Plugins installed in the `mu-plugins` directory are treated as "always on", so y
 
 == Changelog ==
 
+= 1.4.3 =
+* Trying to delete a non-custom menu item will now trigger a warning dialog that offers to hide the item instead. In general, it's impossible to permanently delete menus created by WordPress itself or other plugins (without editing their source code, that is).
+* Added a workaround for a bug in W3 Total Cache 0.9.4.1 that could cause menu permissions to stop working properly when the CDN or New Relic modules were activated.
+* Fixed a plugin conflict where certain menu items didn't show up in the editor because the plugin that created them used a very low priority.
+* Signigicantly improved sanitization of menu properties. 
+* Renamed the "Choose Icon" button to "Media Library".
+* Minor compatibility improvements.
+
 = 1.4.2 =
 * Tested on WP 4.1 and 4.2-alpha.
 * Fixed a bug that allowed Administrators to bypass custom permissions for the "Appearance -> Customize" menu item.
