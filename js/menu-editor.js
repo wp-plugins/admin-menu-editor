@@ -2972,6 +2972,7 @@ $(document).ready(function(){
 		//Allow the user to drag sub-menu items to the top level.
 		$('#ws_top_menu_dropzone').droppable({
 			'hoverClass' : 'ws_dropzone_hover',
+			'activeClass' : 'ws_dropzone_active',
 
 			'accept' : (function(thing){
 				return thing.hasClass('ws_item');
@@ -2987,8 +2988,8 @@ $(document).ready(function(){
 		});
 
 		//...and to drag top level menus to a sub-menu.
-		$('#ws_sub_menu_dropzone').droppable({
-			'hoverClass' : 'ws_dropzone_hover',
+		$('#ws_submenu_box').closest('.ws_main_container').droppable({
+			'hoverClass' : 'ws_top_to_submenu_drop_hover',
 
 			'accept' : (function(thing){
 				var visibleSubmenu = $('#ws_submenu_box').find('.ws_submenu:visible');
