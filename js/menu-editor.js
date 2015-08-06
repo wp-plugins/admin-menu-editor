@@ -717,7 +717,7 @@ var knownMenuFields = {
 		advanced : true,
 
 		display: function(menuItem, displayValue, input, containerNode) {
-			var colors = getFieldValue(menuItem, 'colors', {});
+			var colors = getFieldValue(menuItem, 'colors', {}) || {};
 			var colorList = containerNode.find('.ws_color_scheme_display');
 
 			colorList.empty();
@@ -2103,7 +2103,7 @@ $(document).ready(function(){
 		colorDialogState.containerNode = containerNode;
 		colorDialogState.menuItem = menuItem;
 
-		var colors = getFieldValue(menuItem, 'colors', {});
+		var colors = getFieldValue(menuItem, 'colors', {}) || {};
 		var customColorCount = 0;
 		for (var i = 0; i < menuColorVariables.length; i++) {
 			var name = menuColorVariables[i];
