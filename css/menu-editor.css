@@ -703,10 +703,10 @@ select.ws_dropdown optgroup option {
 .ws_color_scheme_display {
     display: inline-block;
     height: 20px;
-    width: 190px;
+    width: 186px;
 
     margin-right: 5px;
-    padding: 2px 2px 2px 3px;
+    padding: 2px 3px;
 
     border: 1px solid #ddd;
     background: white;
